@@ -3997,6 +3997,67 @@ TEST_P(TransformFeedbackTest, DeleteTransformFeedbackBuffer)
     glDrawArrays(GL_POINTS, 0, 1);
 }
 
+// Validates that drawing after deleting a buffer and binding and unbinding transform feedback
+// object.
+TEST_P(TransformFeedbackTest, BindAndUnbindTransformFeedback)
+{
+    ANGLE_GL_PROGRAM_TRANSFORM_FEEDBACK(testProgram, essl1_shaders::vs::Simple(),
+                                        essl1_shaders::fs::Green(), {"gl_Position"},
+                                        GL_INTERLEAVED_ATTRIBS);
+    glUseProgram(testProgram);
+
+    std::vector<uint8_t> data(100, 0);
+
+    std::array<Vector3, 6> quadVerts = GetQuadVertices();
+
+    GLint loc = glGetAttribLocation(testProgram, essl1_shaders::PositionAttrib());
+    ASSERT_NE(-1, loc);
+
+    GLBuffer posBuf;
+    glBindBuffer(GL_ARRAY_BUFFER, posBuf);
+    glBufferData(GL_ARRAY_BUFFER, quadVerts.size() * sizeof(quadVerts[0]), quadVerts.data(),
+                 GL_STATIC_DRAW);
+    glVertexAttribPointer(loc, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    glEnableVertexAttribArray(loc);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    GLTransformFeedback tf;
+    (void)tf.get();
+
+    GLBuffer buf;
+    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
+    glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, data.size() * sizeof(data[0]), data.data(),
+                 GL_STREAM_READ);
+    glBeginTransformFeedback(GL_POINTS);
+    glPauseTransformFeedback();
+    buf.reset();
+    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tf);
+    glDrawArrays(GL_POINTS, 0, 1);
+    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
+    glFinish();
+    glDrawArrays(GL_POINTS, 0, 1);
+    EXPECT_GL_ERROR(GL_INVALID_OPERATION);
+}
+
+// Same as the above, with a paused transform feedback.
+TEST_P(TransformFeedbackTest, DeletePausedTransformFeedbackBuffer)
+{
+    ANGLE_GL_PROGRAM_TRANSFORM_FEEDBACK(testProgram, essl1_shaders::vs::Simple(),
+                                        essl1_shaders::fs::Green(), {"gl_Position"},
+                                        GL_INTERLEAVED_ATTRIBS);
+    glUseProgram(testProgram);
+ 
+    GLBuffer buffer;
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, buffer);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, 3, nullptr, GL_STATIC_DRAW);
+    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buffer);
+ 
+    glBeginTransformFeedback(GL_POINTS);
+    glPauseTransformFeedback();
+    buffer.reset();
+    glDrawArrays(GL_POINTS, 0, 1);
+}
+ 
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TransformFeedbackTest);
 ANGLE_INSTANTIATE_TEST_ES3(TransformFeedbackTest);
 

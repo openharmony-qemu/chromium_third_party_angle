@@ -4178,7 +4178,7 @@ const char *ValidateDrawStates(const Context *context)
                 }
             }
 
-            if (state.isTransformFeedbackActiveUnpaused())
+            if (state.isTransformFeedbackActive())
             {
                 if (!ValidateProgramExecutableXFBBuffersPresent(context, executable))
                 {

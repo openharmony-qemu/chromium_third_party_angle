@@ -125,7 +125,8 @@ if (angle_use_x11) {
   ]
 }
 
-if (is_android || is_linux || is_chromeos) {
+if (is_android || is_linux || is_chromeos ||
+    is_ohos) {  # TODO(ohos): remove is_ohos
   _gl_backend_sources += [
     "egl/ContextEGL.cpp",
     "egl/ContextEGL.h",
@@ -264,7 +265,8 @@ angle_source_set("angle_gl_backend") {
       "Xext",
     ]
   }
-  if (is_android || is_linux || is_chromeos) {
+  if (is_android || is_linux || is_chromeos ||
+      is_ohos) {  # TODO(ohos): remove is_ohos
     deps += [ "$angle_root/src/common/linux:angle_dma_buf" ]
   }
   if (is_apple) {

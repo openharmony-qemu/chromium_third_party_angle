@@ -27,7 +27,7 @@ if (angle_has_build) {
   import("//build/config/sanitizers/sanitizers.gni")
   import("//build_overrides/build.gni")
   import("//testing/test.gni")
-  if (is_android) {
+  if (is_android || is_ohos) {
     import("//build/config/android/config.gni")
   }
 
@@ -104,7 +104,7 @@ declare_args() {
   angle_is_winuwp = is_win && target_os == "winuwp"
 
   # Default to using "_angle" suffix on Android
-  if (is_android) {
+  if (is_android || is_ohos) {
     angle_libs_suffix = "_angle"
   } else {
     angle_libs_suffix = ""
@@ -138,7 +138,8 @@ declare_args() {
       !(is_android && build_with_chromium && is_official_build) &&
       ((is_win && !angle_is_winuwp) ||
        (is_linux && (angle_use_x11 || angle_use_vulkan_display) &&
-        !is_chromeos) || is_android || is_fuchsia || is_ggp || is_mac)
+        !is_chromeos) || is_android || is_fuchsia || is_ggp || is_mac ||
+       is_ohos)
 
   # When set to true, ANGLE will not use VK_KHR_surface and VK_KHR_swapchain
   # extensions. Content can be rendered only off-screen.
@@ -146,7 +147,7 @@ declare_args() {
 
   # Disable null backend to save space for official build.
   angle_enable_null = !is_official_build
-  angle_enable_gl_desktop = !is_android && !is_ios
+  angle_enable_gl_desktop = !is_android && !is_ios && !is_ohos
 
   # http://anglebug.com/2634
   angle_enable_metal = is_mac
@@ -168,7 +169,7 @@ declare_args() {
   # Currently SwiftShader's Vulkan front-end doesn't build on Android.
   # Disabled by default on MSVC because of compiler warnings/errors.
   angle_enable_swiftshader =
-      angle_enable_vulkan && !is_android && !is_ggp && is_clang
+      angle_enable_vulkan && !is_android && !is_ggp && is_clang && !is_ohos
 
   # Translator frontend support:
   angle_enable_desktop_glsl = angle_enable_gl_desktop
@@ -185,7 +186,8 @@ declare_args() {
   # Vulkan Validation Layers compatibility issues, see http://crrev/c/1405714.
   angle_enable_vulkan_validation_layers =
       angle_enable_vulkan && !is_ubsan && !is_tsan && !is_asan &&
-      angle_debug_layers_enabled && (!is_android || ndk_api_level_at_least_26)
+      angle_debug_layers_enabled &&
+      ((!is_android && !is_ohos) || ndk_api_level_at_least_26)
 
   # Support using glslang to generate SPIR-V for the time being for the purpose of debugging
   # the SPIR-V generation path, but leave it disabled on release.  It's still used by the metal

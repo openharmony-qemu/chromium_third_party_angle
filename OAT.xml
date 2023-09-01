@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Copyright (c) 2021 Huawei Device Co., Ltd.
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+
+    This is the configuration file template for OpenHarmony OSS Audit Tool, please copy it to your
+project root dir and modify it refer to OpenHarmony/tools_oat/README.
+    All configurations in this file will be merged to OAT-Default.xml, if you have any questions or
+concerns, please create issue in OpenHarmony/tools_oat and @jalenchen or chenyaxun.
+
+    licensefile:
+    1.If the project don't have "LICENSE" in root dir, please define all the license files in this
+project in , OAT will check license files according to this rule.
+
+    policylist:
+    1. policy: If the OAT-Default.xml policies do not meet your requirements, please add policies here.
+    2. policyitem: The fields type, name, path, desc is required, and the fields rule, group,
+filefilter is optional,the default value is:
+    <policyitem type="" name="" path="" desc="" rule="may" group="defaultGroup"
+filefilter="defaultPolicyFilter"/>
+    3. policyitem type:
+        "compatibility" is used to check license compatibility in the specified path;
+        "license" is used to check source license header in the specified path;
+        "copyright" is used to check source copyright header in the specified path;
+        "import" is used to check source dependency in the specified path, such as import ... ,include ...
+        "filetype" is used to check file type in the specified path, supported file types: archive, binary
+        "filename" is used to check whether the specified file exists in the specified path(projectroot
+means the root dir of the project), supported file names: LICENSE, README, README.OpenSource
+    4. policyitem name: This field is used for define the license, copyright, "*" means match all, the
+"!" prefix means could not match this value. For example, "!GPL" means can not use GPL license.
+    5. policyitem path: This field is used for define the source file scope to apply this policyitem,
+the "!" prefix means exclude the files. For example, "!.*/lib/.*" means files in lib dir will be
+exclude while process this policyitem.
+    6. policyitem rule and group: These two fields are used together to merge policy results. "may"
+policyitems in the same group means any one in this group passed, the result will be passed.
+    7. policyitem filefilter: Used to bind filefilter which define filter rules.
+    7. policyitem desc: Used to describe the reason of this policy item, committers will check this
+while merging the code.
+    8. filefilter: Filter rules, the type filename is used to filter file name, the type filepath is
+used to filter file path.
+
+    Note:If the text contains special characters, please escape them according to the following rules:
+    " == &quot;
+    & == &amp;
+    ' == &apos;
+    < == &lt;
+    > == &gt;
+-->
+
+<configuration>
+    <oatconfig>
+        <policylist>
+            <policy name="projectPolicy" desc="">
+                <policyitem type="compatibility" name="GPL-3.0+" path=".*" desc="" />
+                <policyitem type="compatibility" name="GPL-2.0+" path=".*" desc="" />
+                <policyitem type="compatibility" name="GPLStyleLicense" path=".*" desc="" />
+                <policyitem type="compatibility" name="Apple" path="src/third_party/systeminfo.*" desc="" />
+                <policyitem type="compatibility" name="Khronos Group License" path="include/KHR.*" desc="" />
+                <policyitem type="compatibility" name="Khronos Group License1" path="src/third_party/volk.*" desc="" />
+                <!-- <policyitem type="compatibility" name="Khronos License" path=".*" desc="" />
+                <policyitem type="compatibility" name="Apache-2.0" path=".*" desc="" />
+                <policyitem type="compatibility" name="GPLStyleLicense" path=".*" desc="" />
+                <policyitem type="compatibility" name="LLVM License" path="third_party/llvm-subzero.*" desc="" />
+                <policyitem type="compatibility" name="LLVM License" path="third_party/subzero.*" desc="" />
+                <policyitem type="compatibility" name="LLVM License" path="third_party/llvm-10.0.*" desc="" />
+                <policyitem type="compatibility" name="GPL-3.0+" path=".*" desc="" />
+                <policyitem type="compatibility" name="Spencer-94" path=".*" desc="" />
+                <policyitem type="compatibility" name="OpenBSD" path=".*" desc="" />
+                <policyitem type="compatibility" name="original license" path="third_party/llvm-subzero/include/llvm/Support.*" desc="" />
+                <policyitem type="compatibility" name="original license" path="third_party/llvm-10.0/llvm/include/llvm/Support.*" desc="" />
+                <policyitem type="compatibility" name="Khronos License2" path="include.*" desc="" />
+                <policyitem type="compatibility" name="Khronos License3" path="include.*" desc="" /> -->
+            </policy>
+        </policylist>
+        <filefilterlist>
+            <filefilter name="defaultPolicyFilter"
+                desc="Filters for compatibility,license header policies">
+                <filteritem type="filepath" name="README.chromium"
+                    desc="" />
+                <filteritem type="filepath" name="*/third_party/VK-GL-CTS/README.angle"
+                    desc="" />
+                <filteritem type="filepath" name="util/windows/third_party/StackWalker/README.chromium"
+                    desc="" />
+                <filteritem type="filepath" name="third_party/r8/README.chromium"
+                    desc="" />
+                <filteritem type="filepath" name="third_party/bazel/README.chromium"
+                    desc="" />
+                <filteritem type="filepath" name="third_party/turbine/README.chromium"
+                    desc="" />
+                <filteritem type="filepath" name="src/common/third_party/xxhash/README.chromium"
+                    desc="" />
+                <filteritem type="filepath" name="third_party/colorama/README.chromium"
+                    desc="" />
+                <filteritem type="filepath" name="third_party/OpenCL-ICD-Loader/README.chromium"
+                    desc="" />
+                <filteritem type="filepath" name="third_party/bazel/desugar/README.chromium"
+                    desc="" />
+                <filteritem type="filepath" name="tools/flex-bison/third_party/skeletons/README.chromium"
+                    desc="" />
+                <filteritem type="filepath" name="third_party/logdog/README.chromium"
+                    desc="" />
+                <filteritem type="filepath" name="src/common/third_party/base/README.angle"
+                    desc="" />
+                <filteritem type="filepath" name="tools/flex-bison/third_party/m4sugar/README.chromium"
+                    desc="" />
+                <filteritem type="filepath" name="third_party/libpng/README.angle"
+                    desc="" />
+                <filteritem type="filepath" name="README.OpenSource"
+                    desc="" />
+            </filefilter>
+            <filefilter name="defaultFilter">
+                <filteritem type="filepath" name="README.OpenSource"
+                    desc="" />
+            </filefilter>
+        </filefilterlist>
+        
+        <licensematcherlist>
+            <!-- <licensematcher name="LLVM License" desc="">
+                <licensetext name="
+                /* This file is distributed under the University of Illinois Open Source      */
+                /* License. See LICENSE.TXT for details.                                      */
+                " desc="" />
+                </licensematcher>
+            <licensematcher name="OpenBSD" desc="">
+                <licensetext name="
+                * This code is derived from OpenBSD's libc, original license follows:
+                *
+                * Copyright (c) 1998 Todd C. Miller &gt;Todd.Miller@courtesan.com&gt;
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="original license" desc="">
+                <licensetext name="
+                * This is an OpenSSL-compatible implementation of the RSA Data Security, Inc.
+                * MD5 Message-Digest Algorithm (RFC 1321).
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License2" desc="">
+                <licensetext name="
+                * Copyright (c) 2008-2018 The Khronos Group Inc.
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos License3" desc="">
+                <licensetext name="
+                * Copyright (c) 2007-2016 The Khronos Group Inc
+            " desc="" />
+            </licensematcher> -->
+            <licensematcher name="Apple" desc="">
+                <licensetext name="
+                * Copyright (C) 2009 Apple Inc. All Rights Reserved.
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Khronos Group License" desc="">
+                <licensetext name="
+                ** Copyright (c) 2008-2018 The Khronos Group Inc.
+            " desc="" />
+            </licensematcher>
+             <licensematcher name="Khronos Group License1" desc="">
+                <licensetext name="
+                /* This file is part of volk library; see volk.h for version/license details */
+                /* clang-format off */
+            " desc="" />
+            </licensematcher>
+        </licensematcherlist>
+    </oatconfig>
+</configuration>

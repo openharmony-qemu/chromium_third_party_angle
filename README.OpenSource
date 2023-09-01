@@ -1,0 +1,10 @@
+[
+    {
+        "Name": "chrominum_third_party_vulkan_deps_glslang",                   # 上游开源软件名全称
+        "License": "Khronos Group License",         # 上游开源软件中包含的许可证信息
+        "License File": "LICENSE.TXT", "GPL-2.0-with-bison-exception","GPL-3.0+","Khronos License","GPL-3.0+"       # 许可证所在文件路径
+        "Version Number": "6624e1367309630b2f6df3cf93a5f864e89973f9",
+        "Upstream URL": "https://chromium.googlesource.com/external/github.com/KhronosGroup/glslang@6624e1367309630b2f6df3cf93a5f864e89973f9",   # 上游软件包发布地址
+        "Description": "第三方软件vulkan-deps/glslang"           # 开源软件功能描述
+    }
+]

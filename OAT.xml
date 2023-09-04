@@ -75,33 +75,7 @@ used to filter file path.
                 desc="Filters for compatibility,license header policies">
                 <filteritem type="filepath" name="README.chromium"
                     desc="" />
-                <filteritem type="filepath" name="*/third_party/VK-GL-CTS/README.angle"
-                    desc="" />
-                <filteritem type="filepath" name="util/windows/third_party/StackWalker/README.chromium"
-                    desc="" />
-                <filteritem type="filepath" name="third_party/r8/README.chromium"
-                    desc="" />
-                <filteritem type="filepath" name="third_party/bazel/README.chromium"
-                    desc="" />
-                <filteritem type="filepath" name="third_party/turbine/README.chromium"
-                    desc="" />
-                <filteritem type="filepath" name="src/common/third_party/xxhash/README.chromium"
-                    desc="" />
-                <filteritem type="filepath" name="third_party/colorama/README.chromium"
-                    desc="" />
-                <filteritem type="filepath" name="third_party/OpenCL-ICD-Loader/README.chromium"
-                    desc="" />
-                <filteritem type="filepath" name="third_party/bazel/desugar/README.chromium"
-                    desc="" />
-                <filteritem type="filepath" name="tools/flex-bison/third_party/skeletons/README.chromium"
-                    desc="" />
-                <filteritem type="filepath" name="third_party/logdog/README.chromium"
-                    desc="" />
-                <filteritem type="filepath" name="src/common/third_party/base/README.angle"
-                    desc="" />
-                <filteritem type="filepath" name="tools/flex-bison/third_party/m4sugar/README.chromium"
-                    desc="" />
-                <filteritem type="filepath" name="third_party/libpng/README.angle"
+                    <filteritem type="filepath" name="third_party/VK-GL-CTS/README.angle"
                     desc="" />
                 <filteritem type="filepath" name="README.OpenSource"
                     desc="" />

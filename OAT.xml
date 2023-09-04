@@ -68,19 +68,6 @@ used to filter file path.
                 <policyitem type="compatibility" name="Apple" path="src/third_party/systeminfo.*" desc="" />
                 <policyitem type="compatibility" name="Khronos Group License" path="include/KHR.*" desc="" />
                 <policyitem type="compatibility" name="Khronos Group License1" path="src/third_party/volk.*" desc="" />
-                <!-- <policyitem type="compatibility" name="Khronos License" path=".*" desc="" />
-                <policyitem type="compatibility" name="Apache-2.0" path=".*" desc="" />
-                <policyitem type="compatibility" name="GPLStyleLicense" path=".*" desc="" />
-                <policyitem type="compatibility" name="LLVM License" path="third_party/llvm-subzero.*" desc="" />
-                <policyitem type="compatibility" name="LLVM License" path="third_party/subzero.*" desc="" />
-                <policyitem type="compatibility" name="LLVM License" path="third_party/llvm-10.0.*" desc="" />
-                <policyitem type="compatibility" name="GPL-3.0+" path=".*" desc="" />
-                <policyitem type="compatibility" name="Spencer-94" path=".*" desc="" />
-                <policyitem type="compatibility" name="OpenBSD" path=".*" desc="" />
-                <policyitem type="compatibility" name="original license" path="third_party/llvm-subzero/include/llvm/Support.*" desc="" />
-                <policyitem type="compatibility" name="original license" path="third_party/llvm-10.0/llvm/include/llvm/Support.*" desc="" />
-                <policyitem type="compatibility" name="Khronos License2" path="include.*" desc="" />
-                <policyitem type="compatibility" name="Khronos License3" path="include.*" desc="" /> -->
             </policy>
         </policylist>
         <filefilterlist>
@@ -124,37 +111,7 @@ used to filter file path.
                     desc="" />
             </filefilter>
         </filefilterlist>
-        
         <licensematcherlist>
-            <!-- <licensematcher name="LLVM License" desc="">
-                <licensetext name="
-                /* This file is distributed under the University of Illinois Open Source      */
-                /* License. See LICENSE.TXT for details.                                      */
-                " desc="" />
-                </licensematcher>
-            <licensematcher name="OpenBSD" desc="">
-                <licensetext name="
-                * This code is derived from OpenBSD's libc, original license follows:
-                *
-                * Copyright (c) 1998 Todd C. Miller &gt;Todd.Miller@courtesan.com&gt;
-            " desc="" />
-            </licensematcher>
-            <licensematcher name="original license" desc="">
-                <licensetext name="
-                * This is an OpenSSL-compatible implementation of the RSA Data Security, Inc.
-                * MD5 Message-Digest Algorithm (RFC 1321).
-            " desc="" />
-            </licensematcher>
-            <licensematcher name="Khronos License2" desc="">
-                <licensetext name="
-                * Copyright (c) 2008-2018 The Khronos Group Inc.
-            " desc="" />
-            </licensematcher>
-            <licensematcher name="Khronos License3" desc="">
-                <licensetext name="
-                * Copyright (c) 2007-2016 The Khronos Group Inc
-            " desc="" />
-            </licensematcher> -->
             <licensematcher name="Apple" desc="">
                 <licensetext name="
                 * Copyright (C) 2009 Apple Inc. All Rights Reserved.

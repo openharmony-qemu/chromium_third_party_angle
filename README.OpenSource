@@ -1,10 +1,10 @@
 [
     {
         "Name": "chromium_third_party_angle",                   # 上游开源软件名全称
-        "License":"Khronos Group License","GPL-3.0+","GPL-2.0+","GPLStyleLicense","Apple",         # 上游开源软件中包含的许可证信息
+        "License":"LicenseRef-scancode-khronos","GPL-3.0+","GPL-2.0+","GPLStyleLicense","Libpng"         # 上游开源软件中包含的许可证信息
         "License File": "LICENSE"    # 许可证所在文件路径
         "Version Number": "29b222a3c07c541cafa459ae6886134da3493a4b",
         "Upstream URL": "https://chromium.googlesource.com/angle/angle.git@29b222a3c07c541cafa459ae6886134da3493a4b",   # 上游软件包发布地址
-        "Description": "第三方软件vulkan-deps/glslang"           # 开源软件功能描述
+        "Description": "第三方软件angle底层的图形渲染引擎的一部分"           # 开源软件功能描述
     }
 ]

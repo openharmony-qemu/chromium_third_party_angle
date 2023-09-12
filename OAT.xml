@@ -6,43 +6,187 @@
                 <policyitem type="compatibility" name="GPL-3.0+" path=".*" desc="" />
                 <policyitem type="compatibility" name="GPL-2.0+" path=".*" desc="" />
                 <policyitem type="compatibility" name="GPLStyleLicense" path=".*" desc="" />
-                <policyitem type="compatibility" name="Apple" path="src/third_party/systeminfo.*" desc="" />
-                <policyitem type="compatibility" name="Khronos Group License" path="include/KHR.*" desc="" />
-                <policyitem type="compatibility" name="Khronos Group License1" path="src/third_party/volk.*" desc="" />
+                <policyitem type="compatibility" name="Libpng" path=".*" desc="" />
+                <policyitem type="compatibility" name="LicenseRef-scancode-khronos" path=".*" desc="" />
             </policy>
         </policylist>
         <filefilterlist>
             <filefilter name="defaultPolicyFilter"
                 desc="Filters for compatibility,license header policies">
-                    <filteritem type="filepath" name=".*README.chromium"
-                    desc="" />
-                    <filteritem type="filepath" name=".*angle"
-                    desc="" />
-                    <filteritem type="filepath" name="src/common/third_party/base/README.angle"
-                    desc="" />
                 <filteritem type="filepath" name="README.OpenSource"
+                    desc="" />
+                <filteritem type="filepath" name="src/third_party/volk/volk.c"
+                    desc="" />
+                <filteritem type="filepath" name="src/common/third_party/base/README.angle"
                     desc="" />
             </filefilter>
             <filefilter name="defaultFilter">
                 <filteritem type="filepath" name="README.OpenSource"
                     desc="" />
+                <filteritem type="filepath" name=".*png"
+                    desc="" />
+                <filteritem type="filepath" name="src.*"
+                    desc="" />
+                <filteritem type="filepath" name=".*sha1"
+                    desc="" />
+                <filteritem type="filepath" name=".*tga"
+                    desc="" />
+                <filteritem type="filepath" name=".*custom_d8.jar"
+                    desc="" />
             </filefilter>
         </filefilterlist>
         <licensematcherlist>
-            <licensematcher name="Apple" desc="">
+            <licensematcher name="Apache-2.0" desc="">
                 <licensetext name="
-                * Copyright (C) 2009 Apple Inc. All Rights Reserved.
+                License: Apache 2.0
+                License File: NOT_SHIPPED
+                Version: Unknown
+                Security Critical: no
             " desc="" />
             </licensematcher>
-            <licensematcher name="Khronos Group License" desc="">
+            <licensematcher name="Apache-2.0" desc="">
                 <licensetext name="
-                ** Copyright (c) 2008-2018 The Khronos Group Inc.
+                License: Apache 2.0
+                License File: NOT_SHIPPED
+                Security Critical: no
             " desc="" />
             </licensematcher>
-             <licensematcher name="Khronos Group License1" desc="">
+            <licensematcher name="BSD-3-Clause" desc="">
                 <licensetext name="
-                /* This file is part of volk library; see volk.h for version/license details */
-                /* clang-format off */
+                Version: 3.0.33
+                License: BSD 3-Clause
+                License File: NOT_SHIPPED
+                Security Critical: no
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="BSD-3-Clause" desc="">
+                <licensetext name="
+                License: BSD
+                License File: NOT_SHIPPED
+                Security Critical: no
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="BSD-3-Clause" desc="">
+                <licensetext name="
+                License: BSD
+                License File: LICENSE
+                Security Critical: no
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Libpng" desc="">
+                <licensetext name="
+                Security Critical: yes
+                License: libpng license
+                License Android Compatible: yes
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="BSD-2-Clause" desc="">
+                <licensetext name="
+                * Redistribution and use in source and binary forms, with or without
+                * modification, are permitted provided that the following conditions
+                * are met:
+                * 1. Redistributions of source code must retain the above copyright
+                *    notice, this list of conditions and the following disclaimer.
+                * 2. Redistributions in binary form must reproduce the above copyright
+                *    notice, this list of conditions and the following disclaimer in the
+                *    documentation and/or other materials provided with the distribution.
+                *
+                * THIS SOFTWARE IS PROVIDED BY APPLE INC. ``AS IS'' AND ANY
+                * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+                * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+                * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL APPLE INC. OR
+                * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+                * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+                * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+                * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+                * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+                * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+                * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Apache-2.0" desc="">
+                <licensetext name="
+                Name: Khronos OpenCL ICD Loader
+                Short Name: OpenCL-ICD-Loader
+                Version: v2021.04.29
+                URL: https://chromium.googlesource.com/external/github.com/KhronosGroup/OpenCL-ICD-Loader
+                SOURCE CODE: git clone -b OpenCL-ICD-Loader https://chromium.googlesource.com/external/github.com/KhronosGroup/OpenCL-ICD-Loader
+                Date: 29/04/2021
+                Revision: 9b5e3849b49a1448996c8b96ba086cd774d987db
+                Security Critical: no
+                License: Apache 2.0
+                License File: LICENSE
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Apache-2.0" desc="">
+                <licensetext name="
+                License: GPL
+                License File: LICENSE
+                Security critical: no
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Apache-2.0" desc="">
+                <licensetext name="
+                Name: Desugar, transforming Java 8 bytecode to be Java 7 compatible
+                Short Name: desugar
+                URL: https://github.com/bazelbuild/bazel
+                Version: 1.1.0
+                License: Apache 2.0
+                Security Critical: no
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="BSD-3-Clause" desc="">
+                <licensetext name="
+                Name: xxHash
+                URL: https://github.com/Cyan4973/xxHash
+                License: BSD
+                License File: LICENSE
+                Security Critical: yes
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="BSD-3-Clause" desc="">
+                <licensetext name="
+                Name: ANGLE
+                URL: http://angleproject.org
+                Version: unknown
+                License: BSD
+                License File: LICENSE
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="LicenseRef-scancode-khronos" desc="">
+                <licensetext name="
+                ** Permission is hereby granted, free of charge, to any person obtaining a
+                ** copy of this software and/or associated documentation files (the
+                ** &quot;Materials&quot;), to deal in the Materials without restriction, including
+                ** without limitation the rights to use, copy, modify, merge, publish,
+                ** distribute, sublicense, and/or sell copies of the Materials, and to
+                ** permit persons to whom the Materials are furnished to do so, subject to
+                ** the following conditions:
+                **
+                ** The above copyright notice and this permission notice shall be included
+                ** in all copies or substantial portions of the Materials.
+                **
+                ** THE MATERIALS ARE PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND,
+                ** EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+                ** MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+                ** IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+                ** CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+                ** TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+                ** MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="Apache-2.0" desc="">
+                <licensetext name="
+                Name: Khronos dEQP / CTS
+                Short Name: VK-GL-CTS
+                Version: 1.0
+                URL: https://chromium.googlesource.com/external/github.com/KhronosGroup/VK-GL-CTS
+                SOURCE CODE: git clone -b VK-GL-CTS https://chromium.googlesource.com/external/github.com/KhronosGroup/VK-GL-CTS
+                Date: 20/06/2016
+                Revision: f4f3d8079e7a37d7675ab93583e6438d0bca0e58
+                Security Critical: no
+                License: Apache 2.0
+                License File: LICENSE
             " desc="" />
             </licensematcher>
         </licensematcherlist>

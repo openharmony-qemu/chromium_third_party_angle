@@ -1,6 +1,6 @@
 [
     {
-        "Name": "chromium_third_party_angle",                   # 上游开源软件名全称
+        "Name": "angle",                   # 上游开源软件名全称
         "License":"LicenseRef-scancode-khronos",         # 上游开源软件中包含的许可证信息
         "License File": "LICENSE"    # 许可证所在文件路径
         "Version Number": "29b222a3c07c541cafa459ae6886134da3493a4b",
@@ -8,7 +8,7 @@
         "Description": "第三方软件angle底层的图形渲染引擎的一部分"           # 开源软件功能描述
     },
     {
-        "Name": "chromium_third_party_angle",                   # 上游开源软件名全称
+        "Name": "angle",                   # 上游开源软件名全称
         "License":"GPL-3.0+",         # 上游开源软件中包含的许可证信息
         "License File": "LICENSE"    # 许可证所在文件路径
         "Version Number": "29b222a3c07c541cafa459ae6886134da3493a4b",
@@ -16,7 +16,7 @@
         "Description": "第三方软件angle底层的图形渲染引擎的一部分"           # 开源软件功能描述
     },
     {
-        "Name": "chromium_third_party_angle",                   # 上游开源软件名全称
+        "Name": "angle",                   # 上游开源软件名全称
         "License":"GPL-2.0+",         # 上游开源软件中包含的许可证信息
         "License File": "LICENSE"    # 许可证所在文件路径
         "Version Number": "29b222a3c07c541cafa459ae6886134da3493a4b",
@@ -24,7 +24,7 @@
         "Description": "第三方软件angle底层的图形渲染引擎的一部分"           # 开源软件功能描述
     },
     {
-        "Name": "chromium_third_party_angle",                   # 上游开源软件名全称
+        "Name": "angle",                   # 上游开源软件名全称
         "License":"GPLStyleLicense",         # 上游开源软件中包含的许可证信息
         "License File": "LICENSE"    # 许可证所在文件路径
         "Version Number": "29b222a3c07c541cafa459ae6886134da3493a4b",
@@ -32,7 +32,7 @@
         "Description": "第三方软件angle底层的图形渲染引擎的一部分"           # 开源软件功能描述
     },
     {
-        "Name": "chromium_third_party_angle",                   # 上游开源软件名全称
+        "Name": "angle",                   # 上游开源软件名全称
         "License":"Libpng",         # 上游开源软件中包含的许可证信息
         "License File": "LICENSE"    # 许可证所在文件路径
         "Version Number": "29b222a3c07c541cafa459ae6886134da3493a4b",

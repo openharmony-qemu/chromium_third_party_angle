@@ -72,8 +72,7 @@ used to filter file path.
                 <policyitem type="compatibility" name="Generic Bare Warranty Disclaimer" path="include/KHR/khrplatform.h" desc="经法务确认为宽松型许可证" />
                 <policyitem type="compatibility" name="Apache-2.0" path="third_party/OpenCL-ICD-Loader/README.chromium" desc="经法务确认为宽松型许可证" />
                 <policyitem type="compatibility" name="Apache-2.0" path="third_party/bazel/desugar/README.chromium" desc="经法务确认为宽松型许可证" />
-                <policyitem type="compatibility" name="Apache-2.0" path="third_party/VK-GL-CTS/README.angle" desc="经法务确认为宽松型许可证" />
-                
+                <policyitem type="compatibility" name="Apache-2.0" path="third_party/VK-GL-CTS/README.angle" desc="经法务确认为宽松型许可证" />          
                 <policyitem type="compatibility" name="GPL-2.0+" path="scripts/cl.xml" desc="经法务确认,涉及文件在render下进行了隔离" />
                 <policyitem type="compatibility" name="GPL-2.0-or-later" path="third_party/proguard/LICENSE" desc="经法务确认,涉及文件在render下进行了隔离" />
                 <policyitem type="compatibility" name="GPL-2.0-or-later" path="tools/flex-bison/third_party/m4sugar/LICENSE" desc="经法务确认,涉及文件在render下进行了隔离" />
@@ -93,13 +92,13 @@ used to filter file path.
                 <filteritem type="filepath" name="src/common/third_party/base/README.angle"
                     desc="chromuim原生文件无license" />
                 <filteritem type="filepath" name="tools/flex-bison/third_party/skeletons/.*"
-                    desc="GPL-3.0+禁止使用" />
+                    desc="该文件涉及GPL-3.0+，经确认不会使用" />
                 <filteritem type="filepath" name="src/compiler/translator/.*"
-                    desc="GPL-3.0+禁止使用" />
+                    desc="该文件涉及GPL-3.0+，经确认不会使用" />
                 <filteritem type="filepath" name="src/compiler/preprocessor/preprocessor_tab_autogen.cpp"
-                    desc="GPL-3.0+禁止使用" />
+                    desc="该文件涉及GPL-3.0+，经确认不会使用" />
                 <filteritem type="filepath" name="tools/flex-bison/third_party/m4sugar/.*"
-                    desc="GPL-3.0+禁止使用" />
+                    desc="该文件涉及GPL-3.0+，经确认不会使用" />
             </filefilter>
 
             <filefilter name="defaultFilter">
@@ -123,18 +122,6 @@ used to filter file path.
             </filefilter>
         </filefilterlist>
         <licensematcherlist>
-            <licensematcher name="Apache 2.0" desc="">
-                <licensetext name="
-                License: Apache 2.0
-                License File: NOT_SHIPPED
-                " desc="" />
-            </licensematcher>
-            <licensematcher name="BSD 3-Clause" desc="">
-                <licensetext name="
-                License: BSD 3-Clause
-                License File: NOT_SHIPPED
-                " desc="" />
-            </licensematcher>
             <licensematcher name="GPL-1.0-or-later" desc="">
                 <licensetext name="
                 License: GPL
@@ -142,13 +129,25 @@ used to filter file path.
                 Security critical: no
                 " desc="" />
             </licensematcher>
-            <licensematcher name="BSD-3-Clause" desc="">
+            <licensematcher name="Libpng" desc="">
+                <licensetext name="
+                Name: libpng
+                URL: http://libpng.org/
+                Version: 1.6.22
+                Security Critical: yes
+                License: libpng license
+                License Android Compatible: yes
+                " desc="" />
+            </licensematcher>
+            <licensematcher name="BSD 3-Clause" desc="">
+                <licensetext name="
+                License: BSD 3-Clause
+                License File: NOT_SHIPPED
+                " desc="" />
                 <licensetext name="
                 License: BSD
                 License File: NOT_SHIPPED
                 " desc="" />
-            </licensematcher>
-            <licensematcher name="BSD-3-Clause" desc="">
                 <licensetext name="
                 License: BSD
                 License File: LICENSE
@@ -168,18 +167,6 @@ used to filter file path.
                 * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
                 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                 " desc="" />
-            </licensematcher>
-            <licensematcher name="Libpng" desc="">
-                <licensetext name="
-                Name: libpng
-                URL: http://libpng.org/
-                Version: 1.6.22
-                Security Critical: yes
-                License: libpng license
-                License Android Compatible: yes
-                " desc="" />
-            </licensematcher>
-            <licensematcher name="Generic Bare Warranty Disclaimer" desc="">
                 <licensetext name="
                 ** THE MATERIALS ARE PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND,
                 ** EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
@@ -203,8 +190,6 @@ used to filter file path.
                 License: Apache 2.0
                 License File: LICENSE
                 " desc="" />
-            </licensematcher>
-            <licensematcher name="Apache-2.0" desc="">
                 <licensetext name="
                 Name: Desugar, transforming Java 8 bytecode to be Java 7 compatible
                 Short Name: desugar
@@ -213,8 +198,6 @@ used to filter file path.
                 License: Apache 2.0
                 Security Critical: no
                 " desc="" />
-            </licensematcher>
-            <licensematcher name="Apache-2.0" desc="">
                 <licensetext name="
                 Name: Khronos dEQP / CTS
                 Short Name: VK-GL-CTS
@@ -226,6 +209,10 @@ used to filter file path.
                 Security Critical: no
                 License: Apache 2.0
                 License File: LICENSE
+                " desc="" />
+                <licensetext name="
+                License: Apache 2.0
+                License File: NOT_SHIPPED
                 " desc="" />
             </licensematcher>
         </licensematcherlist>

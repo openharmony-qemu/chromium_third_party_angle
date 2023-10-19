@@ -92,13 +92,13 @@ used to filter file path.
                 <filteritem type="filepath" name="src/common/third_party/base/README.angle"
                     desc="chromuim原生文件无license" />
                 <filteritem type="filepath" name="tools/flex-bison/third_party/skeletons/.*"
-                    desc="该文件涉及GPL-3.0+，经确认不会使用" />
+                    desc="经确认,该文件不会使用" />
                 <filteritem type="filepath" name="src/compiler/translator/.*"
-                    desc="该文件涉及GPL-3.0+，经确认不会使用" />
+                    desc="经确认,该文件不会使用" />
                 <filteritem type="filepath" name="src/compiler/preprocessor/preprocessor_tab_autogen.cpp"
-                    desc="该文件涉及GPL-3.0+，经确认不会使用" />
+                    desc="经确认,该文件不会使用" />
                 <filteritem type="filepath" name="tools/flex-bison/third_party/m4sugar/.*"
-                    desc="该文件涉及GPL-3.0+，经确认不会使用" />
+                    desc="经确认,该文件不会使用" />
             </filefilter>
 
             <filefilter name="defaultFilter">

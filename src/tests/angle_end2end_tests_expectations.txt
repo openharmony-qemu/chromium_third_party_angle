@@ -60,6 +60,8 @@
 1229184 WIN NVIDIA VULKAN : SimpleStateChangeTest.RedefineFramebufferTexture/* = SKIP
 6173 WIN INTEL OPENGL : GLSLTest_ES31.BoolInInterfaceBlocks/* = SKIP
 6217 WIN INTEL OPENGL : GLSLTest_ES31.StorageBufferBoolVectorPassedToFunctions/* = SKIP
+8441 WIN INTEL OPENGL : GLSLTest_ES3.LargeInterfaceBlockArray/* = SKIP
+8441 WIN INTEL OPENGL : GLSLTest_ES3.LargeInterfaceBlockNestedArray/* = SKIP
 6826 WIN NVIDIA OPENGL : GLSLTest.VectorAndMatrixScalarizationDoesNotAffectRendering/* = SKIP
 6826 WIN NVIDIA GLES : GLSLTest.VectorAndMatrixScalarizationDoesNotAffectRendering/* = SKIP
 
@@ -91,6 +93,10 @@
 // Generates invalid errors when compiling the shader in the GL backend
 6172 NVIDIA OpenGL : GLSLTest_ES31.TypesUsedInDifferentBlockStorages/* = SKIP
 6172 NVIDIA GLES : GLSLTest_ES31.TypesUsedInDifferentBlockStorages/* = SKIP
+8441 NVIDIA OPENGL : GLSLTest_ES3.LargeInterfaceBlockArray/* = SKIP
+8441 NVIDIA OPENGL : GLSLTest_ES3.LargeInterfaceBlockNestedArray/* = SKIP
+8441 NVIDIA GLES : GLSLTest_ES3.LargeInterfaceBlockArray/* = SKIP
+8441 NVIDIA GLES : GLSLTest_ES3.LargeInterfaceBlockNestedArray/* = SKIP
 
 // Intel Vulkan
 
@@ -142,6 +148,8 @@
 6570 MAC INTEL OPENGL : WebGLCompatibilityTest.RG32FTextures/* = SKIP
 6570 MAC INTEL OPENGL : WebGLCompatibilityTest.RGB32FTextures/* = SKIP
 6603 MAC OPENGL : ProgramBinaryES3Test.SaveAndLoadDetachedShaders/* = SKIP
+8437 MAC OPENGL : GLSLTest_ES3.LargeInterfaceBlockArray/* = SKIP
+8437 MAC OPENGL : GLSLTest_ES3.LargeInterfaceBlockNestedArray/* = SKIP
 6643 MAC AMD OPENGL : TransformFeedbackTest.TransformFeedbackQueryPausedDrawThenResume/* = SKIP
 6643 MAC AMD OPENGL : TransformFeedbackTest.TransformFeedbackPausedDrawThenResume/* = SKIP
 6738 MAC AMD OPENGL : Texture3DTestES3.PixelUnpackStateTex* = SKIP

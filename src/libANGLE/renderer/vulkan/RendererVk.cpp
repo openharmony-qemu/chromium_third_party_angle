@@ -3804,6 +3804,9 @@ void RendererVk::initFeatures(DisplayVk *displayVk,
     ANGLE_FEATURE_CONDITION(&mFeatures, supportsDepthClipEnable,
                             mDepthClipEnableFeatures.depthClipEnable == VK_TRUE);
 
+    // Affecting Linux/Intel (unknown range).
+    ANGLE_FEATURE_CONDITION(&mFeatures, wrapSwitchInIfTrue, isIntel && IsLinux());
+
     // http://anglebug.com/3970#c25.
     // The workaround requires the VK_EXT_depth_clip_enable extension and the 'depthClamp' physical
     // device feature. This workaround caused test failures on Quadro P400/driver 418.56/Linux.

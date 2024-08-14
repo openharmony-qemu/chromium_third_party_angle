@@ -335,6 +335,7 @@ enum class Feature
     VertexIDDoesNotIncludeBaseVertex,
     WaitIdleBeforeSwapchainRecreation,
     WarmUpPipelineCacheAtLink,
+    WrapSwitchInIfTrue,
     ZeroMaxLodWorkaround,
 
     InvalidEnum,

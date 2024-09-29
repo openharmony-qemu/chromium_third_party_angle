@@ -1745,7 +1745,7 @@ spirv::IdRef OutputSPIRVTraverser::createConstructorMatrixFromMatrix(
     //     ...
     //     %m  = OpCompositeConstruct %matNxM %c0 %c1 %c2 ...
     //
-    // - Otherwise, an identity matrix is created and super imposed by m:
+    //- Otherwise, an identity matrix is created and superimposed by m:
     //
     //     %c0 = OpCompositeConstruct %vecM %m[0][0] %m[0][1] %0 %0
     //     %c1 = OpCompositeConstruct %vecM %m[1][0] %m[1][1] %0 %0
@@ -5385,6 +5385,17 @@ bool OutputSPIRVTraverser::visitSwitch(Visit visit, TIntermSwitch *node)
 
     if (visit == PreVisit)
     {
+	// Artificially add `if (true)` around switches as a driver bug workaround
+        if (mCompileOptions.wrapSwitchInIfTrue)
+        {
+            const spirv::IdRef conditionValue = mBuilder.getBoolConstant(true);
+            mBuilder.startConditional(2, false, false);
+            const SpirvConditional *conditional = mBuilder.getCurrentConditional();
+            const spirv::IdRef trueBlock        = conditional->blockIds[0];
+            const spirv::IdRef mergeBlock       = conditional->blockIds[1];
+            mBuilder.writeBranchConditional(conditionValue, trueBlock, mergeBlock, mergeBlock);
+        }
+
         // Don't add an entry to the stack.  The condition will create one, which we won't pop.
         return true;
     }
@@ -5486,6 +5497,12 @@ bool OutputSPIRVTraverser::visitSwitch(Visit visit, TIntermSwitch *node)
     // Terminate the last block if not already and end the conditional.
     mBuilder.writeSwitchCaseBlockEnd();
     mBuilder.endConditional();
+
+    if (mCompileOptions.wrapSwitchInIfTrue)
+    {
+        mBuilder.writeBranchConditionalBlockEnd();
+        mBuilder.endConditional();
+    }
 
     return true;
 }

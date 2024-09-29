@@ -133,6 +133,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
     {Feature::EnableProgramBinaryForCapture, "enableProgramBinaryForCapture"},
     {Feature::EnableShaderSubstitution, "enableShaderSubstitution"},
     {Feature::EnableTimestampQueries, "enableTimestampQueries"},
+    {Feature::EnsureNonEmptyBufferIsBoundForDraw, "ensureNonEmptyBufferIsBoundForDraw"},
     {Feature::ExpandIntegerPowExpressions, "expandIntegerPowExpressions"},
     {Feature::ExplicitlyCastMediumpFloatTo16Bit, "explicitlyCastMediumpFloatTo16Bit"},
     {Feature::ExplicitlyEnablePerSampleShading, "explicitlyEnablePerSampleShading"},
@@ -363,6 +364,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
     {Feature::VertexIDDoesNotIncludeBaseVertex, "vertexIDDoesNotIncludeBaseVertex"},
     {Feature::WaitIdleBeforeSwapchainRecreation, "waitIdleBeforeSwapchainRecreation"},
     {Feature::WarmUpPipelineCacheAtLink, "warmUpPipelineCacheAtLink"},
+    {Feature::WrapSwitchInIfTrue, "wrapSwitchInIfTrue"},
     {Feature::ZeroMaxLodWorkaround, "zeroMaxLodWorkaround"},
 }};
 }  // anonymous namespace

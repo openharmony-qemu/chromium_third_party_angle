@@ -126,6 +126,7 @@ enum class Feature
     EnableProgramBinaryForCapture,
     EnableShaderSubstitution,
     EnableTimestampQueries,
+    EnsureNonEmptyBufferIsBoundForDraw,
     ExpandIntegerPowExpressions,
     ExplicitlyCastMediumpFloatTo16Bit,
     ExplicitlyEnablePerSampleShading,
@@ -335,6 +336,7 @@ enum class Feature
     VertexIDDoesNotIncludeBaseVertex,
     WaitIdleBeforeSwapchainRecreation,
     WarmUpPipelineCacheAtLink,
+    WrapSwitchInIfTrue,
     ZeroMaxLodWorkaround,
 
     InvalidEnum,

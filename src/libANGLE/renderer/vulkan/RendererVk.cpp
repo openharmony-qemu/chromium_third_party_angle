@@ -3801,6 +3801,9 @@ void RendererVk::initFeatures(DisplayVk *displayVk,
     ANGLE_FEATURE_CONDITION(&mFeatures, clampPointSize,
                             isNvidia && nvidiaVersion.major < uint32_t(IsWindows() ? 430 : 421));
 
+    // Affecting Linux/Intel (unknown range).
+    ANGLE_FEATURE_CONDITION(&mFeatures, wrapSwitchInIfTrue, isIntel && IsLinux());
+
     ANGLE_FEATURE_CONDITION(&mFeatures, supportsDepthClipEnable,
                             mDepthClipEnableFeatures.depthClipEnable == VK_TRUE);
 

@@ -235,8 +235,6 @@ b/273271471 WIN INTEL VULKAN : ShaderAlgorithmTest.rgb_to_hsl_vertex_shader/* = 
 6570 MAC INTEL OPENGL : WebGLCompatibilityTest.RG32FTextures/* = SKIP
 6570 MAC INTEL OPENGL : WebGLCompatibilityTest.RGB32FTextures/* = SKIP
 6603 MAC OPENGL : ProgramBinaryES3Test.SaveAndLoadDetachedShaders/* = SKIP
-8437 MAC OPENGL : GLSLTest_ES3.LargeInterfaceBlockArray/* = SKIP
-8437 MAC OPENGL : GLSLTest_ES3.LargeInterfaceBlockNestedArray/* = SKIP
 6643 MAC AMD OPENGL : TransformFeedbackTest.TransformFeedbackQueryPausedDrawThenResume/* = SKIP
 6643 MAC AMD OPENGL : TransformFeedbackTest.TransformFeedbackPausedDrawThenResume/* = SKIP
 6738 MAC AMD OPENGL : Texture3DTestES3.PixelUnpackStateTex* = SKIP
@@ -255,6 +253,8 @@ b/273271471 WIN INTEL VULKAN : ShaderAlgorithmTest.rgb_to_hsl_vertex_shader/* = 
 5155 MAC NVIDIA OPENGL : CopyTextureTestES3.InvalidateCopyThenBlend/ES3_OpenGL = SKIP
 5155 MAC NVIDIA OPENGL : CopyTextureTestES3.InvalidateBlitThenBlend3Layers/ES3_OpenGL = SKIP
 7530 MAC NVIDIA OPENGL : TransformFeedbackTest.RenderOnceChangeXfbBufferRenderAgain/* = SKIP
+355607623 MAC INTEL OPENGL : WebGL2GLSLTest.BasicInfiniteLoop/* = SKIP
+355607623 WIN INTEL OPENGL : WebGL2GLSLTest.BasicInfiniteLoop/* = SKIP
 
 // BlitFramebufferTest.ScissoredMultisampleStencil failures
 3496 MAC INTEL OPENGL : BlitFramebufferTest.ScissoredMultisampleStencil/* = SKIP
@@ -413,6 +413,7 @@ b/273271471 WIN INTEL VULKAN : ShaderAlgorithmTest.rgb_to_hsl_vertex_shader/* = 
 7316 WIN D3D11 : StateChangeTestES3.StencilTestAndFunc/* = SKIP
 7329 WIN D3D11 : StateChangeTestES3.PrimitiveRestart/* = SKIP
 8100 WIN D3D11 : WebGL2GLSLTest.InitOutputParams/* = SKIP
+1456243 WIN D3D11 : WebGL2CompatibilityTest.DrawWithZeroSizedBuffer/* = SKIP
 
 // Android
 6095 ANDROID GLES : GLSLTest_ES3.InitGlobalComplexConstant/* = SKIP
@@ -517,6 +518,7 @@ b/273271471 WIN INTEL VULKAN : ShaderAlgorithmTest.rgb_to_hsl_vertex_shader/* = 
 7703 PIXEL4ORXL GLES : FramebufferFetchES31.ProgramPipeline* = SKIP
 7703 PIXEL4ORXL GLES : FramebufferFetchES31.DrawNonFetchDrawFetchInStorageBuffer* = SKIP
 2046 PIXEL4ORXL GLES : WebGL2GLSLTest.InitOutputParams/* = SKIP
+8250 PIXEL4ORXL GLES : GLSLTest_ES3.ComplexConstructor/* = SKIP
 
 3423 PIXEL4ORXL VULKAN : ClearTestES3.MaskedClearBufferBug/* = SKIP
 3423 PIXEL4ORXL VULKAN : DrawBuffersWebGL2Test.TwoProgramsWithDifferentOutputsAndClear/* = SKIP
@@ -1051,6 +1053,10 @@ b/273271471 WIN INTEL VULKAN : ShaderAlgorithmTest.rgb_to_hsl_vertex_shader/* = 
 // Timeout with SwiftShader and MAC OpenGL due to large workloads
 7389 SWIFTSHADER : Texture2DTest.ManySupersedingTextureUpdates/* = SKIP
 7389 MAC OPENGL : Texture2DTest.ManySupersedingTextureUpdates/* = SKIP
+
+8437 MAC OPENGL : GLSLTest_ES3.LotsOfFieldsInStruct/* = SKIP
+8437 MAC OPENGL : GLSLTest_ES3.LargeInterfaceBlockArray/* = SKIP
+8437 MAC OPENGL : GLSLTest_ES3.LargeInterfaceBlockNestedArray/* = SKIP
 
 // GL, GLES run into issues with cleanup
 7495 WIN OpenGL : EGLMultiContextTest.ReuseUnterminatedDisplay/* = SKIP

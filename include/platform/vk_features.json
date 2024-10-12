@@ -1186,6 +1186,15 @@
             "issue": "https://issuetracker.google.com/250706693"
         },
         {
+	    "name": "wrap_switch_in_if_true",
+            "category": "Workarounds",
+            "description": [
+                "On some drivers, nested switch statements are mishandled which can be worked around ",
+                "by wrapping them in if(true)"
+            ],
+            "issue": "http://crbug.com/350528343"
+        },
+        {
             "name": "force_wait_for_submission_to_complete_for_query_result",
             "category": "Workarounds",
             "description":["Force wait for submission to complete before calling getQueryResult(wait)."],

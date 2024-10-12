@@ -44,7 +44,7 @@ class FindConstantVariablesTraverser : public TIntermTraverser
 
     const VariableSet &getConstVariables() const { return mConstVariables; }
 
-  private:
+    private:
     bool visitDeclaration(Visit, TIntermDeclaration *decl) override
     {
         // Initially, assume every variable is a constant
@@ -90,7 +90,6 @@ class FindConstantVariablesTraverser : public TIntermTraverser
         {
             condition->traverse(this);
         }
-
         return false;
     }
 
@@ -227,5 +226,3 @@ bool PruneInfiniteLoops(TCompiler *compiler, TIntermBlock *root, TSymbolTable *s
 }
 
 }  // namespace sh
-
-

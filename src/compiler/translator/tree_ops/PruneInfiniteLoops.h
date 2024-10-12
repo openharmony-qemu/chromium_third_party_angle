@@ -23,4 +23,3 @@ class TSymbolTable;
 
 #endif  // COMPILER_TRANSLATOR_TREEOPS_PRUNEINFINITELOOPS_H_
 
-

@@ -8911,7 +8911,6 @@ void main()
     while (localConstantVariable)
     {
         b += 0.3;
-
         if (g > 0.4) { break; }
     }
 

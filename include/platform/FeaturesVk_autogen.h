@@ -891,6 +891,15 @@ struct FeaturesVk : FeatureSetBase
         "SecondaryCommandPools when using VulkanSecondaryCommandBuffer. ",
         &members,
     };
+
+    FeatureInfo wrapSwitchInIfTrue = {
+        "wrapSwitchInIfTrue",
+        FeatureCategory::VulkanWorkarounds,
+        "On some drivers, nested switch statements are mishandled which can be worked around "
+        "by wrapping them in if(true)",
+        &members, "http://crbug.com/350528343"
+    };
+
 };
 
 inline FeaturesVk::FeaturesVk()  = default;

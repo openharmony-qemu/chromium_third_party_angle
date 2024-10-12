@@ -118,6 +118,11 @@ std::shared_ptr<WaitableCompileEvent> ShaderVk::compile(const gl::Context *conte
         options->pls = contextVk->getNativePixelLocalStorageOptions();
     }
 
+    if (contextVk->getFeatures().wrapSwitchInIfTrue.enabled)
+    {
+        options->wrapSwitchInIfTrue = true;
+    }
+
     return compileImpl(context, compilerInstance, mState.getSource(), options);
 }
 

@@ -8406,7 +8406,7 @@ TEST_P(GLSLTest_ES3, ArrayLengthInVectorConstructor)
     const char kVS[] = R"(#version 300 es
 precision highp float;
 flat out uvec4 v;
-
+ 
 int[1] f0()
 {
     return int[1](1);
@@ -8414,19 +8414,19 @@ int[1] f0()
 void main()
 {
     v = uvec4(vec4(f0().length()));
-
+ 
     gl_Position.x = ((gl_VertexID & 1) == 0 ? -1.0 : 1.0);
     gl_Position.y = ((gl_VertexID & 2) == 0 ? -1.0 : 1.0);
     gl_Position.zw = vec2(0, 1);
 })";
-
+ 
     const char kFS[] = R"(#version 300 es
 precision highp float;
 flat in uvec4 v;
 out vec4 color;
-
+ 
 bool isEq(uint a, float b) { return abs(float(a) - b) < 0.01; }
-
+ 
 void main()
 {
     if (isEq(v[0], 1.) &&
@@ -8441,20 +8441,20 @@ void main()
         color = vec4(1, 0, 0, 1);
     }
 })";
-
+ 
     ANGLE_GL_PROGRAM(program, kVS, kFS);
     glUseProgram(program);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
 }
-
+ 
 // Test that array length inside vector constructor works in complex expression.
 TEST_P(GLSLTest_ES3, ArrayLengthInVectorConstructorComplex)
 {
     const char kVS[] = R"(#version 300 es
 precision highp float;
 out vec4 v;
-
+ 
 int[1] f0()
 {
     return int[1](1);
@@ -8462,20 +8462,19 @@ int[1] f0()
 void main()
 {
     v = vec4(float(uint(f0().length()) + 1u) / 4.);
-
+ 
     gl_Position.x = ((gl_VertexID & 1) == 0 ? -1.0 : 1.0);
     gl_Position.y = ((gl_VertexID & 2) == 0 ? -1.0 : 1.0);
     gl_Position.zw = vec2(0, 1);
 })";
-
+ 
     const char kFS[] = R"(#version 300 es
 precision highp float;
 in vec4 v;
 out vec4 color;
-
-
+ 
 bool isEq(float a, float b) { return abs(float(a) - b) < 0.01; }
-
+ 
 void main()
 {
     if (isEq(v[0], 0.5) &&
@@ -8490,19 +8489,20 @@ void main()
         color = vec4(1, 0, 0, 1);
     }
 })";
-
+ 
     ANGLE_GL_PROGRAM(program, kVS, kFS);
     glUseProgram(program);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
 }
-
+ 
 // Test that array length inside matrix constructor works.
 TEST_P(GLSLTest_ES3, ArrayLengthInMatrixConstructor)
 {
     const char kVS[] = R"(#version 300 es
 precision highp float;
 out mat2x2 v;
+ 
 int[1] f0()
 {
     return int[1](1);
@@ -8510,19 +8510,19 @@ int[1] f0()
 void main()
 {
     v = mat2x2(f0().length());
-
+ 
     gl_Position.x = ((gl_VertexID & 1) == 0 ? -1.0 : 1.0);
     gl_Position.y = ((gl_VertexID & 2) == 0 ? -1.0 : 1.0);
     gl_Position.zw = vec2(0, 1);
 })";
-
+ 
     const char kFS[] = R"(#version 300 es
 precision highp float;
 in mat2x2 v;
 out vec4 color;
-
+ 
 bool isEq(float a, float b) { return abs(a - b) < 0.01; }
-
+ 
 void main()
 {
     if (isEq(v[0][0], 1.) &&
@@ -8537,20 +8537,20 @@ void main()
         color = vec4(1, 0, 0, 1);
     }
 })";
-
+ 
     ANGLE_GL_PROGRAM(program, kVS, kFS);
     glUseProgram(program);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
 }
-
+ 
 // Test that array length inside vector constructor inside matrix constructor works.
 TEST_P(GLSLTest_ES3, ArrayLengthInVectorInMatrixConstructor)
 {
     const char kVS[] = R"(#version 300 es
 precision highp float;
 out mat2x2 v;
-
+ 
 int[1] f0()
 {
     return int[1](1);
@@ -8558,19 +8558,19 @@ int[1] f0()
 void main()
 {
     v = mat2x2(vec2(f0().length()), f0().length(), 0);
-
+ 
     gl_Position.x = ((gl_VertexID & 1) == 0 ? -1.0 : 1.0);
     gl_Position.y = ((gl_VertexID & 2) == 0 ? -1.0 : 1.0);
     gl_Position.zw = vec2(0, 1);
 })";
-
+ 
     const char kFS[] = R"(#version 300 es
 precision highp float;
 in mat2x2 v;
 out vec4 color;
-
+ 
 bool isEq(float a, float b) { return abs(a - b) < 0.01; }
-
+ 
 void main()
 {
     if (isEq(v[0][0], 1.) &&
@@ -8585,7 +8585,7 @@ void main()
         color = vec4(1, 0, 0, 1);
     }
 })";
-
+ 
     ANGLE_GL_PROGRAM(program, kVS, kFS);
     glUseProgram(program);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -14653,6 +14653,182 @@ void main()
     glDeleteShader(shader);
 }
 
+// Test constructors without precision
+TEST_P(GLSLTest, ConstructFromBoolVector)
+{
+    constexpr char kFS[] = R"(precision mediump float;
+uniform float u;
+void main()
+{
+    mat4 m = mat4(u);
+    mat2(0, bvec3(m));
+    gl_FragColor = vec4(m);
+})";
+
+    GLuint shader = CompileShader(GL_FRAGMENT_SHADER, kFS);
+    EXPECT_NE(0u, shader);
+    glDeleteShader(shader);
+}
+
+// Test constructing vector from matrix
+TEST_P(GLSLTest, VectorConstructorFromMatrix)
+{
+    constexpr char kFS[] = R"(precision mediump float;
+uniform mat2 umat2;
+void main()
+{
+    gl_FragColor = vec4(umat2);
+})";
+
+    GLuint shader = CompileShader(GL_FRAGMENT_SHADER, kFS);
+    EXPECT_NE(0u, shader);
+    glDeleteShader(shader);
+}
+
+// Test constructing matrix from vectors
+TEST_P(GLSLTest, MatrixConstructorFromVectors)
+{
+    constexpr char kFS[] = R"(precision mediump float;
+uniform vec2 uvec2;
+void main()
+{
+    mat2 m = mat2(uvec2, uvec2.yx);
+    gl_FragColor = vec4(m * uvec2, uvec2);
+})";
+
+    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), kFS);
+    glUseProgram(program);
+
+    GLint uloc = glGetUniformLocation(program, "uvec2");
+    ASSERT_NE(uloc, -1);
+    glUniform2f(uloc, 0.5, 0.8);
+
+    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
+    EXPECT_GL_NO_ERROR();
+
+    EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(227, 204, 127, 204), 1);
+}
+
+// Test that constructing vector and matrix inside multiple declarations preserves the correct order
+// of operations.
+TEST_P(GLSLTest, ConstructorinSequenceOperator)
+{
+    constexpr char kFS[] = R"(precision mediump float;
+uniform vec2 u;
+void main()
+{
+    vec2 v = u;
+    mat2 m = (v[0] += 1.0, mat2(v, v[1], -v[0]));
+    gl_FragColor = vec4(m[0], m[1]);
+})";
+
+    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), kFS);
+    glUseProgram(program);
+
+    GLint uloc = glGetUniformLocation(program, "u");
+    ASSERT_NE(uloc, -1);
+    glUniform2f(uloc, -0.5, 1.0);
+
+    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
+    EXPECT_GL_NO_ERROR();
+
+    EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(127, 255, 255, 0), 1);
+}
+
+// Test that constructing vectors inside multiple declarations preserves the correct order
+// of operations.
+TEST_P(GLSLTest, VectorConstructorsInMultiDeclaration)
+{
+    constexpr char kFS[] = R"(precision mediump float;
+uniform vec2 u;
+void main()
+{
+    vec2 v = vec2(u[0]),
+         w = mat2(v, v) * u;
+    gl_FragColor = vec4(v, w);
+})";
+
+    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), kFS);
+    glUseProgram(program);
+
+    GLint uloc = glGetUniformLocation(program, "u");
+    ASSERT_NE(uloc, -1);
+    glUniform2f(uloc, 0.5, 0.8);
+
+    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
+    EXPECT_GL_NO_ERROR();
+
+    EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(127, 127, 166, 166), 1);
+}
+
+// Test complex constructor usage.
+TEST_P(GLSLTest_ES3, ComplexConstructor)
+{
+    constexpr char kFS[] = R"(#version 300 es
+precision mediump float;
+uniform vec2 u; // = vec2(0.5, 0.8)
+uniform vec2 v; // = vec2(-0.2, 1.0)
+
+out vec4 color;
+
+bool f(mat2 m)
+{
+    return m[0][0] > 0.;
+}
+
+bool isEqual(float a, float b)
+{
+    return abs(a - b) < 0.01;
+}
+
+void main()
+{
+    int shouldRemainZero = 0;
+
+    // Test side effects inside constructor args after short-circuit
+    if (u.x < 0. && f(mat2(shouldRemainZero += 1, u, v)))
+    {
+        shouldRemainZero += 2;
+    }
+
+    int shouldBecomeFive = 0;
+
+    // Test directly nested constructors
+    mat4x3 m = mat4x3(mat2(shouldBecomeFive += 5, v, u));
+
+    // Test indirectly nested constructors
+    mat2 m2 = mat2(f(mat2(u, v)), f(mat2(v, u)), f(mat2(f(mat2(1.)))), -1.);
+
+    // Verify
+    bool sideEffectsOk = shouldRemainZero == 0 && shouldBecomeFive == 5;
+
+    bool mOk = isEqual(m[0][0], 5.) && isEqual(m[0][1], -0.2) && isEqual(m[0][2], 0.) &&
+               isEqual(m[1][0], 1.) && isEqual(m[1][1], 0.5) && isEqual(m[1][2], 0.) &&
+               isEqual(m[2][0], 0.) && isEqual(m[2][1], 0.) && isEqual(m[2][2], 1.) &&
+               isEqual(m[3][0], 0.) && isEqual(m[3][1], 0.) && isEqual(m[3][2], 0.);
+
+    bool m2Ok = isEqual(m2[0][0], 1.) && isEqual(m2[0][1], 0.) &&
+               isEqual(m2[1][0], 1.) && isEqual(m2[1][1], -1.);
+
+    color = vec4(sideEffectsOk ? 1 : 0, mOk ? 1 : 0, m2Ok ? 1 : 0, 1);
+})";
+
+    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
+    glUseProgram(program);
+
+    GLint uloc = glGetUniformLocation(program, "u");
+    GLint vloc = glGetUniformLocation(program, "v");
+    ASSERT_NE(uloc, -1);
+    ASSERT_NE(vloc, -1);
+    glUniform2f(uloc, 0.5, 0.8);
+    glUniform2f(vloc, -0.2, 1.0);
+
+    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
+    EXPECT_GL_NO_ERROR();
+
+    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::white);
+}
+
 // Test that scalar(nonScalar) constructors work.
 TEST_P(GLSLTest_ES3, ScalarConstructor)
 {
@@ -18098,11 +18274,11 @@ out vec4 color;
 void main() {
     color = vec4(f(a), 0.0, 0.0, 1.0);
 })";
-
+ 
     GLuint shader = CompileShader(GL_FRAGMENT_SHADER, kFS);
     EXPECT_EQ(0u, shader);
 }
-
+ 
 // Make sure the shader in LargeInterfaceBlockArrayPassedToFunction works if the large local is
 // avoided.
 TEST_P(GLSLTest_ES3, LargeInterfaceBlockArray)
@@ -18110,7 +18286,7 @@ TEST_P(GLSLTest_ES3, LargeInterfaceBlockArray)
     int maxUniformBlockSize = 0;
     glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBlockSize);
     ANGLE_SKIP_TEST_IF(maxUniformBlockSize < 16384 * 4);
-
+ 
     constexpr char kFS[] = R"(#version 300 es
 precision highp float;
 uniform Large { float a[16384]; };
@@ -18118,10 +18294,10 @@ out vec4 color;
 void main() {
     color = vec4(a[0], 0.0, 0.0, 1.0);
 })";
-
+ 
     ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
 }
-
+ 
 // Similar to LargeInterfaceBlockArrayPassedToFunction, but the array is nested in a struct.
 TEST_P(GLSLTest_ES3, LargeInterfaceBlockNestedArrayPassedToFunction)
 {
@@ -18138,11 +18314,11 @@ out vec4 color;
 void main() {
     color = vec4(f(s.a), 0.0, 0.0, 1.0);
 })";
-
+ 
     GLuint shader = CompileShader(GL_FRAGMENT_SHADER, kFS);
     EXPECT_EQ(0u, shader);
 }
-
+ 
 // Make sure the shader in LargeInterfaceBlockNestedArrayPassedToFunction works if the large local
 // is avoided.
 TEST_P(GLSLTest_ES3, LargeInterfaceBlockNestedArray)
@@ -18150,7 +18326,7 @@ TEST_P(GLSLTest_ES3, LargeInterfaceBlockNestedArray)
     int maxUniformBlockSize = 0;
     glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBlockSize);
     ANGLE_SKIP_TEST_IF(maxUniformBlockSize < 16384 * 4);
-
+ 
     constexpr char kFS[] = R"(#version 300 es
 precision highp float;
 struct S { float a[16384]; };
@@ -18159,10 +18335,10 @@ out vec4 color;
 void main() {
     color = vec4(s.a[0], 0.0, 0.0, 1.0);
 })";
-
+ 
     ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
 }
-
+ 
 // Similar to LargeInterfaceBlockArrayPassedToFunction, but the large array is copied to a local
 // variable instead.
 TEST_P(GLSLTest_ES3, LargeInterfaceBlockArrayCopiedToLocal)
@@ -18175,11 +18351,11 @@ void main() {
     float b[65536] = a;
     color = vec4(b[0], 0.0, 0.0, 1.0);
 })";
-
+ 
     GLuint shader = CompileShader(GL_FRAGMENT_SHADER, kFS);
     EXPECT_EQ(0u, shader);
 }
-
+ 
 // Similar to LargeInterfaceBlockArrayCopiedToLocal, but the array is nested in a struct
 TEST_P(GLSLTest_ES3, LargeInterfaceBlockNestedArrayCopiedToLocal)
 {
@@ -18192,11 +18368,11 @@ void main() {
     S s2 = s;
     color = vec4(s2.a[0], 0.0, 0.0, 1.0);
 })";
-
+ 
     GLuint shader = CompileShader(GL_FRAGMENT_SHADER, kFS);
     EXPECT_EQ(0u, shader);
 }
-
+ 
 // Test that too large varyings are rejected.
 TEST_P(GLSLTest_ES3, LargeArrayVarying)
 {
@@ -18207,7 +18383,7 @@ out vec4 color;
 void main() {
     color = vec4(a[0], 0.0, 0.0, 1.0);
 })";
-
+ 
     GLuint shader = CompileShader(GL_FRAGMENT_SHADER, kFS);
     EXPECT_EQ(0u, shader);
 }

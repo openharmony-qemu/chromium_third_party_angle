@@ -90,8 +90,7 @@ class FindConstantVariablesTraverser : public TIntermTraverser
         {
             condition->traverse(this);
         }
-
-	 return false;
+        return false;
     }
 
     void visitSymbol(TIntermSymbol *symbol) override
@@ -227,4 +226,3 @@ bool PruneInfiniteLoops(TCompiler *compiler, TIntermBlock *root, TSymbolTable *s
 }
 
 }  // namespace sh
-

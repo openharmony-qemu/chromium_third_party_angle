@@ -42,8 +42,10 @@ struct IsOpaqueFunc
 {
     bool operator()(TBasicType type) { return IsOpaqueType(type); }
 };
+ 
 template <typename OpaqueFunc>
 bool ContainsOpaque(const TStructure *structType);
+ 
 template <typename OpaqueFunc>
 bool ContainsOpaque(const TType &type)
 {

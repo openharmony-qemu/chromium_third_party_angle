@@ -7,6 +7,7 @@
 #include "compiler/translator/ValidateTypeSizeLimitations.h"
 
 #include "angle_gl.h"
+#include "common/mathutil.h"
 #include "compiler/translator/Diagnostics.h"
 #include "compiler/translator/Symbol.h"
 #include "compiler/translator/SymbolTable.h"
@@ -27,7 +28,6 @@ namespace
 // the GPU registers anyway.
 constexpr size_t kMaxVariableSizeInBytes             = static_cast<size_t>(2) * 1024 * 1024 * 1024;
 constexpr size_t kMaxPrivateVariableSizeInBytes      = static_cast<size_t>(64) * 1024;
-constexpr size_t kMaxTotalPrivateVariableSizeInBytes = static_cast<size_t>(16) * 1024 * 1024;
 
 // Traverses intermediate tree to ensure that the shader does not
 // exceed certain implementation-defined limits on the sizes of types.
@@ -186,7 +186,8 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
 
     void validateTotalPrivateVariableSize()
     {
-        if (mTotalPrivateVariablesSize > kMaxTotalPrivateVariableSizeInBytes)
+        if (mTotalPrivateVariablesSize.ValueOrDefault(std::numeric_limits<size_t>::max()) >
+            kMaxPrivateVariableSizeInBytes)
         {
             mDiagnostics->error(
                 TSourceLoc{},
@@ -304,7 +305,7 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
     TDiagnostics *mDiagnostics;
     std::vector<int> mLoopSymbolIds;
 
-    size_t mTotalPrivateVariablesSize;
+    angle::base::CheckedNumeric<size_t> mTotalPrivateVariablesSize;
 };
 
 }  // namespace

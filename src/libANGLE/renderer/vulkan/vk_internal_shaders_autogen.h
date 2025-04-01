@@ -19,6 +19,17 @@ namespace vk
 {
 namespace InternalShader
 {
+namespace Blit3DSrc_frag
+{
+enum Blit
+{
+    kBlitFloat = 0x00000000,
+    kBlitInt   = 0x00000001,
+    kBlitUint  = 0x00000002,
+};
+constexpr size_t kArrayLen = 0x00000003;
+}  // namespace Blit3DSrc_frag
+
 namespace BlitResolve_frag
 {
 enum flags
@@ -90,6 +101,20 @@ enum Conversion
 constexpr size_t kArrayLen = 0x00000008;
 }  // namespace ConvertVertex_comp
 
+namespace CopyImageToBuffer_comp
+{
+enum SrcFormat
+{
+    kSrcIsFloat = 0x00000000,
+};
+enum SrcType
+{
+    kSrcIs2D = 0x00000000,
+    kSrcIs3D = 0x00000001,
+};
+constexpr size_t kArrayLen = 0x00000002;
+}  // namespace CopyImageToBuffer_comp
+
 namespace EtcToBc_comp
 {
 enum OutputFormat
@@ -109,6 +134,11 @@ namespace FullScreenTri_vert
 {
 constexpr size_t kArrayLen = 0x00000001;
 }  // namespace FullScreenTri_vert
+
+namespace GenerateFragmentShadingRate_comp
+{
+constexpr size_t kArrayLen = 0x00000001;
+}  // namespace GenerateFragmentShadingRate_comp
 
 namespace GenerateMipmap_comp
 {
@@ -156,11 +186,11 @@ constexpr size_t kArrayLen = 0x00000030;
 
 namespace ImageCopy_frag
 {
-enum DestFormat
+enum DstFormat
 {
-    kDestIsFloat = 0x00000000,
-    kDestIsSint  = 0x00000001,
-    kDestIsUint  = 0x00000002,
+    kDstIsFloat = 0x00000000,
+    kDstIsSint  = 0x00000001,
+    kDstIsUint  = 0x00000002,
 };
 enum SrcFormat
 {
@@ -176,6 +206,16 @@ enum SrcType
 };
 constexpr size_t kArrayLen = 0x0000002B;
 }  // namespace ImageCopy_frag
+
+namespace ImageCopyFloat_frag
+{
+enum SrcType
+{
+    kSrcIsYUV  = 0x00000000,
+    kSrcIs2DMS = 0x00000001,
+};
+constexpr size_t kArrayLen = 0x00000002;
+}  // namespace ImageCopyFloat_frag
 
 namespace OverlayDraw_frag
 {
@@ -197,6 +237,9 @@ class ShaderLibrary final : angle::NonCopyable
 
     void destroy(VkDevice device);
 
+    angle::Result getBlit3DSrc_frag(Context *context,
+                                    uint32_t shaderFlags,
+                                    RefCounted<ShaderModule> **shaderOut);
     angle::Result getBlitResolve_frag(Context *context,
                                       uint32_t shaderFlags,
                                       RefCounted<ShaderModule> **shaderOut);
@@ -215,6 +258,9 @@ class ShaderLibrary final : angle::NonCopyable
     angle::Result getConvertVertex_comp(Context *context,
                                         uint32_t shaderFlags,
                                         RefCounted<ShaderModule> **shaderOut);
+    angle::Result getCopyImageToBuffer_comp(Context *context,
+                                            uint32_t shaderFlags,
+                                            RefCounted<ShaderModule> **shaderOut);
     angle::Result getEtcToBc_comp(Context *context,
                                   uint32_t shaderFlags,
                                   RefCounted<ShaderModule> **shaderOut);
@@ -224,6 +270,9 @@ class ShaderLibrary final : angle::NonCopyable
     angle::Result getFullScreenTri_vert(Context *context,
                                         uint32_t shaderFlags,
                                         RefCounted<ShaderModule> **shaderOut);
+    angle::Result getGenerateFragmentShadingRate_comp(Context *context,
+                                                      uint32_t shaderFlags,
+                                                      RefCounted<ShaderModule> **shaderOut);
     angle::Result getGenerateMipmap_comp(Context *context,
                                          uint32_t shaderFlags,
                                          RefCounted<ShaderModule> **shaderOut);
@@ -233,6 +282,9 @@ class ShaderLibrary final : angle::NonCopyable
     angle::Result getImageCopy_frag(Context *context,
                                     uint32_t shaderFlags,
                                     RefCounted<ShaderModule> **shaderOut);
+    angle::Result getImageCopyFloat_frag(Context *context,
+                                         uint32_t shaderFlags,
+                                         RefCounted<ShaderModule> **shaderOut);
     angle::Result getOverlayDraw_frag(Context *context,
                                       uint32_t shaderFlags,
                                       RefCounted<ShaderModule> **shaderOut);
@@ -241,6 +293,7 @@ class ShaderLibrary final : angle::NonCopyable
                                       RefCounted<ShaderModule> **shaderOut);
 
   private:
+    RefCounted<ShaderModule> mBlit3DSrc_frag_shaders[InternalShader::Blit3DSrc_frag::kArrayLen];
     RefCounted<ShaderModule> mBlitResolve_frag_shaders[InternalShader::BlitResolve_frag::kArrayLen];
     RefCounted<ShaderModule> mBlitResolveStencilNoExport_comp_shaders
         [InternalShader::BlitResolveStencilNoExport_comp::kArrayLen];
@@ -252,15 +305,21 @@ class ShaderLibrary final : angle::NonCopyable
         [InternalShader::ConvertIndirectLineLoop_comp::kArrayLen];
     RefCounted<ShaderModule>
         mConvertVertex_comp_shaders[InternalShader::ConvertVertex_comp::kArrayLen];
+    RefCounted<ShaderModule>
+        mCopyImageToBuffer_comp_shaders[InternalShader::CopyImageToBuffer_comp::kArrayLen];
     RefCounted<ShaderModule> mEtcToBc_comp_shaders[InternalShader::EtcToBc_comp::kArrayLen];
     RefCounted<ShaderModule>
         mExportStencil_frag_shaders[InternalShader::ExportStencil_frag::kArrayLen];
     RefCounted<ShaderModule>
         mFullScreenTri_vert_shaders[InternalShader::FullScreenTri_vert::kArrayLen];
+    RefCounted<ShaderModule> mGenerateFragmentShadingRate_comp_shaders
+        [InternalShader::GenerateFragmentShadingRate_comp::kArrayLen];
     RefCounted<ShaderModule>
         mGenerateMipmap_comp_shaders[InternalShader::GenerateMipmap_comp::kArrayLen];
     RefCounted<ShaderModule> mImageClear_frag_shaders[InternalShader::ImageClear_frag::kArrayLen];
     RefCounted<ShaderModule> mImageCopy_frag_shaders[InternalShader::ImageCopy_frag::kArrayLen];
+    RefCounted<ShaderModule>
+        mImageCopyFloat_frag_shaders[InternalShader::ImageCopyFloat_frag::kArrayLen];
     RefCounted<ShaderModule> mOverlayDraw_frag_shaders[InternalShader::OverlayDraw_frag::kArrayLen];
     RefCounted<ShaderModule> mOverlayDraw_vert_shaders[InternalShader::OverlayDraw_vert::kArrayLen];
 };

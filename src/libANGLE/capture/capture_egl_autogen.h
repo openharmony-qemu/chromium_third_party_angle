@@ -323,6 +323,13 @@ angle::CallCapture CaptureReleaseDeviceANGLE(egl::Thread *thread,
                                              bool isCallValid,
                                              egl::Device *devicePacked,
                                              EGLBoolean returnValue);
+angle::CallCapture CaptureAcquireExternalContextANGLE(egl::Thread *thread,
+                                                      bool isCallValid,
+                                                      egl::Display *dpyPacked,
+                                                      SurfaceID drawAndReadPacked);
+angle::CallCapture CaptureReleaseExternalContextANGLE(egl::Thread *thread,
+                                                      bool isCallValid,
+                                                      egl::Display *dpyPacked);
 angle::CallCapture CaptureQueryStringiANGLE(egl::Thread *thread,
                                             bool isCallValid,
                                             egl::Display *dpyPacked,
@@ -340,6 +347,9 @@ angle::CallCapture CaptureCopyMetalSharedEventANGLE(egl::Thread *thread,
                                                     egl::Display *dpyPacked,
                                                     egl::SyncID syncPacked,
                                                     void *returnValue);
+angle::CallCapture CaptureSetValidationEnabledANGLE(egl::Thread *thread,
+                                                    bool isCallValid,
+                                                    EGLBoolean validationState);
 angle::CallCapture CaptureReleaseHighPowerGPUANGLE(egl::Thread *thread,
                                                    bool isCallValid,
                                                    egl::Display *dpyPacked,

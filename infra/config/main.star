@@ -139,11 +139,6 @@ os = struct(
 
 _RECIPE_NAME_PREFIX = "recipe:"
 _DEFAULT_BUILDERLESS_OS_CATEGORIES = [os_category.LINUX, os_category.WINDOWS]
-_GOMA_RBE_PROD = {
-    "server_host": "goma.chromium.org",
-    "rpc_extra_params": "?prod",
-    "use_luci_auth": True,
-}
 
 def _recipe_for_package(cipd_package):
     def recipe(*, name, cipd_version = None, recipe = None, use_python3 = False):
@@ -199,18 +194,15 @@ def angle_builder(name, cpu):
     dimensions = {}
     dimensions["os"] = config_os.dimension
 
-    goma_props = {}
-    goma_props.update(_GOMA_RBE_PROD)
-
     if config_os.category in _DEFAULT_BUILDERLESS_OS_CATEGORIES:
         dimensions["builderless"] = "1"
-        goma_props["enable_ats"] = True
 
     is_asan = "-asan" in name
     is_tsan = "-tsan" in name
     is_debug = "-dbg" in name
     is_exp = "-exp" in name
     is_perf = name.endswith("-perf")
+    is_s22 = "s22" in name
     is_trace = name.endswith("-trace")
     is_uwp = "winuwp" in name
     is_msvc = is_uwp or "-msvc" in name
@@ -258,18 +250,29 @@ def angle_builder(name, cpu):
         short_name = get_gpu_type_from_builder_name(name)
     elif is_asan:
         short_name = "asan"
+        if is_exp:
+            short_name = "asan-exp"
     elif is_tsan:
         short_name = "tsan"
+        if is_exp:
+            short_name = "tsan-exp"
     elif is_debug:
         short_name = "dbg"
     elif is_exp:
         short_name = "exp"
+        if is_s22:
+            # This is a little clunky, but we'd like this to be cleanly "s22" rather than "s22-exp"
+            short_name = "s22"
     else:
         short_name = "rel"
 
     properties = {
         "builder_group": "angle",
-        "$build/goma": goma_props,
+        "$build/reclient": {
+            "instance": "rbe-chromium-untrusted",
+            "metrics_project": "chromium-reclient-metrics",
+            "scandeps_server": True,
+        },
         "platform": config_os.console_name,
         "toolchain": toolchain,
         "test_mode": test_mode,
@@ -277,12 +280,18 @@ def angle_builder(name, cpu):
 
     ci_properties = {
         "builder_group": "angle",
-        "$build/goma": goma_props,
+        "$build/reclient": {
+            "instance": "rbe-chromium-trusted",
+            "metrics_project": "chromium-reclient-metrics",
+            "scandeps_server": True,
+        },
         "platform": config_os.console_name,
         "toolchain": toolchain,
         "test_mode": test_mode,
     }
 
+    # TODO(343503161): Remove sheriff_rotations after SoM is updated.
+    ci_properties["gardener_rotations"] = ["angle"]
     ci_properties["sheriff_rotations"] = ["angle"]
 
     if is_perf:
@@ -297,6 +306,7 @@ def angle_builder(name, cpu):
         executable = "recipe:angle",
         experiments = build_experiments,
         service_account = "angle-ci-builder@chops-service-accounts.iam.gserviceaccount.com",
+        shadow_service_account = "angle-try-builder@chops-service-accounts.iam.gserviceaccount.com",
         properties = ci_properties,
         dimensions = dimensions,
         build_numbers = True,
@@ -312,12 +322,26 @@ def angle_builder(name, cpu):
         execution_timeout = timeout_hours * time.hour,
     )
 
-    luci.console_view_entry(
-        console_view = "ci",
-        builder = "ci/" + name,
-        category = category + "|" + os_toolchain_name + "|" + cpu,
-        short_name = short_name,
-    )
+    active_experimental_builders = [
+        "android-arm64-exp-test",
+        "android-arm64-exp-s22-test",
+        "linux-exp-test",
+        "mac-exp-test",
+        "win-exp-test",
+    ]
+
+    if (not is_exp) or (name in active_experimental_builders):
+        luci.console_view_entry(
+            console_view = "ci",
+            builder = "ci/" + name,
+            category = category + "|" + os_toolchain_name + "|" + cpu,
+            short_name = short_name,
+        )
+    else:
+        luci.list_view_entry(
+            list_view = "exp",
+            builder = "ci/" + name,
+        )
 
     # Do not include perf tests in "try".
     if not is_perf:
@@ -375,6 +399,81 @@ luci.bucket(
     ],
 )
 
+# Shadow buckets for LED jobs.
+luci.bucket(
+    name = "ci.shadow",
+    shadows = "ci",
+    constraints = luci.bucket_constraints(
+        pools = ["luci.angle.ci"],
+    ),
+    bindings = [
+        luci.binding(
+            roles = "role/buildbucket.creator",
+            groups = [
+                "mdb/chrome-build-access-sphinx",
+                "mdb/chrome-troopers",
+                "chromium-led-users",
+            ],
+            users = [
+                "angle-try-builder@chops-service-accounts.iam.gserviceaccount.com",
+            ],
+        ),
+        luci.binding(
+            roles = "role/buildbucket.triggerer",
+            users = [
+                "angle-try-builder@chops-service-accounts.iam.gserviceaccount.com",
+            ],
+        ),
+        # Allow ci builders to create invocations in their own builds.
+        luci.binding(
+            roles = "role/resultdb.invocationCreator",
+            users = [
+                "angle-try-builder@chops-service-accounts.iam.gserviceaccount.com",
+            ],
+        ),
+    ],
+    dynamic = True,
+)
+
+luci.bucket(
+    name = "try.shadow",
+    shadows = "try",
+    constraints = luci.bucket_constraints(
+        pools = ["luci.angle.try"],
+        service_accounts = [
+            "angle-try-builder@chops-service-accounts.iam.gserviceaccount.com",
+        ],
+    ),
+    bindings = [
+        luci.binding(
+            roles = "role/buildbucket.creator",
+            groups = [
+                "mdb/chrome-build-access-sphinx",
+                "mdb/chrome-troopers",
+                "chromium-led-users",
+            ],
+            users = [
+                "angle-try-builder@chops-service-accounts.iam.gserviceaccount.com",
+            ],
+        ),
+        luci.binding(
+            roles = "role/buildbucket.triggerer",
+            users = [
+                "angle-try-builder@chops-service-accounts.iam.gserviceaccount.com",
+            ],
+        ),
+        # Allow try builders to create invocations in their own builds.
+        luci.binding(
+            roles = "role/resultdb.invocationCreator",
+            groups = [
+                "project-angle-try-task-accounts",
+                "project-angle-tryjob-access",
+            ],
+        ),
+    ],
+    dynamic = True,
+)
+
 luci.builder(
     name = "presubmit",
     bucket = "try",
@@ -410,10 +509,13 @@ luci.gitiles_poller(
 angle_builder("android-arm-compile", cpu = "arm")
 angle_builder("android-arm-dbg-compile", cpu = "arm")
 angle_builder("android-arm64-dbg-compile", cpu = "arm64")
+angle_builder("android-arm64-exp-s22-test", cpu = "arm64")
 angle_builder("android-arm64-exp-test", cpu = "arm64")
 angle_builder("android-arm64-test", cpu = "arm64")
 angle_builder("linux-asan-test", cpu = "x64")
+angle_builder("linux-exp-asan-test", cpu = "x64")
 angle_builder("linux-exp-test", cpu = "x64")
+angle_builder("linux-exp-tsan-test", cpu = "x64")
 angle_builder("linux-tsan-test", cpu = "x64")
 angle_builder("linux-dbg-compile", cpu = "x64")
 angle_builder("linux-test", cpu = "x64")
@@ -449,6 +551,11 @@ luci.console_view(
     name = "ci",
     title = "ANGLE CI Builders",
     repo = "https://chromium.googlesource.com/angle/angle",
+)
+
+luci.list_view(
+    name = "exp",
+    title = "ANGLE Experimental CI Builders",
 )
 
 luci.list_view(

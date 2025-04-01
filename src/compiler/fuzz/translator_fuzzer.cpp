@@ -14,6 +14,7 @@
 
 #include "angle_gl.h"
 #include "anglebase/no_destructor.h"
+#include "common/hash_containers.h"
 #include "compiler/translator/Compiler.h"
 #include "compiler/translator/util.h"
 
@@ -112,12 +113,12 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         hasUnsupportedOptions = hasUnsupportedOptions || hasMacGLSLOptions;
 #endif
     }
-    if (!IsOutputVulkan(shaderOutput))
+    if (!IsOutputSPIRV(shaderOutput))
     {
-        hasUnsupportedOptions =
-            hasUnsupportedOptions || options.emulateSeamfulCubeMapSampling ||
-            options.useSpecializationConstant || options.addVulkanXfbEmulationSupportCode ||
-            options.roundOutputAfterDithering || options.addAdvancedBlendEquationsEmulation;
+        hasUnsupportedOptions = hasUnsupportedOptions || options.useSpecializationConstant ||
+                                options.addVulkanXfbEmulationSupportCode ||
+                                options.roundOutputAfterDithering ||
+                                options.addAdvancedBlendEquationsEmulation;
     }
     if (!IsOutputHLSL(shaderOutput))
     {
@@ -154,7 +155,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     validOutputs.push_back(SH_SPIRV_VULKAN_OUTPUT);
     validOutputs.push_back(SH_HLSL_3_0_OUTPUT);
     validOutputs.push_back(SH_HLSL_4_1_OUTPUT);
-    validOutputs.push_back(SH_HLSL_4_0_FL9_3_OUTPUT);
     bool found = false;
     for (auto valid : validOutputs)
     {
@@ -206,6 +206,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         resources.EXT_shader_framebuffer_fetch    = 1;
         resources.NV_shader_framebuffer_fetch     = 1;
         resources.ARM_shader_framebuffer_fetch    = 1;
+        resources.ARM_shader_framebuffer_fetch_depth_stencil = 1;
         resources.EXT_YUV_target                  = 1;
         resources.APPLE_clip_distance             = 1;
         resources.MaxDualSourceDrawBuffers        = 1;
@@ -227,7 +228,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
     auto &translator = (*translators)[key];
 
-    const char *shaderStrings[] = {reinterpret_cast<const char *>(data)};
+    options.limitExpressionComplexity = true;
+    const char *shaderStrings[]       = {reinterpret_cast<const char *>(data)};
     translator->compile(shaderStrings, 1, options);
 
     return 0;

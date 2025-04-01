@@ -66,6 +66,11 @@ ANGLE_EXPORT EGLDeviceEXT EGLAPIENTRY EGL_CreateDeviceANGLE(EGLint device_type,
                                                             const EGLAttrib *attrib_list);
 ANGLE_EXPORT EGLBoolean EGLAPIENTRY EGL_ReleaseDeviceANGLE(EGLDeviceEXT device);
 
+// EGL_ANGLE_external_context_and_surface
+ANGLE_EXPORT void EGLAPIENTRY EGL_AcquireExternalContextANGLE(EGLDisplay dpy,
+                                                              EGLSurface drawAndRead);
+ANGLE_EXPORT void EGLAPIENTRY EGL_ReleaseExternalContextANGLE(EGLDisplay dpy);
+
 // EGL_ANGLE_feature_control
 ANGLE_EXPORT const char *EGLAPIENTRY EGL_QueryStringiANGLE(EGLDisplay dpy,
                                                            EGLint name,
@@ -76,6 +81,9 @@ ANGLE_EXPORT EGLBoolean EGLAPIENTRY EGL_QueryDisplayAttribANGLE(EGLDisplay dpy,
 
 // EGL_ANGLE_metal_shared_event_sync
 ANGLE_EXPORT void *EGLAPIENTRY EGL_CopyMetalSharedEventANGLE(EGLDisplay dpy, EGLSyncKHR sync);
+
+// EGL_ANGLE_no_error
+ANGLE_EXPORT void EGLAPIENTRY EGL_SetValidationEnabledANGLE(EGLBoolean validationState);
 
 // EGL_ANGLE_power_preference
 ANGLE_EXPORT void EGLAPIENTRY EGL_ReleaseHighPowerGPUANGLE(EGLDisplay dpy, EGLContext ctx);

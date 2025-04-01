@@ -32,8 +32,10 @@ def load_json(path):
         return json.loads(map_file.read(), object_pairs_hook=reject_duplicate_keys)
 
 
-def load_forward_table(path):
+def load_forward_table(path, key=None):
     pairs = load_json(path)
+    if key is not None:
+        pairs = pairs[key]
     reject_duplicate_keys(pairs)
     return {gl: angle for gl, angle in pairs}
 
@@ -41,6 +43,8 @@ def load_forward_table(path):
 def load_inverse_table(path):
     pairs = load_json(path)
     reject_duplicate_keys(pairs)
+    for x in range(0, 8):
+        pairs.append(("GL_NONE", "EXTERNAL" + str(x)))
     return {angle: gl for gl, angle in pairs}
 
 
@@ -87,6 +91,8 @@ def get_component_type(format_id):
         return "unorm"
     elif "TYPELESS" in format_id:
         return "unorm"
+    elif "EXTERNAL" in format_id:
+        return "unorm"
     elif format_id == "R9G9B9E5_SHAREDEXP":
         return "float"
     else:
@@ -94,6 +100,8 @@ def get_component_type(format_id):
 
 
 def get_channel_tokens(format_id):
+    if 'EXTERNAL' in format_id:
+        return ['R8', 'G8', 'B8', 'A8']
     r = re.compile(r'([' + kChannels + '][\d]+)')
     return list(filter(r.match, r.split(format_id)))
 
@@ -264,8 +272,6 @@ def get_vertex_copy_function(src_format, dst_format):
         return "nullptr"
 
     if src_format.endswith('_VERTEX'):
-        assert 'FLOAT' in dst_format, (
-            'get_vertex_copy_function: can only convert to float,' + ' not to ' + dst_format)
         is_signed = 'true' if 'SINT' in src_format or 'SNORM' in src_format or 'SSCALED' in src_format else 'false'
         is_normal = 'true' if 'NORM' in src_format else 'false'
         if 'A2' in src_format:

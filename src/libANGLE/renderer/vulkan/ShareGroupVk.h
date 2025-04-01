@@ -10,18 +10,15 @@
 #ifndef LIBANGLE_RENDERER_VULKAN_SHAREGROUPVK_H_
 #define LIBANGLE_RENDERER_VULKAN_SHAREGROUPVK_H_
 
-#include "libANGLE/renderer/DisplayImpl.h"
-#include "libANGLE/renderer/vulkan/ResourceVk.h"
+#include "libANGLE/renderer/ShareGroupImpl.h"
 #include "libANGLE/renderer/vulkan/vk_cache_utils.h"
 #include "libANGLE/renderer/vulkan/vk_helpers.h"
+#include "libANGLE/renderer/vulkan/vk_resource.h"
 #include "libANGLE/renderer/vulkan/vk_utils.h"
 
 namespace rx
 {
 constexpr VkDeviceSize kMaxTotalEmptyBufferBytes = 16 * 1024 * 1024;
-
-class RendererVk;
-using ContextVkSet = std::set<ContextVk *>;
 
 class TextureUpload
 {
@@ -37,73 +34,41 @@ class TextureUpload
     TextureVk *mPrevUploadedMutableTexture;
 };
 
-class UpdateDescriptorSetsBuilder final : angle::NonCopyable
-{
-  public:
-    UpdateDescriptorSetsBuilder();
-    ~UpdateDescriptorSetsBuilder();
-
-    VkDescriptorBufferInfo *allocDescriptorBufferInfos(size_t count);
-    VkDescriptorImageInfo *allocDescriptorImageInfos(size_t count);
-    VkWriteDescriptorSet *allocWriteDescriptorSets(size_t count);
-    VkBufferView *allocBufferViews(size_t count);
-
-    VkDescriptorBufferInfo &allocDescriptorBufferInfo() { return *allocDescriptorBufferInfos(1); }
-    VkDescriptorImageInfo &allocDescriptorImageInfo() { return *allocDescriptorImageInfos(1); }
-    VkWriteDescriptorSet &allocWriteDescriptorSet() { return *allocWriteDescriptorSets(1); }
-    VkBufferView &allocBufferView() { return *allocBufferViews(1); }
-
-    // Returns the number of written descriptor sets.
-    uint32_t flushDescriptorSetUpdates(VkDevice device);
-
-  private:
-    template <typename T, const T *VkWriteDescriptorSet::*pInfo>
-    T *allocDescriptorInfos(std::vector<T> *descriptorVector, size_t count);
-    template <typename T, const T *VkWriteDescriptorSet::*pInfo>
-    void growDescriptorCapacity(std::vector<T> *descriptorVector, size_t newSize);
-
-    std::vector<VkDescriptorBufferInfo> mDescriptorBufferInfos;
-    std::vector<VkDescriptorImageInfo> mDescriptorImageInfos;
-    std::vector<VkWriteDescriptorSet> mWriteDescriptorSets;
-    std::vector<VkBufferView> mBufferViews;
-};
-
 class ShareGroupVk : public ShareGroupImpl
 {
   public:
-    ShareGroupVk();
+    ShareGroupVk(const egl::ShareGroupState &state);
     void onDestroy(const egl::Display *display) override;
 
+    void onContextAdd() override;
+
     FramebufferCache &getFramebufferCache() { return mFramebufferCache; }
+
+    bool hasAnyContextWithRobustness() const { return mState.hasAnyContextWithRobustness(); }
 
     // PipelineLayoutCache and DescriptorSetLayoutCache can be shared between multiple threads
     // accessing them via shared contexts. The ShareGroup locks around gl entrypoints ensuring
     // synchronous update to the caches.
     PipelineLayoutCache &getPipelineLayoutCache() { return mPipelineLayoutCache; }
     DescriptorSetLayoutCache &getDescriptorSetLayoutCache() { return mDescriptorSetLayoutCache; }
-    const ContextVkSet &getContexts() const { return mContexts; }
-    vk::MetaDescriptorPool &getMetaDescriptorPool(DescriptorSetIndex descriptorSetIndex)
+    const egl::ContextMap &getContexts() const { return mState.getContexts(); }
+    vk::DescriptorSetArray<vk::MetaDescriptorPool> &getMetaDescriptorPools()
     {
-        return mMetaDescriptorPools[descriptorSetIndex];
+        return mMetaDescriptorPools;
     }
-
-    size_t getContextCount() const { return mContexts.size(); }
 
     // Used to flush the mutable textures more often.
     angle::Result onMutableTextureUpload(ContextVk *contextVk, TextureVk *newTexture);
 
-    vk::BufferPool *getDefaultBufferPool(RendererVk *renderer,
+    vk::BufferPool *getDefaultBufferPool(vk::Renderer *renderer,
                                          VkDeviceSize size,
                                          uint32_t memoryTypeIndex,
                                          BufferUsageType usageType);
-    void pruneDefaultBufferPools(RendererVk *renderer);
-    bool isDueForBufferPoolPrune(RendererVk *renderer);
+    void pruneDefaultBufferPools(vk::Renderer *renderer);
+    bool isDueForBufferPoolPrune(vk::Renderer *renderer);
 
     void calculateTotalBufferCount(size_t *bufferCount, VkDeviceSize *totalSize) const;
     void logBufferPools() const;
-
-    void addContext(ContextVk *contextVk);
-    void removeContext(ContextVk *contextVk);
 
     // Temporary workaround until VkSemaphore(s) will be used between different priorities.
     angle::Result unifyContextsPriority(ContextVk *newContextVk);
@@ -117,10 +82,37 @@ class ShareGroupVk : public ShareGroupImpl
 
     void onTextureRelease(TextureVk *textureVk);
 
+    VertexInputGraphicsPipelineCache *getVertexInputGraphicsPipelineCache()
+    {
+        return &mVertexInputGraphicsPipelineCache;
+    }
+    FragmentOutputGraphicsPipelineCache *getFragmentOutputGraphicsPipelineCache()
+    {
+        return &mFragmentOutputGraphicsPipelineCache;
+    }
+
     angle::Result scheduleMonolithicPipelineCreationTask(
         ContextVk *contextVk,
         vk::WaitableMonolithicPipelineCreationTask *taskOut);
     void waitForCurrentMonolithicPipelineCreationTask();
+
+    vk::RefCountedEventsGarbageRecycler *getRefCountedEventsGarbageRecycler()
+    {
+        return &mRefCountedEventsGarbageRecycler;
+    }
+    void cleanupRefCountedEventGarbage(vk::Renderer *renderer)
+    {
+        mRefCountedEventsGarbageRecycler.cleanup(renderer);
+    }
+    void cleanupExcessiveRefCountedEventGarbage(vk::Renderer *renderer)
+    {
+        // TODO: b/336844257 needs tune.
+        constexpr size_t kExcessiveGarbageCountThreshold = 256;
+        if (mRefCountedEventsGarbageRecycler.getGarbageCount() > kExcessiveGarbageCountThreshold)
+        {
+            mRefCountedEventsGarbageRecycler.cleanup(renderer);
+        }
+    }
 
   private:
     angle::Result updateContextsPriority(ContextVk *contextVk, egl::ContextPriority newPriority);
@@ -139,10 +131,7 @@ class ShareGroupVk : public ShareGroupImpl
     // Descriptor set caches
     vk::DescriptorSetArray<vk::MetaDescriptorPool> mMetaDescriptorPools;
 
-    // The list of contexts within the share group
-    ContextVkSet mContexts;
-
-    // Priority of all Contexts in the mContexts
+    // Priority of all Contexts in the context set
     egl::ContextPriority mContextsPriority;
     bool mIsContextsPriorityLocked;
 
@@ -150,18 +139,17 @@ class ShareGroupVk : public ShareGroupImpl
     UpdateDescriptorSetsBuilder mUpdateDescriptorSetsBuilder;
 
     // The per shared group buffer pools that all buffers should sub-allocate from.
-    enum class SuballocationAlgorithm : uint8_t
-    {
-        Buddy       = 0,
-        General     = 1,
-        InvalidEnum = 2,
-        EnumCount   = InvalidEnum,
-    };
-    angle::PackedEnumMap<SuballocationAlgorithm, vk::BufferPoolPointerArray> mDefaultBufferPools;
-    angle::PackedEnumMap<BufferUsageType, size_t> mSizeLimitForBuddyAlgorithm;
+    vk::BufferPoolPointerArray mDefaultBufferPools;
 
     // The system time when last pruneEmptyBuffer gets called.
     double mLastPruneTime;
+
+    // Used when VK_EXT_graphics_pipeline_library is available, the vertex input and fragment output
+    // partial pipelines are created in the following caches.  These caches are in the share group
+    // because linked pipelines using these pipeline libraries are referenced from
+    // ProgramExecutableVk, and as such must stay alive as long as the program may be alive.
+    VertexInputGraphicsPipelineCache mVertexInputGraphicsPipelineCache;
+    FragmentOutputGraphicsPipelineCache mFragmentOutputGraphicsPipelineCache;
 
     // The system time when the last monolithic pipeline creation job was launched.  This is
     // rate-limited to avoid hogging all cores and interfering with the application threads.  A
@@ -172,9 +160,8 @@ class ShareGroupVk : public ShareGroupImpl
     // Texture update manager used to flush uploaded mutable textures.
     TextureUpload mTextureUpload;
 
-    // If true, it is expected that a BufferBlock may still in used by textures that outlived
-    // ShareGroup. The non-empty BufferBlock will be put into RendererVk's orphan list instead.
-    bool mOrphanNonEmptyBufferBlock;
+    // Holds RefCountedEvent that are free and ready to reuse
+    vk::RefCountedEventsGarbageRecycler mRefCountedEventsGarbageRecycler;
 };
 }  // namespace rx
 

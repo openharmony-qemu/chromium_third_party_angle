@@ -478,6 +478,8 @@
 #define glMultiDrawArraysInstancedBaseInstanceANGLE l_glMultiDrawArraysInstancedBaseInstanceANGLE
 #define glMultiDrawElementsInstancedBaseVertexBaseInstanceANGLE \
     l_glMultiDrawElementsInstancedBaseVertexBaseInstanceANGLE
+#define glBlobCacheCallbacksANGLE l_glBlobCacheCallbacksANGLE
+#define glGetPointervANGLE l_glGetPointervANGLE
 #define glCopySubTexture3DANGLE l_glCopySubTexture3DANGLE
 #define glCopyTexture3DANGLE l_glCopyTexture3DANGLE
 #define glBlitFramebufferANGLE l_glBlitFramebufferANGLE
@@ -500,6 +502,7 @@
 #define glMultiDrawArraysInstancedANGLE l_glMultiDrawArraysInstancedANGLE
 #define glMultiDrawElementsANGLE l_glMultiDrawElementsANGLE
 #define glMultiDrawElementsInstancedANGLE l_glMultiDrawElementsInstancedANGLE
+#define glPolygonModeANGLE l_glPolygonModeANGLE
 #define glProvokingVertexANGLE l_glProvokingVertexANGLE
 #define glDisableExtensionANGLE l_glDisableExtensionANGLE
 #define glRequestExtensionANGLE l_glRequestExtensionANGLE
@@ -613,6 +616,8 @@
 #define glGetFragDataIndexEXT l_glGetFragDataIndexEXT
 #define glGetProgramResourceLocationIndexEXT l_glGetProgramResourceLocationIndexEXT
 #define glBufferStorageEXT l_glBufferStorageEXT
+#define glClearTexImageEXT l_glClearTexImageEXT
+#define glClearTexSubImageEXT l_glClearTexSubImageEXT
 #define glClipControlEXT l_glClipControlEXT
 #define glCopyImageSubDataEXT l_glCopyImageSubDataEXT
 #define glGetObjectLabelEXT l_glGetObjectLabelEXT
@@ -757,6 +762,11 @@
 #define glPopDebugGroupKHR l_glPopDebugGroupKHR
 #define glPushDebugGroupKHR l_glPushDebugGroupKHR
 #define glMaxShaderCompilerThreadsKHR l_glMaxShaderCompilerThreadsKHR
+#define glGetGraphicsResetStatusKHR l_glGetGraphicsResetStatusKHR
+#define glGetnUniformfvKHR l_glGetnUniformfvKHR
+#define glGetnUniformivKHR l_glGetnUniformivKHR
+#define glGetnUniformuivKHR l_glGetnUniformuivKHR
+#define glReadnPixelsKHR l_glReadnPixelsKHR
 #define glFramebufferParameteriMESA l_glFramebufferParameteriMESA
 #define glGetFramebufferParameterivMESA l_glGetFramebufferParameterivMESA
 #define glDeleteFencesNV l_glDeleteFencesNV
@@ -767,6 +777,7 @@
 #define glSetFenceNV l_glSetFenceNV
 #define glTestFenceNV l_glTestFenceNV
 #define glBlitFramebufferNV l_glBlitFramebufferNV
+#define glPolygonModeNV l_glPolygonModeNV
 #define glEGLImageTargetRenderbufferStorageOES l_glEGLImageTargetRenderbufferStorageOES
 #define glEGLImageTargetTexture2DOES l_glEGLImageTargetTexture2DOES
 #define glCopyImageSubDataOES l_glCopyImageSubDataOES
@@ -789,6 +800,7 @@
 #define glUnmapBufferOES l_glUnmapBufferOES
 #define glPrimitiveBoundingBoxOES l_glPrimitiveBoundingBoxOES
 #define glMinSampleShadingOES l_glMinSampleShadingOES
+#define glPatchParameteriOES l_glPatchParameteriOES
 #define glCompressedTexImage3DOES l_glCompressedTexImage3DOES
 #define glCompressedTexSubImage3DOES l_glCompressedTexSubImage3DOES
 #define glCopyTexSubImage3DOES l_glCopyTexSubImage3DOES
@@ -811,7 +823,12 @@
 #define glGenVertexArraysOES l_glGenVertexArraysOES
 #define glIsVertexArrayOES l_glIsVertexArrayOES
 #define glFramebufferTextureMultiviewOVR l_glFramebufferTextureMultiviewOVR
+#define glFramebufferFoveationConfigQCOM l_glFramebufferFoveationConfigQCOM
+#define glFramebufferFoveationParametersQCOM l_glFramebufferFoveationParametersQCOM
 #define glShadingRateQCOM l_glShadingRateQCOM
+#define glTextureFoveationParametersQCOM l_glTextureFoveationParametersQCOM
+#define glEndTilingQCOM l_glEndTilingQCOM
+#define glStartTilingQCOM l_glStartTilingQCOM
 #define glDrawTexfOES l_glDrawTexfOES
 #define glDrawTexfvOES l_glDrawTexfvOES
 #define glDrawTexiOES l_glDrawTexiOES
@@ -1318,6 +1335,8 @@ ANGLE_UTIL_EXPORT extern PFNGLMULTIDRAWARRAYSINSTANCEDBASEINSTANCEANGLEPROC
     l_glMultiDrawArraysInstancedBaseInstanceANGLE;
 ANGLE_UTIL_EXPORT extern PFNGLMULTIDRAWELEMENTSINSTANCEDBASEVERTEXBASEINSTANCEANGLEPROC
     l_glMultiDrawElementsInstancedBaseVertexBaseInstanceANGLE;
+ANGLE_UTIL_EXPORT extern PFNGLBLOBCACHECALLBACKSANGLEPROC l_glBlobCacheCallbacksANGLE;
+ANGLE_UTIL_EXPORT extern PFNGLGETPOINTERVANGLEPROC l_glGetPointervANGLE;
 ANGLE_UTIL_EXPORT extern PFNGLCOPYSUBTEXTURE3DANGLEPROC l_glCopySubTexture3DANGLE;
 ANGLE_UTIL_EXPORT extern PFNGLCOPYTEXTURE3DANGLEPROC l_glCopyTexture3DANGLE;
 ANGLE_UTIL_EXPORT extern PFNGLBLITFRAMEBUFFERANGLEPROC l_glBlitFramebufferANGLE;
@@ -1344,6 +1363,7 @@ ANGLE_UTIL_EXPORT extern PFNGLMULTIDRAWARRAYSINSTANCEDANGLEPROC l_glMultiDrawArr
 ANGLE_UTIL_EXPORT extern PFNGLMULTIDRAWELEMENTSANGLEPROC l_glMultiDrawElementsANGLE;
 ANGLE_UTIL_EXPORT extern PFNGLMULTIDRAWELEMENTSINSTANCEDANGLEPROC
     l_glMultiDrawElementsInstancedANGLE;
+ANGLE_UTIL_EXPORT extern PFNGLPOLYGONMODEANGLEPROC l_glPolygonModeANGLE;
 ANGLE_UTIL_EXPORT extern PFNGLPROVOKINGVERTEXANGLEPROC l_glProvokingVertexANGLE;
 ANGLE_UTIL_EXPORT extern PFNGLDISABLEEXTENSIONANGLEPROC l_glDisableExtensionANGLE;
 ANGLE_UTIL_EXPORT extern PFNGLREQUESTEXTENSIONANGLEPROC l_glRequestExtensionANGLE;
@@ -1487,6 +1507,8 @@ ANGLE_UTIL_EXPORT extern PFNGLGETFRAGDATAINDEXEXTPROC l_glGetFragDataIndexEXT;
 ANGLE_UTIL_EXPORT extern PFNGLGETPROGRAMRESOURCELOCATIONINDEXEXTPROC
     l_glGetProgramResourceLocationIndexEXT;
 ANGLE_UTIL_EXPORT extern PFNGLBUFFERSTORAGEEXTPROC l_glBufferStorageEXT;
+ANGLE_UTIL_EXPORT extern PFNGLCLEARTEXIMAGEEXTPROC l_glClearTexImageEXT;
+ANGLE_UTIL_EXPORT extern PFNGLCLEARTEXSUBIMAGEEXTPROC l_glClearTexSubImageEXT;
 ANGLE_UTIL_EXPORT extern PFNGLCLIPCONTROLEXTPROC l_glClipControlEXT;
 ANGLE_UTIL_EXPORT extern PFNGLCOPYIMAGESUBDATAEXTPROC l_glCopyImageSubDataEXT;
 ANGLE_UTIL_EXPORT extern PFNGLGETOBJECTLABELEXTPROC l_glGetObjectLabelEXT;
@@ -1634,6 +1656,11 @@ ANGLE_UTIL_EXPORT extern PFNGLOBJECTPTRLABELKHRPROC l_glObjectPtrLabelKHR;
 ANGLE_UTIL_EXPORT extern PFNGLPOPDEBUGGROUPKHRPROC l_glPopDebugGroupKHR;
 ANGLE_UTIL_EXPORT extern PFNGLPUSHDEBUGGROUPKHRPROC l_glPushDebugGroupKHR;
 ANGLE_UTIL_EXPORT extern PFNGLMAXSHADERCOMPILERTHREADSKHRPROC l_glMaxShaderCompilerThreadsKHR;
+ANGLE_UTIL_EXPORT extern PFNGLGETGRAPHICSRESETSTATUSKHRPROC l_glGetGraphicsResetStatusKHR;
+ANGLE_UTIL_EXPORT extern PFNGLGETNUNIFORMFVKHRPROC l_glGetnUniformfvKHR;
+ANGLE_UTIL_EXPORT extern PFNGLGETNUNIFORMIVKHRPROC l_glGetnUniformivKHR;
+ANGLE_UTIL_EXPORT extern PFNGLGETNUNIFORMUIVKHRPROC l_glGetnUniformuivKHR;
+ANGLE_UTIL_EXPORT extern PFNGLREADNPIXELSKHRPROC l_glReadnPixelsKHR;
 ANGLE_UTIL_EXPORT extern PFNGLFRAMEBUFFERPARAMETERIMESAPROC l_glFramebufferParameteriMESA;
 ANGLE_UTIL_EXPORT extern PFNGLGETFRAMEBUFFERPARAMETERIVMESAPROC l_glGetFramebufferParameterivMESA;
 ANGLE_UTIL_EXPORT extern PFNGLDELETEFENCESNVPROC l_glDeleteFencesNV;
@@ -1644,6 +1671,7 @@ ANGLE_UTIL_EXPORT extern PFNGLISFENCENVPROC l_glIsFenceNV;
 ANGLE_UTIL_EXPORT extern PFNGLSETFENCENVPROC l_glSetFenceNV;
 ANGLE_UTIL_EXPORT extern PFNGLTESTFENCENVPROC l_glTestFenceNV;
 ANGLE_UTIL_EXPORT extern PFNGLBLITFRAMEBUFFERNVPROC l_glBlitFramebufferNV;
+ANGLE_UTIL_EXPORT extern PFNGLPOLYGONMODENVPROC l_glPolygonModeNV;
 ANGLE_UTIL_EXPORT extern PFNGLEGLIMAGETARGETRENDERBUFFERSTORAGEOESPROC
     l_glEGLImageTargetRenderbufferStorageOES;
 ANGLE_UTIL_EXPORT extern PFNGLEGLIMAGETARGETTEXTURE2DOESPROC l_glEGLImageTargetTexture2DOES;
@@ -1668,6 +1696,7 @@ ANGLE_UTIL_EXPORT extern PFNGLMAPBUFFEROESPROC l_glMapBufferOES;
 ANGLE_UTIL_EXPORT extern PFNGLUNMAPBUFFEROESPROC l_glUnmapBufferOES;
 ANGLE_UTIL_EXPORT extern PFNGLPRIMITIVEBOUNDINGBOXOESPROC l_glPrimitiveBoundingBoxOES;
 ANGLE_UTIL_EXPORT extern PFNGLMINSAMPLESHADINGOESPROC l_glMinSampleShadingOES;
+ANGLE_UTIL_EXPORT extern PFNGLPATCHPARAMETERIOESPROC l_glPatchParameteriOES;
 ANGLE_UTIL_EXPORT extern PFNGLCOMPRESSEDTEXIMAGE3DOESPROC l_glCompressedTexImage3DOES;
 ANGLE_UTIL_EXPORT extern PFNGLCOMPRESSEDTEXSUBIMAGE3DOESPROC l_glCompressedTexSubImage3DOES;
 ANGLE_UTIL_EXPORT extern PFNGLCOPYTEXSUBIMAGE3DOESPROC l_glCopyTexSubImage3DOES;
@@ -1690,7 +1719,13 @@ ANGLE_UTIL_EXPORT extern PFNGLDELETEVERTEXARRAYSOESPROC l_glDeleteVertexArraysOE
 ANGLE_UTIL_EXPORT extern PFNGLGENVERTEXARRAYSOESPROC l_glGenVertexArraysOES;
 ANGLE_UTIL_EXPORT extern PFNGLISVERTEXARRAYOESPROC l_glIsVertexArrayOES;
 ANGLE_UTIL_EXPORT extern PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVRPROC l_glFramebufferTextureMultiviewOVR;
+ANGLE_UTIL_EXPORT extern PFNGLFRAMEBUFFERFOVEATIONCONFIGQCOMPROC l_glFramebufferFoveationConfigQCOM;
+ANGLE_UTIL_EXPORT extern PFNGLFRAMEBUFFERFOVEATIONPARAMETERSQCOMPROC
+    l_glFramebufferFoveationParametersQCOM;
 ANGLE_UTIL_EXPORT extern PFNGLSHADINGRATEQCOMPROC l_glShadingRateQCOM;
+ANGLE_UTIL_EXPORT extern PFNGLTEXTUREFOVEATIONPARAMETERSQCOMPROC l_glTextureFoveationParametersQCOM;
+ANGLE_UTIL_EXPORT extern PFNGLENDTILINGQCOMPROC l_glEndTilingQCOM;
+ANGLE_UTIL_EXPORT extern PFNGLSTARTTILINGQCOMPROC l_glStartTilingQCOM;
 ANGLE_UTIL_EXPORT extern PFNGLDRAWTEXFOESPROC l_glDrawTexfOES;
 ANGLE_UTIL_EXPORT extern PFNGLDRAWTEXFVOESPROC l_glDrawTexfvOES;
 ANGLE_UTIL_EXPORT extern PFNGLDRAWTEXIOESPROC l_glDrawTexiOES;
@@ -1737,7 +1772,7 @@ typedef GenericProc(KHRONOS_APIENTRY *LoadProc)(const char *);
 ANGLE_UTIL_EXPORT void LoadUtilGLES(LoadProc loadProc);
 
 #if defined(__cplusplus)
-}  // extern "C"
+}       // extern "C"
 #endif  // defined(__cplusplus)
 
 #endif  // UTIL_GLES_LOADER_AUTOGEN_H_

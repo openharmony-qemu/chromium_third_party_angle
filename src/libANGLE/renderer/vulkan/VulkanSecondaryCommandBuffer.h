@@ -49,7 +49,9 @@ class VulkanSecondaryCommandBuffer : public priv::CommandBuffer
         ContextVk *contextVk,
         const Framebuffer &framebuffer,
         const RenderPassDesc &renderPassDesc,
-        VkCommandBufferInheritanceInfo *inheritanceInfoOut);
+        VkCommandBufferInheritanceInfo *inheritanceInfoOut,
+        VkCommandBufferInheritanceRenderingInfo *renderingInfoOut,
+        gl::DrawBuffersArray<VkFormat> *colorFormatStorageOut);
 
     angle::Result initialize(Context *context,
                              SecondaryCommandPool *pool,
@@ -167,13 +169,24 @@ class VulkanSecondaryCommandBuffer : public priv::CommandBuffer
                        VkPipelineStageFlags dstStageMask,
                        const VkBufferMemoryBarrier *bufferMemoryBarrier);
 
+    void bufferBarrier2(const VkBufferMemoryBarrier2 *bufferMemoryBarrier2);
+
     void imageBarrier(VkPipelineStageFlags srcStageMask,
                       VkPipelineStageFlags dstStageMask,
                       const VkImageMemoryBarrier &imageMemoryBarrier);
 
+    void imageBarrier2(const VkImageMemoryBarrier2 &imageMemoryBarrier2);
+
+    void imageWaitEvent(const VkEvent &event,
+                        VkPipelineStageFlags srcStageMask,
+                        VkPipelineStageFlags dstStageMask,
+                        const VkImageMemoryBarrier &imageMemoryBarrier);
+
     void memoryBarrier(VkPipelineStageFlags srcStageMask,
                        VkPipelineStageFlags dstStageMask,
-                       const VkMemoryBarrier *memoryBarrier);
+                       const VkMemoryBarrier &memoryBarrier);
+
+    void memoryBarrier2(const VkMemoryBarrier2 &memoryBarrier);
 
     void nextSubpass(VkSubpassContents subpassContents);
 
@@ -187,6 +200,14 @@ class VulkanSecondaryCommandBuffer : public priv::CommandBuffer
                          uint32_t imageMemoryBarrierCount,
                          const VkImageMemoryBarrier *imageMemoryBarriers);
 
+    void pipelineBarrier2(VkDependencyFlags dependencyFlags,
+                          uint32_t memoryBarrierCount,
+                          const VkMemoryBarrier2 *memoryBarriers2,
+                          uint32_t bufferMemoryBarrierCount,
+                          const VkBufferMemoryBarrier2 *bufferMemoryBarriers2,
+                          uint32_t imageMemoryBarrierCount,
+                          const VkImageMemoryBarrier2 *imageMemoryBarriers2);
+
     void pushConstants(const PipelineLayout &layout,
                        VkShaderStageFlags flag,
                        uint32_t offset,
@@ -194,6 +215,10 @@ class VulkanSecondaryCommandBuffer : public priv::CommandBuffer
                        const void *data);
 
     void setEvent(VkEvent event, VkPipelineStageFlags stageMask);
+    void setVertexInput(uint32_t vertexBindingDescriptionCount,
+                        const VkVertexInputBindingDescription2EXT *vertexBindingDescriptions,
+                        uint32_t vertexAttributeDescriptionCount,
+                        const VkVertexInputAttributeDescription2EXT *vertexAttributeDescriptions);
     void resetEvent(VkEvent event, VkPipelineStageFlags stageMask);
     void resetQueryPool(const QueryPool &queryPool, uint32_t firstQuery, uint32_t queryCount);
     void resolveImage(const Image &srcImage,
@@ -216,6 +241,10 @@ class VulkanSecondaryCommandBuffer : public priv::CommandBuffer
     void writeTimestamp(VkPipelineStageFlagBits pipelineStage,
                         const QueryPool &queryPool,
                         uint32_t query);
+
+    void writeTimestamp2(VkPipelineStageFlagBits2 pipelineStage,
+                         const QueryPool &queryPool,
+                         uint32_t query);
 
     // VK_EXT_transform_feedback
     void beginTransformFeedback(uint32_t firstCounterBuffer,
@@ -288,6 +317,15 @@ ANGLE_INLINE void VulkanSecondaryCommandBuffer::writeTimestamp(
 {
     onRecordCommand();
     CommandBuffer::writeTimestamp(pipelineStage, queryPool, query);
+}
+
+ANGLE_INLINE void VulkanSecondaryCommandBuffer::writeTimestamp2(
+    VkPipelineStageFlagBits2 pipelineStage,
+    const QueryPool &queryPool,
+    uint32_t query)
+{
+    onRecordCommand();
+    CommandBuffer::writeTimestamp2(pipelineStage, queryPool, query);
 }
 
 ANGLE_INLINE void VulkanSecondaryCommandBuffer::clearColorImage(
@@ -517,12 +555,34 @@ ANGLE_INLINE void VulkanSecondaryCommandBuffer::pipelineBarrier(
                                    imageMemoryBarrierCount, imageMemoryBarriers);
 }
 
+ANGLE_INLINE void VulkanSecondaryCommandBuffer::pipelineBarrier2(
+    VkDependencyFlags dependencyFlags,
+    uint32_t memoryBarrierCount,
+    const VkMemoryBarrier2 *memoryBarriers2,
+    uint32_t bufferMemoryBarrierCount,
+    const VkBufferMemoryBarrier2 *bufferMemoryBarriers2,
+    uint32_t imageMemoryBarrierCount,
+    const VkImageMemoryBarrier2 *imageMemoryBarriers2)
+{
+    onRecordCommand();
+    CommandBuffer::pipelineBarrier2(dependencyFlags, memoryBarrierCount, memoryBarriers2,
+                                    bufferMemoryBarrierCount, bufferMemoryBarriers2,
+                                    imageMemoryBarrierCount, imageMemoryBarriers2);
+}
+
 ANGLE_INLINE void VulkanSecondaryCommandBuffer::memoryBarrier(VkPipelineStageFlags srcStageMask,
                                                               VkPipelineStageFlags dstStageMask,
-                                                              const VkMemoryBarrier *memoryBarrier)
+                                                              const VkMemoryBarrier &memoryBarrier)
 {
     onRecordCommand();
     CommandBuffer::memoryBarrier(srcStageMask, dstStageMask, memoryBarrier);
+}
+
+ANGLE_INLINE void VulkanSecondaryCommandBuffer::memoryBarrier2(
+    const VkMemoryBarrier2 &memoryBarrier2)
+{
+    onRecordCommand();
+    CommandBuffer::memoryBarrier2(memoryBarrier2);
 }
 
 ANGLE_INLINE void VulkanSecondaryCommandBuffer::bufferBarrier(
@@ -535,6 +595,13 @@ ANGLE_INLINE void VulkanSecondaryCommandBuffer::bufferBarrier(
                                    bufferMemoryBarrier, 0, nullptr);
 }
 
+ANGLE_INLINE void VulkanSecondaryCommandBuffer::bufferBarrier2(
+    const VkBufferMemoryBarrier2 *bufferMemoryBarrier2)
+{
+    onRecordCommand();
+    CommandBuffer::pipelineBarrier2(0, 0, nullptr, 1, bufferMemoryBarrier2, 0, nullptr);
+}
+
 ANGLE_INLINE void VulkanSecondaryCommandBuffer::imageBarrier(
     VkPipelineStageFlags srcStageMask,
     VkPipelineStageFlags dstStageMask,
@@ -542,6 +609,24 @@ ANGLE_INLINE void VulkanSecondaryCommandBuffer::imageBarrier(
 {
     onRecordCommand();
     CommandBuffer::imageBarrier(srcStageMask, dstStageMask, imageMemoryBarrier);
+}
+
+ANGLE_INLINE void VulkanSecondaryCommandBuffer::imageBarrier2(
+    const VkImageMemoryBarrier2 &imageMemoryBarrier2)
+{
+    onRecordCommand();
+    CommandBuffer::imageBarrier2(imageMemoryBarrier2);
+}
+
+ANGLE_INLINE void VulkanSecondaryCommandBuffer::imageWaitEvent(
+    const VkEvent &event,
+    VkPipelineStageFlags srcStageMask,
+    VkPipelineStageFlags dstStageMask,
+    const VkImageMemoryBarrier &imageMemoryBarrier)
+{
+    onRecordCommand();
+    CommandBuffer::waitEvents(1, &event, srcStageMask, dstStageMask, 0, nullptr, 0, nullptr, 1,
+                              &imageMemoryBarrier);
 }
 
 ANGLE_INLINE void VulkanSecondaryCommandBuffer::nextSubpass(VkSubpassContents subpassContents)
@@ -565,6 +650,17 @@ ANGLE_INLINE void VulkanSecondaryCommandBuffer::setEvent(VkEvent event,
 {
     onRecordCommand();
     CommandBuffer::setEvent(event, stageMask);
+}
+
+ANGLE_INLINE void VulkanSecondaryCommandBuffer::setVertexInput(
+    uint32_t vertexBindingDescriptionCount,
+    const VkVertexInputBindingDescription2EXT *vertexBindingDescriptions,
+    uint32_t vertexAttributeDescriptionCount,
+    const VkVertexInputAttributeDescription2EXT *vertexAttributeDescriptions)
+{
+    onRecordCommand();
+    CommandBuffer::setVertexInput(vertexBindingDescriptionCount, vertexBindingDescriptions,
+                                  vertexAttributeDescriptionCount, vertexAttributeDescriptions);
 }
 
 ANGLE_INLINE void VulkanSecondaryCommandBuffer::resetEvent(VkEvent event,

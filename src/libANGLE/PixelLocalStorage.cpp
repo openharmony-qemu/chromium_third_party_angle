@@ -14,8 +14,9 @@
 #include "common/FixedVector.h"
 #include "libANGLE/Context.h"
 #include "libANGLE/Framebuffer.h"
-#include "libANGLE/Texture.h"
+#include "libANGLE/context_private_call_autogen.h"
 #include "libANGLE/renderer/ContextImpl.h"
+#include "libANGLE/renderer/TextureImpl.h"
 
 namespace gl
 {
@@ -65,7 +66,8 @@ class ScopedDisableScissor : angle::NonCopyable
     {
         if (mScissorTestEnabled)
         {
-            mContext->disable(GL_SCISSOR_TEST);
+            ContextPrivateDisable(mContext->getMutablePrivateState(),
+                                  mContext->getMutablePrivateStateCache(), GL_SCISSOR_TEST);
         }
     }
 
@@ -73,7 +75,8 @@ class ScopedDisableScissor : angle::NonCopyable
     {
         if (mScissorTestEnabled)
         {
-            mContext->enable(GL_SCISSOR_TEST);
+            ContextPrivateEnable(mContext->getMutablePrivateState(),
+                                 mContext->getMutablePrivateStateCache(), GL_SCISSOR_TEST);
         }
     }
 
@@ -93,7 +96,9 @@ class ScopedEnableColorMask : angle::NonCopyable
         {
             std::array<bool, 4> &mask = mSavedColorMasks[0];
             state.getBlendStateExt().getColorMaskIndexed(0, &mask[0], &mask[1], &mask[2], &mask[3]);
-            mContext->colorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+            ContextPrivateColorMask(mContext->getMutablePrivateState(),
+                                    mContext->getMutablePrivateStateCache(), GL_TRUE, GL_TRUE,
+                                    GL_TRUE, GL_TRUE);
         }
         else
         {
@@ -102,7 +107,9 @@ class ScopedEnableColorMask : angle::NonCopyable
                 std::array<bool, 4> &mask = mSavedColorMasks[i];
                 state.getBlendStateExt().getColorMaskIndexed(i, &mask[0], &mask[1], &mask[2],
                                                              &mask[3]);
-                mContext->colorMaski(i, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                ContextPrivateColorMaski(mContext->getMutablePrivateState(),
+                                         mContext->getMutablePrivateStateCache(), i, GL_TRUE,
+                                         GL_TRUE, GL_TRUE, GL_TRUE);
             }
         }
     }
@@ -112,14 +119,18 @@ class ScopedEnableColorMask : angle::NonCopyable
         if (!mContext->getExtensions().drawBuffersIndexedAny())
         {
             const std::array<bool, 4> &mask = mSavedColorMasks[0];
-            mContext->colorMask(mask[0], mask[1], mask[2], mask[3]);
+            ContextPrivateColorMask(mContext->getMutablePrivateState(),
+                                    mContext->getMutablePrivateStateCache(), mask[0], mask[1],
+                                    mask[2], mask[3]);
         }
         else
         {
             for (int i = 0; i < mNumDrawBuffers; ++i)
             {
                 const std::array<bool, 4> &mask = mSavedColorMasks[i];
-                mContext->colorMaski(i, mask[0], mask[1], mask[2], mask[3]);
+                ContextPrivateColorMaski(mContext->getMutablePrivateState(),
+                                         mContext->getMutablePrivateStateCache(), i, mask[0],
+                                         mask[1], mask[2], mask[3]);
             }
         }
     }
@@ -131,94 +142,109 @@ class ScopedEnableColorMask : angle::NonCopyable
 };
 }  // namespace
 
+PixelLocalStoragePlane::PixelLocalStoragePlane() : mTextureObserver(this, 0) {}
+
 PixelLocalStoragePlane::~PixelLocalStoragePlane()
 {
     // Call deinitialize or onContextObjectsLost first!
-    ASSERT(mMemorylessTextureID.value == 0);
-    // Call deinitialize or onFramebufferDestroyed first!
-    ASSERT(mTextureRef == nullptr);
+    // (PixelLocalStorage::deleteContextObjects calls deinitialize.)
+    ASSERT(isDeinitialized());
+    // We can always expect to receive angle::SubjectMessage::TextureIDDeleted, even if our texture
+    // isn't deleted until context teardown. For this reason, we don't need to hold a ref on the
+    // underlying texture that is the subject of mTextureObserver.
+    ASSERT(mTextureObserver.getSubject() == nullptr);
 }
 
 void PixelLocalStoragePlane::onContextObjectsLost()
 {
     // We normally call deleteTexture on the memoryless plane texture ID, since we own it, but in
     // this case we can let it go.
-    mMemorylessTextureID = TextureID();
-}
-
-void PixelLocalStoragePlane::onFramebufferDestroyed(const Context *context)
-{
-    if (mTextureRef != nullptr)
-    {
-        mTextureRef->release(context);
-        mTextureRef = nullptr;
-    }
+    mTextureID = TextureID();
+    deinitialize(nullptr);
 }
 
 void PixelLocalStoragePlane::deinitialize(Context *context)
 {
-    mInternalformat = GL_NONE;
-    mMemoryless     = false;
-    if (mMemorylessTextureID.value != 0)
+    if (mMemoryless && mTextureID.value != 0)
     {
-        // The app could have technically deleted mMemorylessTextureID by guessing its value and
-        // calling glDeleteTextures, but it seems unnecessary to worry about that here. (Worst case
-        // we delete one of their textures.) This also isn't a problem in WebGL.
-        context->deleteTexture(mMemorylessTextureID);
-        mMemorylessTextureID = TextureID();
+        ASSERT(context);
+        context->deleteTexture(mTextureID);  // Will deinitialize the texture via observers.
     }
-    if (mTextureRef != nullptr)
+    else
     {
-        mTextureRef->release(context);
-        mTextureRef = nullptr;
+        mInternalformat = GL_NONE;
+        mMemoryless     = false;
+        mTextureID      = TextureID();
+        mTextureObserver.reset();
     }
+    ASSERT(isDeinitialized());
 }
 
 void PixelLocalStoragePlane::setMemoryless(Context *context, GLenum internalformat)
 {
     deinitialize(context);
-    mInternalformat    = internalformat;
-    mMemoryless        = true;
-    mTextureImageIndex = ImageIndex::MakeFromType(TextureType::_2D, 0, 0);
+    mInternalformat = internalformat;
+    mMemoryless     = true;
     // The backing texture will get allocated lazily, once we know what dimensions it should be.
-    ASSERT(mMemorylessTextureID.value == 0);
-    ASSERT(mTextureRef == nullptr);
+    ASSERT(mTextureID.value == 0);
+    mTextureImageIndex = ImageIndex::MakeFromType(TextureType::_2D, 0, 0);
 }
 
 void PixelLocalStoragePlane::setTextureBacked(Context *context, Texture *tex, int level, int layer)
 {
     deinitialize(context);
     ASSERT(tex->getImmutableFormat());
-    mInternalformat    = tex->getState().getBaseLevelDesc().format.info->internalFormat;
-    mMemoryless        = false;
+    mInternalformat = tex->getState().getBaseLevelDesc().format.info->internalFormat;
+    mMemoryless     = false;
+    mTextureID      = tex->id();
+    mTextureObserver.bind(tex);
     mTextureImageIndex = ImageIndex::MakeFromType(tex->getType(), level, layer);
-    mTextureRef        = tex;
-    mTextureRef->addRef();
 }
 
-bool PixelLocalStoragePlane::isTextureIDDeleted(const Context *context) const
+void PixelLocalStoragePlane::onSubjectStateChange(angle::SubjectIndex index,
+                                                  angle::SubjectMessage message)
 {
-    // We can tell if the texture has been deleted by looking up mTextureRef's ID on the Context. If
-    // they don't match, it's been deleted.
-    ASSERT(!isDeinitialized() || mTextureRef == nullptr);
-    return mTextureRef != nullptr && context->getTexture(mTextureRef->id()) != mTextureRef;
+    ASSERT(index == 0);
+    switch (message)
+    {
+        case angle::SubjectMessage::TextureIDDeleted:
+            // When a texture object is deleted, any pixel local storage plane to which it is bound
+            // is automatically deinitialized.
+            ASSERT(mTextureID.value != 0);
+            mTextureID = TextureID();
+            deinitialize(nullptr);
+            break;
+        default:
+            break;
+    }
 }
 
-GLint PixelLocalStoragePlane::getIntegeri(const Context *context, GLenum target) const
+bool PixelLocalStoragePlane::isDeinitialized() const
+{
+    if (mInternalformat == GL_NONE)
+    {
+        ASSERT(!isMemoryless());
+        ASSERT(mTextureID.value == 0);
+        ASSERT(mTextureObserver.getSubject() == nullptr);
+        return true;
+    }
+    return false;
+}
+
+GLint PixelLocalStoragePlane::getIntegeri(GLenum target) const
 {
     if (!isDeinitialized())
     {
-        bool memoryless = isMemoryless() || isTextureIDDeleted(context);
         switch (target)
         {
             case GL_PIXEL_LOCAL_FORMAT_ANGLE:
                 return mInternalformat;
             case GL_PIXEL_LOCAL_TEXTURE_NAME_ANGLE:
-                return memoryless ? 0 : mTextureRef->id().value;
+                return isMemoryless() ? 0 : mTextureID.value;
             case GL_PIXEL_LOCAL_TEXTURE_LEVEL_ANGLE:
-                return memoryless ? 0 : mTextureImageIndex.getLevelIndex();
+                return isMemoryless() ? 0 : mTextureImageIndex.getLevelIndex();
             case GL_PIXEL_LOCAL_TEXTURE_LAYER_ANGLE:
-                return memoryless ? 0 : mTextureImageIndex.getLayerIndex();
+                return isMemoryless() ? 0 : mTextureImageIndex.getLayerIndex();
         }
     }
     // Since GL_NONE == 0, PLS queries all return 0 when the plane is deinitialized.
@@ -228,13 +254,14 @@ GLint PixelLocalStoragePlane::getIntegeri(const Context *context, GLenum target)
 
 bool PixelLocalStoragePlane::getTextureImageExtents(const Context *context, Extents *extents) const
 {
-    if (isDeinitialized() || isMemoryless() || isTextureIDDeleted(context))
+    ASSERT(!isDeinitialized());
+    if (isMemoryless())
     {
         return false;
     }
-    ASSERT(mTextureRef != nullptr);
-    *extents =
-        mTextureRef->getExtents(mTextureImageIndex.getTarget(), mTextureImageIndex.getLevelIndex());
+    Texture *tex = context->getTexture(mTextureID);
+    ASSERT(tex != nullptr);
+    *extents = tex->getExtents(mTextureImageIndex.getTarget(), mTextureImageIndex.getLevelIndex());
     extents->depth = 0;
     return true;
 }
@@ -242,10 +269,9 @@ bool PixelLocalStoragePlane::getTextureImageExtents(const Context *context, Exte
 void PixelLocalStoragePlane::ensureBackingTextureIfMemoryless(Context *context, Extents plsExtents)
 {
     ASSERT(!isDeinitialized());
-    ASSERT(!isTextureIDDeleted(context));  // Convert to memoryless first in this case.
     if (!isMemoryless())
     {
-        ASSERT(mTextureRef != nullptr);
+        ASSERT(mTextureID.value != 0);
         return;
     }
 
@@ -253,50 +279,54 @@ void PixelLocalStoragePlane::ensureBackingTextureIfMemoryless(Context *context, 
     ASSERT(mTextureImageIndex.getType() == TextureType::_2D);
     ASSERT(mTextureImageIndex.getLevelIndex() == 0);
     ASSERT(mTextureImageIndex.getLayerIndex() == 0);
-    const bool hasMemorylessTextureId = mMemorylessTextureID.value != 0;
-    const bool hasTextureRef          = mTextureRef != nullptr;
-    ASSERT(hasMemorylessTextureId == hasTextureRef);
+
+    Texture *tex = nullptr;
+    if (mTextureID.value != 0)
+    {
+        tex = context->getTexture(mTextureID);
+        ASSERT(tex != nullptr);
+    }
 
     // Do we need to allocate a new backing texture?
-    if (mTextureRef == nullptr ||
-        static_cast<GLsizei>(mTextureRef->getWidth(TextureTarget::_2D, 0)) != plsExtents.width ||
-        static_cast<GLsizei>(mTextureRef->getHeight(TextureTarget::_2D, 0)) != plsExtents.height)
+    if (tex == nullptr ||
+        static_cast<GLsizei>(tex->getWidth(TextureTarget::_2D, 0)) != plsExtents.width ||
+        static_cast<GLsizei>(tex->getHeight(TextureTarget::_2D, 0)) != plsExtents.height)
     {
-        // Call setMemoryless() to release our current data.
+        // Call setMemoryless() to release our current data, if any.
         setMemoryless(context, mInternalformat);
-        ASSERT(mTextureRef == nullptr);
-        ASSERT(mMemorylessTextureID.value == 0);
+        ASSERT(mTextureID.value == 0);
 
         // Create a new texture that backs the memoryless plane.
-        mMemorylessTextureID = context->createTexture();
+        mTextureID = context->createTexture();
         {
-            ScopedBindTexture2D scopedBindTexture2D(context, mMemorylessTextureID);
-            context->bindTexture(TextureType::_2D, mMemorylessTextureID);
+            ScopedBindTexture2D scopedBindTexture2D(context, mTextureID);
+            context->bindTexture(TextureType::_2D, mTextureID);
             context->texStorage2D(TextureType::_2D, 1, mInternalformat, plsExtents.width,
                                   plsExtents.height);
         }
 
-        mTextureRef = context->getTexture(mMemorylessTextureID);
-        ASSERT(mTextureRef != nullptr);
-        ASSERT(mTextureRef->id() == mMemorylessTextureID);
-        mTextureRef->addRef();
+        tex = context->getTexture(mTextureID);
+        ASSERT(tex != nullptr);
+        ASSERT(tex->id() == mTextureID);
+        mTextureObserver.bind(tex);
     }
 }
 
 void PixelLocalStoragePlane::attachToDrawFramebuffer(Context *context, GLenum colorAttachment) const
 {
     ASSERT(!isDeinitialized());
-    ASSERT(mTextureRef != nullptr);      // Call ensureBackingTextureIfMemoryless() first!
+    // Call ensureBackingTextureIfMemoryless() first!
+    ASSERT(mTextureID.value != 0 && context->getTexture(mTextureID) != nullptr);
     if (mTextureImageIndex.usesTex3D())  // GL_TEXTURE_3D or GL_TEXTURE_2D_ARRAY.
     {
-        context->framebufferTextureLayer(GL_DRAW_FRAMEBUFFER, colorAttachment, mTextureRef->id(),
+        context->framebufferTextureLayer(GL_DRAW_FRAMEBUFFER, colorAttachment, mTextureID,
                                          mTextureImageIndex.getLevelIndex(),
                                          mTextureImageIndex.getLayerIndex());
     }
     else
     {
         context->framebufferTexture2D(GL_DRAW_FRAMEBUFFER, colorAttachment,
-                                      mTextureImageIndex.getTarget(), mTextureRef->id(),
+                                      mTextureImageIndex.getTarget(), mTextureID,
                                       mTextureImageIndex.getLevelIndex());
     }
 }
@@ -391,7 +421,8 @@ void PixelLocalStoragePlane::issueClearCommand(ClearCommands *clearCommands,
 void PixelLocalStoragePlane::bindToImage(Context *context, GLuint unit, bool needsR32Packing) const
 {
     ASSERT(!isDeinitialized());
-    ASSERT(mTextureRef != nullptr);  // Call ensureBackingTextureIfMemoryless() first!
+    // Call ensureBackingTextureIfMemoryless() first!
+    ASSERT(mTextureID.value != 0 && context->getTexture(mTextureID) != nullptr);
     GLenum imageBindingFormat = mInternalformat;
     if (needsR32Packing)
     {
@@ -407,7 +438,7 @@ void PixelLocalStoragePlane::bindToImage(Context *context, GLuint unit, bool nee
                 break;
         }
     }
-    context->bindImageTexture(unit, mTextureRef->id(), mTextureImageIndex.getLevelIndex(), GL_FALSE,
+    context->bindImageTexture(unit, mTextureID, mTextureImageIndex.getLevelIndex(), GL_FALSE,
                               mTextureImageIndex.getLayerIndex(), GL_READ_WRITE,
                               imageBindingFormat);
 }
@@ -416,19 +447,38 @@ const Texture *PixelLocalStoragePlane::getBackingTexture(const Context *context)
 {
     ASSERT(!isDeinitialized());
     ASSERT(!isMemoryless());
-    ASSERT(!isTextureIDDeleted(context));  // In this case we are also memoryless.
-    return mTextureRef;
+    const Texture *tex = context->getTexture(mTextureID);
+    ASSERT(tex != nullptr);
+    return tex;
 }
 
-PixelLocalStorage::PixelLocalStorage(const ShPixelLocalStorageOptions &plsOptions)
-    : mPLSOptions(plsOptions)
+PixelLocalStorage::PixelLocalStorage(const ShPixelLocalStorageOptions &plsOptions, const Caps &caps)
+    : mPLSOptions(plsOptions), mPlanes(caps.maxPixelLocalStoragePlanes)
 {}
 
 PixelLocalStorage::~PixelLocalStorage() {}
 
+namespace
+{
+bool AllPlanesDeinitialized(
+    const angle::FixedVector<PixelLocalStoragePlane, IMPLEMENTATION_MAX_PIXEL_LOCAL_STORAGE_PLANES>
+        &planes,
+    const Context *context)
+{
+    for (const PixelLocalStoragePlane &plane : planes)
+    {
+        if (!plane.isDeinitialized())
+        {
+            return false;
+        }
+    }
+    return true;
+}
+}  // namespace
+
 void PixelLocalStorage::onFramebufferDestroyed(const Context *context)
 {
-    if (context->getRefCount() == 0)
+    if (!context->isReferenced())
     {
         // If the Context's refcount is zero, we know it's in a teardown state and we can just let
         // go of our GL objects -- they get cleaned up as part of context teardown. Otherwise, the
@@ -439,10 +489,8 @@ void PixelLocalStorage::onFramebufferDestroyed(const Context *context)
             plane.onContextObjectsLost();
         }
     }
-    for (PixelLocalStoragePlane &plane : mPlanes)
-    {
-        plane.onFramebufferDestroyed(context);
-    }
+    // Call deleteContextObjects() when a Framebuffer is destroyed outside of context teardown!
+    ASSERT(AllPlanesDeinitialized(mPlanes, context));
 }
 
 void PixelLocalStorage::deleteContextObjects(Context *context)
@@ -456,24 +504,16 @@ void PixelLocalStorage::deleteContextObjects(Context *context)
 
 void PixelLocalStorage::begin(Context *context, GLsizei n, const GLenum loadops[])
 {
-    // Convert planes whose backing texture has been deleted to memoryless, and find the pixel local
-    // storage rendering dimensions.
+    // Find the pixel local storage rendering dimensions.
     Extents plsExtents;
     bool hasPLSExtents = false;
     for (GLsizei i = 0; i < n; ++i)
     {
         PixelLocalStoragePlane &plane = mPlanes[i];
-        if (plane.isTextureIDDeleted(context))
-        {
-            // [ANGLE_shader_pixel_local_storage] Section 4.4.2.X "Configuring Pixel Local Storage
-            // on a Framebuffer": When a texture object is deleted, any pixel local storage plane to
-            // which it was bound is automatically converted to a memoryless plane of matching
-            // internalformat.
-            plane.setMemoryless(context, plane.getInternalformat());
-        }
-        if (!hasPLSExtents && plane.getTextureImageExtents(context, &plsExtents))
+        if (plane.getTextureImageExtents(context, &plsExtents))
         {
             hasPLSExtents = true;
+            break;
         }
     }
     if (!hasPLSExtents)
@@ -523,9 +563,7 @@ void PixelLocalStorage::interrupt(Context *context)
                mActivePlanesAtInterrupt <= IMPLEMENTATION_MAX_PIXEL_LOCAL_STORAGE_PLANES);
         if (mActivePlanesAtInterrupt >= 1)
         {
-            angle::FixedVector<GLenum, IMPLEMENTATION_MAX_PIXEL_LOCAL_STORAGE_PLANES> storeops(
-                mActivePlanesAtInterrupt, GL_STORE_OP_STORE_ANGLE);
-            context->endPixelLocalStorage(mActivePlanesAtInterrupt, storeops.data());
+            context->endPixelLocalStorageWithStoreOpsStore();
         }
     }
     ++mInterruptCount;
@@ -556,8 +594,8 @@ namespace
 class PixelLocalStorageImageLoadStore : public PixelLocalStorage
 {
   public:
-    PixelLocalStorageImageLoadStore(const ShPixelLocalStorageOptions &plsOptions)
-        : PixelLocalStorage(plsOptions)
+    PixelLocalStorageImageLoadStore(const ShPixelLocalStorageOptions &plsOptions, const Caps &caps)
+        : PixelLocalStorage(plsOptions, caps)
     {
         ASSERT(mPLSOptions.type == ShPixelLocalStorageType::ImageLoadStore);
     }
@@ -597,24 +635,41 @@ class PixelLocalStorageImageLoadStore : public PixelLocalStorage
         Framebuffer *framebuffer = state.getDrawFramebuffer();
         if (mPLSOptions.renderPassNeedsAMDRasterOrderGroupsWorkaround)
         {
-            // anglebug.com/7792 -- Metal [[raster_order_group()]] does not work for read_write
+            // anglebug.com/42266263 -- Metal [[raster_order_group()]] does not work for read_write
             // textures on AMD when the render pass doesn't have a color attachment on slot 0. To
             // work around this we attach one of the PLS textures to GL_COLOR_ATTACHMENT0, if there
             // isn't one already.
-            mHadColorAttachment0 = framebuffer->getColorAttachment(0) != nullptr;
+            // It's important to keep the attachment enabled so that it's set in the corresponding
+            // MTLRenderPassAttachmentDescriptor. As the fragment shader does not have any output
+            // bound to this attachment, set the color write mask to all-disabled.
+            // Note that the PLS extension disallows simultaneously binding a single texture image
+            // to a PLS plane and attaching it to the draw framebuffer. Enabling this workaround on
+            // any other platform would yield incorrect results.
+            // This flag is set to true iff the framebuffer has an attachment 0 and it is enabled.
+            mHadColorAttachment0 = framebuffer->getDrawBufferMask().test(0);
             if (!mHadColorAttachment0)
             {
+                // Indexed color masks are always available on Metal.
+                ASSERT(context->getExtensions().drawBuffersIndexedAny());
+                // Remember the current draw buffer 0 color mask and set it to all-disabled.
+                state.getBlendStateExt().getColorMaskIndexed(
+                    0, &mSavedColorMask[0], &mSavedColorMask[1], &mSavedColorMask[2],
+                    &mSavedColorMask[3]);
+                ContextPrivateColorMaski(context->getMutablePrivateState(),
+                                         context->getMutablePrivateStateCache(), 0, false, false,
+                                         false, false);
+
                 // Remember the current draw buffer state so we can restore it during onEnd().
                 const DrawBuffersVector<GLenum> &appDrawBuffers =
                     framebuffer->getDrawBufferStates();
                 mSavedDrawBuffers.resize(appDrawBuffers.size());
                 std::copy(appDrawBuffers.begin(), appDrawBuffers.end(), mSavedDrawBuffers.begin());
 
-                // Turn off draw buffer 0.
-                if (mSavedDrawBuffers[0] != GL_NONE)
+                // Turn on draw buffer 0.
+                if (mSavedDrawBuffers[0] != GL_COLOR_ATTACHMENT0)
                 {
                     GLenum drawBuffer0   = mSavedDrawBuffers[0];
-                    mSavedDrawBuffers[0] = GL_NONE;
+                    mSavedDrawBuffers[0] = GL_COLOR_ATTACHMENT0;
                     context->drawBuffers(static_cast<GLsizei>(mSavedDrawBuffers.size()),
                                          mSavedDrawBuffers.data());
                     mSavedDrawBuffers[0] = drawBuffer0;
@@ -666,7 +721,6 @@ class PixelLocalStorageImageLoadStore : public PixelLocalStorage
             {
                 GLenum loadop                       = loadops[i];
                 const PixelLocalStoragePlane &plane = getPlane(i);
-                ASSERT(!plane.isDeinitialized());
                 plane.bindToImage(context, i, !mPLSOptions.supportsNativeRGBA8ImageFormats);
                 if (loadop == GL_LOAD_OP_ZERO_ANGLE || loadop == GL_LOAD_OP_CLEAR_ANGLE)
                 {
@@ -736,12 +790,17 @@ class PixelLocalStorageImageLoadStore : public PixelLocalStorage
                                               TextureTarget::_2D, TextureID(), 0);
 
                 // Restore the draw buffer state from before PLS was enabled.
-                if (mSavedDrawBuffers[0] != GL_NONE)
+                if (mSavedDrawBuffers[0] != GL_COLOR_ATTACHMENT0)
                 {
                     context->drawBuffers(static_cast<GLsizei>(mSavedDrawBuffers.size()),
                                          mSavedDrawBuffers.data());
                 }
                 mSavedDrawBuffers.clear();
+
+                // Restore the draw buffer 0 color mask.
+                ContextPrivateColorMaski(
+                    context->getMutablePrivateState(), context->getMutablePrivateStateCache(), 0,
+                    mSavedColorMask[0], mSavedColorMask[1], mSavedColorMask[2], mSavedColorMask[3]);
             }
         }
         else
@@ -771,6 +830,7 @@ class PixelLocalStorageImageLoadStore : public PixelLocalStorage
     std::vector<ImageUnit> mSavedImageBindings;
     // If mPLSOptions.plsRenderPassNeedsColorAttachmentWorkaround.
     bool mHadColorAttachment0;
+    std::array<bool, 4> mSavedColorMask;
     DrawBuffersVector<GLenum> mSavedDrawBuffers;
     // If !mPLSOptions.plsRenderPassNeedsColorAttachmentWorkaround.
     GLint mSavedFramebufferDefaultWidth;
@@ -781,8 +841,9 @@ class PixelLocalStorageImageLoadStore : public PixelLocalStorage
 class PixelLocalStorageFramebufferFetch : public PixelLocalStorage
 {
   public:
-    PixelLocalStorageFramebufferFetch(const ShPixelLocalStorageOptions &plsOptions)
-        : PixelLocalStorage(plsOptions)
+    PixelLocalStorageFramebufferFetch(const ShPixelLocalStorageOptions &plsOptions,
+                                      const Caps &caps)
+        : PixelLocalStorage(plsOptions, caps)
     {
         ASSERT(mPLSOptions.type == ShPixelLocalStorageType::FramebufferFetch);
     }
@@ -824,14 +885,17 @@ class PixelLocalStorageFramebufferFetch : public PixelLocalStorage
             ASSERT(caps.maxColorAttachmentsWithActivePixelLocalStorage == 0);
             if (state.isBlendEnabled())
             {
-                context->disable(GL_BLEND);
+                ContextPrivateDisable(context->getMutablePrivateState(),
+                                      context->getMutablePrivateStateCache(), GL_BLEND);
                 mBlendsToReEnable.set(0);
             }
             std::array<bool, 4> &mask = mSavedColorMasks[0];
             state.getBlendStateExt().getColorMaskIndexed(0, &mask[0], &mask[1], &mask[2], &mask[3]);
             if (!(mask[0] && mask[1] && mask[2] && mask[3]))
             {
-                context->colorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                ContextPrivateColorMask(context->getMutablePrivateState(),
+                                        context->getMutablePrivateStateCache(), GL_TRUE, GL_TRUE,
+                                        GL_TRUE, GL_TRUE);
                 mColorMasksToRestore.set(0);
             }
         }
@@ -855,7 +919,9 @@ class PixelLocalStorageFramebufferFetch : public PixelLocalStorage
                 // Ensure blend and color mask are disabled for this draw buffer.
                 if (state.isBlendEnabledIndexed(drawBufferIdx))
                 {
-                    context->disablei(GL_BLEND, drawBufferIdx);
+                    ContextPrivateDisablei(context->getMutablePrivateState(),
+                                           context->getMutablePrivateStateCache(), GL_BLEND,
+                                           drawBufferIdx);
                     mBlendsToReEnable.set(drawBufferIdx);
                 }
                 std::array<bool, 4> &mask = mSavedColorMasks[drawBufferIdx];
@@ -863,7 +929,9 @@ class PixelLocalStorageFramebufferFetch : public PixelLocalStorage
                                                              &mask[2], &mask[3]);
                 if (!(mask[0] && mask[1] && mask[2] && mask[3]))
                 {
-                    context->colorMaski(drawBufferIdx, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                    ContextPrivateColorMaski(context->getMutablePrivateState(),
+                                             context->getMutablePrivateStateCache(), drawBufferIdx,
+                                             GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
                     mColorMasksToRestore.set(drawBufferIdx);
                 }
             }
@@ -932,12 +1000,15 @@ class PixelLocalStorageFramebufferFetch : public PixelLocalStorage
             // change while pixel local storage was active.
             if (mBlendsToReEnable[0])
             {
-                context->enable(GL_BLEND);
+                ContextPrivateEnable(context->getMutablePrivateState(),
+                                     context->getMutablePrivateStateCache(), GL_BLEND);
             }
             if (mColorMasksToRestore[0])
             {
                 const std::array<bool, 4> &mask = mSavedColorMasks[0];
-                context->colorMask(mask[0], mask[1], mask[2], mask[3]);
+                ContextPrivateColorMask(context->getMutablePrivateState(),
+                                        context->getMutablePrivateStateCache(), mask[0], mask[1],
+                                        mask[2], mask[3]);
             }
         }
 
@@ -957,12 +1028,16 @@ class PixelLocalStorageFramebufferFetch : public PixelLocalStorage
                 // these did not change while pixel local storage was active.
                 if (mBlendsToReEnable[drawBufferIdx])
                 {
-                    context->enablei(GL_BLEND, drawBufferIdx);
+                    ContextPrivateEnablei(context->getMutablePrivateState(),
+                                          context->getMutablePrivateStateCache(), GL_BLEND,
+                                          drawBufferIdx);
                 }
                 if (mColorMasksToRestore[drawBufferIdx])
                 {
                     const std::array<bool, 4> &mask = mSavedColorMasks[drawBufferIdx];
-                    context->colorMaski(drawBufferIdx, mask[0], mask[1], mask[2], mask[3]);
+                    ContextPrivateColorMaski(context->getMutablePrivateState(),
+                                             context->getMutablePrivateStateCache(), drawBufferIdx,
+                                             mask[0], mask[1], mask[2], mask[3]);
                 }
             }
         }
@@ -990,89 +1065,19 @@ class PixelLocalStorageFramebufferFetch : public PixelLocalStorage
     DrawBuffersArray<std::array<bool, 4>> mSavedColorMasks;
 };
 
-// Implements ANGLE_shader_pixel_local_storage directly via EXT_shader_pixel_local_storage.
-class PixelLocalStorageEXT : public PixelLocalStorage
-{
-  public:
-    PixelLocalStorageEXT(const ShPixelLocalStorageOptions &plsOptions)
-        : PixelLocalStorage(plsOptions)
-    {
-        ASSERT(mPLSOptions.type == ShPixelLocalStorageType::PixelLocalStorageEXT);
-    }
-
-  private:
-    void onContextObjectsLost() override {}
-
-    void onDeleteContextObjects(Context *) override {}
-
-    void onBegin(Context *context, GLsizei n, const GLenum loadops[], Extents plsExtents) override
-    {
-        const State &state       = context->getState();
-        Framebuffer *framebuffer = state.getDrawFramebuffer();
-
-        // Remember the current draw buffer state so we can restore it during onEnd().
-        const DrawBuffersVector<GLenum> &appDrawBuffers = framebuffer->getDrawBufferStates();
-        mSavedDrawBuffers.resize(appDrawBuffers.size());
-        std::copy(appDrawBuffers.begin(), appDrawBuffers.end(), mSavedDrawBuffers.begin());
-
-        // Turn off draw buffers.
-        context->drawBuffers(0, nullptr);
-
-        // Save the default framebuffer width/height so we can restore it during onEnd().
-        mSavedFramebufferDefaultWidth  = framebuffer->getDefaultWidth();
-        mSavedFramebufferDefaultHeight = framebuffer->getDefaultHeight();
-
-        // Specify the framebuffer width/height explicitly since we don't use color attachments in
-        // this mode.
-        context->framebufferParameteri(GL_DRAW_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH,
-                                       plsExtents.width);
-        context->framebufferParameteri(GL_DRAW_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT,
-                                       plsExtents.height);
-
-        context->drawPixelLocalStorageEXTEnable(n, getPlanes(), loadops);
-
-        memcpy(mActiveLoadOps.data(), loadops, sizeof(GLenum) * n);
-    }
-
-    void onEnd(Context *context, const GLenum storeops[]) override
-    {
-        context->drawPixelLocalStorageEXTDisable(getPlanes(), storeops);
-
-        // Restore the default framebuffer width/height.
-        context->framebufferParameteri(GL_DRAW_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH,
-                                       mSavedFramebufferDefaultWidth);
-        context->framebufferParameteri(GL_DRAW_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT,
-                                       mSavedFramebufferDefaultHeight);
-
-        // Restore the draw buffer state from before PLS was enabled.
-        context->drawBuffers(static_cast<GLsizei>(mSavedDrawBuffers.size()),
-                             mSavedDrawBuffers.data());
-        mSavedDrawBuffers.clear();
-    }
-
-    void onBarrier(Context *context) override { UNREACHABLE(); }
-
-    // Saved values to restore during onEnd().
-    GLint mSavedFramebufferDefaultWidth;
-    GLint mSavedFramebufferDefaultHeight;
-    DrawBuffersVector<GLenum> mSavedDrawBuffers;
-
-    std::array<GLenum, IMPLEMENTATION_MAX_PIXEL_LOCAL_STORAGE_PLANES> mActiveLoadOps;
-};
 }  // namespace
 
 std::unique_ptr<PixelLocalStorage> PixelLocalStorage::Make(const Context *context)
 {
     const ShPixelLocalStorageOptions &plsOptions =
         context->getImplementation()->getNativePixelLocalStorageOptions();
+    const Caps &caps = context->getState().getCaps();
     switch (plsOptions.type)
     {
         case ShPixelLocalStorageType::ImageLoadStore:
-            return std::make_unique<PixelLocalStorageImageLoadStore>(plsOptions);
+            return std::make_unique<PixelLocalStorageImageLoadStore>(plsOptions, caps);
         case ShPixelLocalStorageType::FramebufferFetch:
-            return std::make_unique<PixelLocalStorageFramebufferFetch>(plsOptions);
-        case ShPixelLocalStorageType::PixelLocalStorageEXT:
-            return std::make_unique<PixelLocalStorageEXT>(plsOptions);
+            return std::make_unique<PixelLocalStorageFramebufferFetch>(plsOptions, caps);
         default:
             UNREACHABLE();
             return nullptr;

@@ -362,7 +362,7 @@ TEST_P(EGLMultiContextTest, RepeatedEglInitAndTerminate)
                           EGL_PLATFORM_ANGLE_DEVICE_TYPE_ANGLE, GetParam().getDeviceType(),
                           EGL_NONE};
 
-    for (int i = 0; i < 100; i++)
+    for (int i = 0; i < 50; i++)  // Note: this test is fairly slow b/303089709
     {
         std::thread thread = std::thread([&]() {
             dpy = eglGetPlatformDisplayEXT(
@@ -724,6 +724,38 @@ TEST_P(EGLMultiContextTest, ThreadBCanSubmitWhileThreadAWaiting)
 
     RunLockStepThreads(getEGLWindow(), threadFuncs.size(), threadFuncs.data());
     ASSERT_NE(currentStep, Step::Abort);
+}
+
+// Test that if there are any placeholder objects when the programs don't use any resources
+// (such as textures), they can correctly be used in non-shared contexts (without causing
+// double-free).
+TEST_P(EGLMultiContextTest, NonSharedContextsReuseDescritorSetLayoutHandle)
+{
+    EGLWindow *window   = getEGLWindow();
+    EGLDisplay dpy      = window->getDisplay();
+    EGLSurface surface  = window->getSurface();
+    EGLContext context1 = window->createContext(EGL_NO_CONTEXT, nullptr);
+    EGLContext context2 = window->createContext(EGL_NO_CONTEXT, nullptr);
+
+    EXPECT_EGL_TRUE(eglMakeCurrent(dpy, surface, surface, context1));
+    EXPECT_EGL_SUCCESS();
+
+    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), essl1_shaders::fs::Green());
+    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
+    ASSERT_GL_NO_ERROR();
+
+    EXPECT_EGL_TRUE(eglMakeCurrent(dpy, surface, surface, context2));
+    EXPECT_EGL_SUCCESS();
+
+    ANGLE_GL_PROGRAM(program1, essl1_shaders::vs::Simple(), essl1_shaders::fs::Red());
+    drawQuad(program1, essl1_shaders::PositionAttrib(), 0.5f);
+    ASSERT_GL_NO_ERROR();
+
+    // Cleanup
+    EXPECT_EGL_TRUE(eglMakeCurrent(dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+    EXPECT_EGL_TRUE(eglDestroyContext(dpy, context1));
+    EXPECT_EGL_TRUE(eglDestroyContext(dpy, context2));
+    EXPECT_EGL_SUCCESS();
 }
 
 }  // anonymous namespace

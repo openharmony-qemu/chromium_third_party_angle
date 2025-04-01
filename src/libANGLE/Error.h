@@ -68,6 +68,8 @@ class [[nodiscard]] Error final
     inline EGLint getID() const;
     inline bool isError() const;
 
+    inline void setCode(EGLint code);
+
     const std::string &getMessage() const;
 
     static inline Error NoError();
@@ -132,7 +134,7 @@ inline Error NoError()
 #define ANGLE_RETURN(X) return X;
 #define ANGLE_TRY(EXPR) ANGLE_TRY_TEMPLATE(EXPR, ANGLE_RETURN)
 
-// TODO(jmadill): Remove after EGL error refactor. http://anglebug.com/3041
+// TODO(jmadill): Remove after EGL error refactor. http://anglebug.com/42261727
 #define ANGLE_SWALLOW_ERR(EXPR)                                       \
     do                                                                \
     {                                                                 \
@@ -159,33 +161,33 @@ inline Error NoError()
 
 namespace angle
 {
-// Result signals if calling code should continue running or early exit. A value of Stop can
-// either indicate an Error or a non-Error early exit condition such as a detected no-op.
-// Incomplete signals special cases that are neither success nor failure but require
-// special attention.
-enum class [[nodiscard]] Result{
+// Result implements an explicit exception handling mechanism.  A value of Stop signifies an
+// exception akin to |throw|.
+// TODO: make incorrect usage of Stop consistent with the above expectation.
+// http://anglebug.com/42266839
+enum class [[nodiscard]] Result
+{
     Continue,
     Stop,
-    Incomplete,
 };
 
-// TODO(jmadill): Remove this when refactor is complete. http://anglebug.com/3041
+// TODO(jmadill): Remove this when refactor is complete. http://anglebug.com/42261727
 egl::Error ResultToEGL(Result result);
 }  // namespace angle
 
-// TODO(jmadill): Remove this when refactor is complete. http://anglebug.com/3041
+// TODO(jmadill): Remove this when refactor is complete. http://anglebug.com/42261727
 inline bool IsError(angle::Result result)
 {
     return result == angle::Result::Stop;
 }
 
-// TODO(jmadill): Remove this when refactor is complete. http://anglebug.com/3041
+// TODO(jmadill): Remove this when refactor is complete. http://anglebug.com/42261727
 inline bool IsError(const egl::Error &err)
 {
     return err.isError();
 }
 
-// TODO(jmadill): Remove this when refactor is complete. http://anglebug.com/3041
+// TODO(jmadill): Remove this when refactor is complete. http://anglebug.com/42261727
 inline bool IsError(bool value)
 {
     return !value;

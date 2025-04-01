@@ -35,6 +35,18 @@ GL_APICALL void GL_APIENTRY glDisableExtensionANGLE (const GLchar *name);
 #define GL_RESOURCE_INITIALIZED_ANGLE 0x969F
 #endif /* GL_ANGLE_robust_resource_initialization */
 
+#ifndef GL_ANGLE_polygon_mode
+#define GL_ANGLE_polygon_mode 1
+#define GL_POLYGON_MODE_ANGLE             0x0B40
+#define GL_POLYGON_OFFSET_LINE_ANGLE      0x2A02
+#define GL_LINE_ANGLE                     0x1B01
+#define GL_FILL_ANGLE                     0x1B02
+typedef void (GL_APIENTRYP PFNGLPOLYGONMODEANGLEPROC) (GLenum face, GLenum mode);
+#ifdef GL_GLEXT_PROTOTYPES
+GL_APICALL void GL_APIENTRY glPolygonModeANGLE (GLenum face, GLenum mode);
+#endif
+#endif /* GL_ANGLE_polygon_mode */
+
 #ifndef GL_ANGLE_provoking_vertex
 #define GL_ANGLE_provoking_vertex 1
 #define GL_FIRST_VERTEX_CONVENTION_ANGLE             0x8E4D
@@ -64,7 +76,13 @@ GL_APICALL void GL_APIENTRY glProvokingVertexANGLE(GLenum provokeMode);
 #ifndef GL_ANGLE_stencil_texturing
 #define GL_ANGLE_stencil_texturing 1
 #define GL_DEPTH_STENCIL_TEXTURE_MODE_ANGLE           0x90EA
+#define GL_STENCIL_INDEX_ANGLE                        0x1901
 #endif /* GL_ANGLE_stencil_texturing */
+
+#ifndef GL_ANGLE_renderability_validation
+#define GL_ANGLE_renderability_validation 1
+#define GL_RENDERABILITY_VALIDATION_ANGLE 0x9EA0
+#endif /* GL_ANGLE_renderability_validation */
 
 #ifndef GL_CHROMIUM_framebuffer_mixed_samples
 #define GL_CHROMIUM_frambuffer_mixed_samples 1
@@ -583,11 +601,6 @@ GL_APICALL void GL_APIENTRY glReleaseTexturesANGLE(GLuint numTexture, const GLui
 #endif
 #endif /* GL_ANGLE_vulkan_image */
 
-#ifndef GL_CHROMIUM_texture_filtering_hint
-#define GL_CHROMIUM_texture_filtering_hint
-#define GL_TEXTURE_FILTERING_HINT_CHROMIUM 0x8AF0
-#endif /* GL_CHROMIUM_texture_filtering_hint */
-
 #ifndef GL_NV_robustness_video_memory
 #define GL_NV_robustness_video_memory
 #define GL_PURGED_CONTEXT_RESET_NV 0x92BB
@@ -717,5 +730,26 @@ typedef void (GL_APIENTRYP PFNGLLOGICOPANGLEPROC) (GLenum);
 GL_APICALL void GL_APIENTRY glLogicOpANGLE (GLenum);
 #endif
 #endif /* GL_ANGLE_logic_op */
+
+#ifndef GL_ANGLE_program_binary_readiness_query
+#define GL_ANGLE_program_binary_readiness_query
+#define GL_PROGRAM_BINARY_READY_ANGLE    0x96BE
+#endif /* GL_ANGLE_program_binary_readiness_query */
+
+#ifndef GL_ANGLE_blob_cache
+#define GL_ANGLE_blob_cache
+typedef GLsizeiptr (GL_APIENTRY *GLGETBLOBPROCANGLE)(const void *key, GLsizeiptr keySize, void *value, GLsizeiptr valueSize, const void *userParam);
+typedef void (GL_APIENTRY *GLSETBLOBPROCANGLE)(const void *key, GLsizeiptr keySize, const void *value, GLsizeiptr valueSize, const void *userParam);
+#define GL_BLOB_CACHE_GET_FUNCTION_ANGLE 0x96BF
+#define GL_BLOB_CACHE_SET_FUNCTION_ANGLE 0x96EF
+#define GL_BLOB_CACHE_USER_PARAM_ANGLE   0x972D
+typedef void (GL_APIENTRYP PFNGLBLOBCACHECALLBACKSANGLEPROC) (GLSETBLOBPROCANGLE, GLGETBLOBPROCANGLE, const void*);
+typedef void (GL_APIENTRYP PFNGLGETPOINTERVANGLEPROC) (GLenum pname, void **params);
+#ifdef GL_GLEXT_PROTOTYPES
+GL_APICALL void GL_APIENTRY glBlobCacheCallbacksANGLE (GLSETBLOBPROCANGLE, GLGETBLOBPROCANGLE, const void*);
+GL_APICALL void GL_APIENTRY glGetPointervANGLE (GLenum pname, void **params);
+#endif
+#endif /* GL_ANGLE_blob_cache */
+
 
 #endif  // INCLUDE_GLES2_GL2EXT_ANGLE_H_

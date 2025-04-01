@@ -457,6 +457,17 @@ void LoadRGB10A2ToRGB10X2(const ImageLoadContext &context,
                           size_t outputRowPitch,
                           size_t outputDepthPitch);
 
+void LoadBGR10A2ToRGB10A2(const ImageLoadContext &context,
+                          size_t width,
+                          size_t height,
+                          size_t depth,
+                          const uint8_t *input,
+                          size_t inputRowPitch,
+                          size_t inputDepthPitch,
+                          uint8_t *output,
+                          size_t outputRowPitch,
+                          size_t outputDepthPitch);
+
 void LoadRGB16FToRGB9E5(const ImageLoadContext &context,
                         size_t width,
                         size_t height,
@@ -1015,6 +1026,72 @@ void LoadETC2SRGB8A1ToBC1(const ImageLoadContext &context,
                           uint8_t *output,
                           size_t outputRowPitch,
                           size_t outputDepthPitch);
+
+void LoadETC2RGBA8ToBC3(const ImageLoadContext &context,
+                        size_t width,
+                        size_t height,
+                        size_t depth,
+                        const uint8_t *input,
+                        size_t inputRowPitch,
+                        size_t inputDepthPitch,
+                        uint8_t *output,
+                        size_t outputRowPitch,
+                        size_t outputDepthPitch);
+
+void LoadETC2SRGBA8ToBC3(const ImageLoadContext &context,
+                         size_t width,
+                         size_t height,
+                         size_t depth,
+                         const uint8_t *input,
+                         size_t inputRowPitch,
+                         size_t inputDepthPitch,
+                         uint8_t *output,
+                         size_t outputRowPitch,
+                         size_t outputDepthPitch);
+
+void LoadEACR11ToBC4(const ImageLoadContext &context,
+                     size_t width,
+                     size_t height,
+                     size_t depth,
+                     const uint8_t *input,
+                     size_t inputRowPitch,
+                     size_t inputDepthPitch,
+                     uint8_t *output,
+                     size_t outputRowPitch,
+                     size_t outputDepthPitch);
+
+void LoadEACR11SToBC4(const ImageLoadContext &context,
+                      size_t width,
+                      size_t height,
+                      size_t depth,
+                      const uint8_t *input,
+                      size_t inputRowPitch,
+                      size_t inputDepthPitch,
+                      uint8_t *output,
+                      size_t outputRowPitch,
+                      size_t outputDepthPitch);
+
+void LoadEACRG11ToBC5(const ImageLoadContext &context,
+                      size_t width,
+                      size_t height,
+                      size_t depth,
+                      const uint8_t *input,
+                      size_t inputRowPitch,
+                      size_t inputDepthPitch,
+                      uint8_t *output,
+                      size_t outputRowPitch,
+                      size_t outputDepthPitch);
+
+void LoadEACRG11SToBC5(const ImageLoadContext &context,
+                       size_t width,
+                       size_t height,
+                       size_t depth,
+                       const uint8_t *input,
+                       size_t inputRowPitch,
+                       size_t inputDepthPitch,
+                       uint8_t *output,
+                       size_t outputRowPitch,
+                       size_t outputDepthPitch);
 
 void LoadETC2RGBA8ToRGBA8(const ImageLoadContext &context,
                           size_t width,

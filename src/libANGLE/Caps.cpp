@@ -282,8 +282,9 @@ static bool DetermineBGRAReadFormatSupport(const TextureCapsMap &textureCaps)
 {
     constexpr GLenum requiredFormats[] = {
         GL_BGRA8_EXT,
-        // TODO(http://anglebug.com/4302): GL_EXT_read_format_bgra specifies 2 more types, which are
-        // currently ignored. The equivalent formats would be: GL_BGRA4_ANGLEX, GL_BGR5_A1_ANGLEX
+        // TODO(http://anglebug.com/42262931): GL_EXT_read_format_bgra specifies 2 more types, which
+        // are currently ignored. The equivalent formats would be: GL_BGRA4_ANGLEX,
+        // GL_BGR5_A1_ANGLEX
     };
 
     return GetFormatSupport(textureCaps, requiredFormats, true, false, true, true, false);
@@ -401,8 +402,7 @@ static bool DetermineRGTextureSupport(const TextureCapsMap &textureCaps,
 
 static bool DetermineTextureFormat2101010Support(const TextureCapsMap &textureCaps)
 {
-    // GL_EXT_texture_type_2_10_10_10_REV specifies both RGBA and RGB support whereas desktop GL
-    // only specifies RGBA support, so check both RGBA and RGB before marking as supported.
+    // GL_EXT_texture_type_2_10_10_10_REV specifies both RGBA and RGB support.
     constexpr GLenum requiredFormats[] = {
         GL_RGB10_A2,
         GL_RGB10_UNORM_ANGLEX,
@@ -651,7 +651,7 @@ static bool DetermineDepthTextureANGLESupport(const TextureCapsMap &textureCaps)
     constexpr GLenum requiredFormats[] = {
         GL_DEPTH_COMPONENT16,
 #if !ANGLE_PLATFORM_IOS_FAMILY
-        // anglebug.com/6082
+        // anglebug.com/42264611
         // TODO(dino): Temporarily Removing the need for GL_DEPTH_COMPONENT32_OES
         // because it is not supported on iOS.
         // TODO(dino): I think this needs to be a runtime check when running an iOS app on Mac.
@@ -669,7 +669,7 @@ static bool DetermineDepthTextureOESSupport(const TextureCapsMap &textureCaps)
     constexpr GLenum requiredFormats[] = {
         GL_DEPTH_COMPONENT16,
 #if !ANGLE_PLATFORM_IOS_FAMILY
-        // anglebug.com/6082
+        // anglebug.com/42264611
         // TODO(dino): Temporarily Removing the need for GL_DEPTH_COMPONENT32_OES
         // because it is not supported on iOS.
         // TODO(dino): I think this needs to be a runtime check when running an iOS app on Mac.
@@ -1168,6 +1168,19 @@ Caps GenerateMinimumCaps(const Version &clientVersion, const Extensions &extensi
         caps.shaderStorageBufferOffsetAlignment = 256;
     }
 
+    if (clientVersion >= Version(3, 2))
+    {
+        // Table 21.40
+        caps.lineWidthGranularity    = 1.0;
+        caps.minMultisampleLineWidth = 1.0;
+        caps.maxMultisampleLineWidth = 1.0;
+    }
+
+    if (extensions.blendFuncExtendedEXT)
+    {
+        caps.maxDualSourceDrawBuffers = 1;
+    }
+
     if (extensions.textureRectangleANGLE)
     {
         caps.maxRectangleTextureSize = 64;
@@ -1201,7 +1214,7 @@ Caps GenerateMinimumCaps(const Version &clientVersion, const Extensions &extensi
         caps.maxCombinedTextureImageUnits = 64;
     }
 
-    if (extensions.tessellationShaderEXT)
+    if (extensions.tessellationShaderAny())
     {
         // Table 20.43 "Implementation Dependent Tessellation Shader Limits"
         caps.maxTessControlInputComponents                          = 64;
@@ -1279,6 +1292,9 @@ std::vector<std::string> DisplayExtensions::getStrings() const
     InsertExtensionString("EGL_EXT_gl_colorspace_display_p3_linear",             glColorspaceDisplayP3Linear,        &extensionStrings);
     InsertExtensionString("EGL_EXT_gl_colorspace_display_p3_passthrough",        glColorspaceDisplayP3Passthrough,   &extensionStrings);
     InsertExtensionString("EGL_ANGLE_colorspace_attribute_passthrough",          eglColorspaceAttributePassthroughANGLE,  &extensionStrings);
+    InsertExtensionString("EGL_EXT_gl_colorspace_bt2020_linear",                 glColorspaceBt2020Linear,           &extensionStrings);
+    InsertExtensionString("EGL_EXT_gl_colorspace_bt2020_pq",                     glColorspaceBt2020Pq,               &extensionStrings);
+    InsertExtensionString("EGL_EXT_gl_colorspace_bt2020_hlg",                    glColorspaceBt2020Hlg,              &extensionStrings);
     InsertExtensionString("EGL_KHR_gl_texture_2D_image",                         glTexture2DImage,                   &extensionStrings);
     InsertExtensionString("EGL_KHR_gl_texture_cubemap_image",                    glTextureCubemapImage,              &extensionStrings);
     InsertExtensionString("EGL_KHR_gl_texture_3D_image",                         glTexture3DImage,                   &extensionStrings);
@@ -1300,8 +1316,8 @@ std::vector<std::string> DisplayExtensions::getStrings() const
     InsertExtensionString("EGL_ANGLE_display_texture_share_group",               displayTextureShareGroup,           &extensionStrings);
     InsertExtensionString("EGL_ANGLE_display_semaphore_share_group",             displaySemaphoreShareGroup,         &extensionStrings);
     InsertExtensionString("EGL_ANGLE_create_context_client_arrays",              createContextClientArrays,          &extensionStrings);
-    InsertExtensionString("EGL_ANGLE_program_cache_control",                     programCacheControlANGLE,                &extensionStrings);
-    InsertExtensionString("EGL_ANGLE_robust_resource_initialization",            robustResourceInitializationANGLE,       &extensionStrings);
+    InsertExtensionString("EGL_ANGLE_program_cache_control",                     programCacheControlANGLE,           &extensionStrings);
+    InsertExtensionString("EGL_ANGLE_robust_resource_initialization",            robustResourceInitializationANGLE,  &extensionStrings);
     InsertExtensionString("EGL_ANGLE_iosurface_client_buffer",                   iosurfaceClientBuffer,              &extensionStrings);
     InsertExtensionString("EGL_ANGLE_metal_texture_client_buffer",               mtlTextureClientBuffer,             &extensionStrings);
     InsertExtensionString("EGL_ANGLE_create_context_extensions_enabled",         createContextExtensionsEnabled,     &extensionStrings);
@@ -1338,6 +1354,7 @@ std::vector<std::string> DisplayExtensions::getStrings() const
     InsertExtensionString("EGL_ANGLE_metal_create_context_ownership_identity",   metalCreateContextOwnershipIdentityANGLE, &extensionStrings);
     InsertExtensionString("EGL_KHR_partial_update",                              partialUpdateKHR,                   &extensionStrings);
     InsertExtensionString("EGL_ANGLE_metal_shared_event_sync",                   mtlSyncSharedEventANGLE,            &extensionStrings);
+    InsertExtensionString("EGL_ANGLE_global_fence_sync",                         globalFenceSyncANGLE,               &extensionStrings);
     // clang-format on
 
     return extensionStrings;
@@ -1352,8 +1369,9 @@ std::vector<std::string> DeviceExtensions::getStrings() const
     // clang-format off
     //                   | Extension name                                 | Supported flag                | Output vector   |
     InsertExtensionString("EGL_ANGLE_device_d3d",                          deviceD3D,                      &extensionStrings);
+    InsertExtensionString("EGL_ANGLE_device_d3d9",                         deviceD3D9,                     &extensionStrings);
+    InsertExtensionString("EGL_ANGLE_device_d3d11",                        deviceD3D11,                    &extensionStrings);
     InsertExtensionString("EGL_ANGLE_device_cgl",                          deviceCGL,                      &extensionStrings);
-    InsertExtensionString("EGL_ANGLE_device_eagl",                         deviceEAGL,                     &extensionStrings);
     InsertExtensionString("EGL_ANGLE_device_metal",                        deviceMetal,                    &extensionStrings);
     InsertExtensionString("EGL_ANGLE_device_vulkan",                       deviceVulkan,                   &extensionStrings);
     InsertExtensionString("EGL_EXT_device_drm",                            deviceDrmEXT,                   &extensionStrings);
@@ -1379,16 +1397,18 @@ std::vector<std::string> ClientExtensions::getStrings() const
     InsertExtensionString("EGL_EXT_platform_device",                          platformDevice,                     &extensionStrings);
     InsertExtensionString("EGL_KHR_platform_gbm",                             platformGbmKHR,                     &extensionStrings);
     InsertExtensionString("EGL_EXT_platform_wayland",                         platformWaylandEXT,                 &extensionStrings);
+    InsertExtensionString("EGL_MESA_platform_surfaceless",                    platformSurfacelessMESA,            &extensionStrings);
     InsertExtensionString("EGL_ANGLE_platform_angle",                         platformANGLE,                      &extensionStrings);
     InsertExtensionString("EGL_ANGLE_platform_angle_d3d",                     platformANGLED3D,                   &extensionStrings);
     InsertExtensionString("EGL_ANGLE_platform_angle_d3d11on12",               platformANGLED3D11ON12,             &extensionStrings);
+    InsertExtensionString("EGL_ANGLE_platform_angle_d3d_luid",                platformANGLED3DLUID,               &extensionStrings);
     InsertExtensionString("EGL_ANGLE_platform_angle_device_type_egl_angle",   platformANGLEDeviceTypeEGLANGLE,    &extensionStrings);
     InsertExtensionString("EGL_ANGLE_platform_angle_device_type_swiftshader", platformANGLEDeviceTypeSwiftShader, &extensionStrings);
     InsertExtensionString("EGL_ANGLE_platform_angle_opengl",                  platformANGLEOpenGL,                &extensionStrings);
     InsertExtensionString("EGL_ANGLE_platform_angle_null",                    platformANGLENULL,                  &extensionStrings);
+    InsertExtensionString("EGL_ANGLE_platform_angle_webgpu",                  platformANGLEWebgpu,                &extensionStrings);
     InsertExtensionString("EGL_ANGLE_platform_angle_vulkan",                  platformANGLEVulkan,                &extensionStrings);
     InsertExtensionString("EGL_ANGLE_platform_angle_metal",                   platformANGLEMetal,                 &extensionStrings);
-    InsertExtensionString("EGL_ANGLE_platform_device_context_volatile_eagl",  platformANGLEDeviceContextVolatileEagl, &extensionStrings);
     InsertExtensionString("EGL_ANGLE_platform_device_context_volatile_cgl",   platformANGLEDeviceContextVolatileCgl, &extensionStrings);
     InsertExtensionString("EGL_ANGLE_platform_angle_device_id",               platformANGLEDeviceId,              &extensionStrings);
     InsertExtensionString("EGL_ANGLE_device_creation",                        deviceCreation,                     &extensionStrings);
@@ -1399,6 +1419,7 @@ std::vector<std::string> ClientExtensions::getStrings() const
     InsertExtensionString("EGL_KHR_debug",                                    debug,                              &extensionStrings);
     InsertExtensionString("EGL_ANGLE_feature_control",                        featureControlANGLE,                &extensionStrings);
     InsertExtensionString("EGL_ANGLE_display_power_preference",               displayPowerPreferenceANGLE,        &extensionStrings);
+    InsertExtensionString("EGL_ANGLE_no_error",                               noErrorANGLE,                       &extensionStrings);
     // clang-format on
 
     return extensionStrings;

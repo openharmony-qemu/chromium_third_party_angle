@@ -72,9 +72,12 @@
 #define eglPresentationTimeANDROID l_eglPresentationTimeANDROID
 #define eglCreateDeviceANGLE l_eglCreateDeviceANGLE
 #define eglReleaseDeviceANGLE l_eglReleaseDeviceANGLE
+#define eglAcquireExternalContextANGLE l_eglAcquireExternalContextANGLE
+#define eglReleaseExternalContextANGLE l_eglReleaseExternalContextANGLE
 #define eglQueryDisplayAttribANGLE l_eglQueryDisplayAttribANGLE
 #define eglQueryStringiANGLE l_eglQueryStringiANGLE
 #define eglCopyMetalSharedEventANGLE l_eglCopyMetalSharedEventANGLE
+#define eglSetValidationEnabledANGLE l_eglSetValidationEnabledANGLE
 #define eglForceGPUSwitchANGLE l_eglForceGPUSwitchANGLE
 #define eglHandleGPUSwitchANGLE l_eglHandleGPUSwitchANGLE
 #define eglReacquireHighPowerGPUANGLE l_eglReacquireHighPowerGPUANGLE
@@ -189,9 +192,12 @@ ANGLE_UTIL_EXPORT extern PFNEGLDUPNATIVEFENCEFDANDROIDPROC l_eglDupNativeFenceFD
 ANGLE_UTIL_EXPORT extern PFNEGLPRESENTATIONTIMEANDROIDPROC l_eglPresentationTimeANDROID;
 ANGLE_UTIL_EXPORT extern PFNEGLCREATEDEVICEANGLEPROC l_eglCreateDeviceANGLE;
 ANGLE_UTIL_EXPORT extern PFNEGLRELEASEDEVICEANGLEPROC l_eglReleaseDeviceANGLE;
+ANGLE_UTIL_EXPORT extern PFNEGLACQUIREEXTERNALCONTEXTANGLEPROC l_eglAcquireExternalContextANGLE;
+ANGLE_UTIL_EXPORT extern PFNEGLRELEASEEXTERNALCONTEXTANGLEPROC l_eglReleaseExternalContextANGLE;
 ANGLE_UTIL_EXPORT extern PFNEGLQUERYDISPLAYATTRIBANGLEPROC l_eglQueryDisplayAttribANGLE;
 ANGLE_UTIL_EXPORT extern PFNEGLQUERYSTRINGIANGLEPROC l_eglQueryStringiANGLE;
 ANGLE_UTIL_EXPORT extern PFNEGLCOPYMETALSHAREDEVENTANGLEPROC l_eglCopyMetalSharedEventANGLE;
+ANGLE_UTIL_EXPORT extern PFNEGLSETVALIDATIONENABLEDANGLEPROC l_eglSetValidationEnabledANGLE;
 ANGLE_UTIL_EXPORT extern PFNEGLFORCEGPUSWITCHANGLEPROC l_eglForceGPUSwitchANGLE;
 ANGLE_UTIL_EXPORT extern PFNEGLHANDLEGPUSWITCHANGLEPROC l_eglHandleGPUSwitchANGLE;
 ANGLE_UTIL_EXPORT extern PFNEGLREACQUIREHIGHPOWERGPUANGLEPROC l_eglReacquireHighPowerGPUANGLE;
@@ -255,7 +261,7 @@ typedef GenericProc(KHRONOS_APIENTRY *LoadProc)(const char *);
 ANGLE_UTIL_EXPORT void LoadUtilEGL(LoadProc loadProc);
 
 #if defined(__cplusplus)
-}  // extern "C"
+}       // extern "C"
 #endif  // defined(__cplusplus)
 
 #endif  // UTIL_EGL_LOADER_AUTOGEN_H_

@@ -18,6 +18,8 @@
 #include "libANGLE/validationES31.h"
 #include "libANGLE/validationES32.h"
 
+#include <optional>
+
 namespace gl
 {
 using namespace err;
@@ -34,14 +36,14 @@ bool ValidateGetImageFormatAndType(const Context *context,
     GLenum implFormat = obj->getImplementationColorReadFormat(context);
     if (!ValidES3Format(format) && (format != implFormat || format == GL_NONE))
     {
-        context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidFormat);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidFormat);
         return false;
     }
 
     GLenum implType = obj->getImplementationColorReadType(context);
     if (!ValidES3Type(type) && (type != implType || type == GL_NONE))
     {
-        context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidType);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidType);
         return false;
     }
 
@@ -83,7 +85,7 @@ bool IsValidMemoryObjectParamater(const Context *context,
         case GL_PROTECTED_MEMORY_OBJECT_EXT:
             if (!context->getExtensions().protectedTexturesEXT)
             {
-                context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
                 return false;
             }
             return true;
@@ -106,7 +108,7 @@ bool ValidateObjectIdentifierAndName(const Context *context,
         case GL_BUFFER_OBJECT_EXT:
             if (context->getBuffer({name}) == nullptr)
             {
-                context->validationError(entryPoint, GL_INVALID_OPERATION, kInvalidBufferName);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidBufferName);
                 return false;
             }
             return true;
@@ -114,12 +116,12 @@ bool ValidateObjectIdentifierAndName(const Context *context,
         case GL_SHADER_OBJECT_EXT:
             if (isGLES11)
             {
-                context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidType);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidType);
                 return false;
             }
-            if (context->getShader({name}) == nullptr)
+            if (context->getShaderNoResolveCompile({name}) == nullptr)
             {
-                context->validationError(entryPoint, GL_INVALID_OPERATION, kInvalidShaderName);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidShaderName);
                 return false;
             }
             return true;
@@ -127,12 +129,12 @@ bool ValidateObjectIdentifierAndName(const Context *context,
         case GL_PROGRAM_OBJECT_EXT:
             if (isGLES11)
             {
-                context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidType);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidType);
                 return false;
             }
             if (context->getProgramNoResolveLink({name}) == nullptr)
             {
-                context->validationError(entryPoint, GL_INVALID_OPERATION, kInvalidProgramName);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidProgramName);
                 return false;
             }
             return true;
@@ -140,12 +142,12 @@ bool ValidateObjectIdentifierAndName(const Context *context,
         case GL_VERTEX_ARRAY_OBJECT_EXT:
             if (!isGLES3 && !context->getExtensions().vertexArrayObjectOES)
             {
-                context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidType);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidType);
                 return false;
             }
             if (context->getVertexArray({name}) == nullptr)
             {
-                context->validationError(entryPoint, GL_INVALID_OPERATION, kInvalidVertexArrayName);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidVertexArrayName);
                 return false;
             }
             return true;
@@ -153,12 +155,12 @@ bool ValidateObjectIdentifierAndName(const Context *context,
         case GL_QUERY_OBJECT_EXT:
             if (!isGLES3 && !context->getExtensions().occlusionQueryBooleanEXT)
             {
-                context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidType);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidType);
                 return false;
             }
             if (context->getQuery({name}) == nullptr)
             {
-                context->validationError(entryPoint, GL_INVALID_OPERATION, kInvalidQueryName);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidQueryName);
                 return false;
             }
             return true;
@@ -166,13 +168,12 @@ bool ValidateObjectIdentifierAndName(const Context *context,
         case GL_TRANSFORM_FEEDBACK:
             if (!isGLES3)
             {
-                context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidType);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidType);
                 return false;
             }
             if (context->getTransformFeedback({name}) == nullptr)
             {
-                context->validationError(entryPoint, GL_INVALID_OPERATION,
-                                         kInvalidTransformFeedbackName);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidTransformFeedbackName);
                 return false;
             }
             return true;
@@ -180,12 +181,12 @@ bool ValidateObjectIdentifierAndName(const Context *context,
         case GL_SAMPLER:
             if (!isGLES3)
             {
-                context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidType);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidType);
                 return false;
             }
             if (context->getSampler({name}) == nullptr)
             {
-                context->validationError(entryPoint, GL_INVALID_OPERATION, kInvalidSamplerName);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidSamplerName);
                 return false;
             }
             return true;
@@ -193,7 +194,7 @@ bool ValidateObjectIdentifierAndName(const Context *context,
         case GL_TEXTURE:
             if (context->getTexture({name}) == nullptr)
             {
-                context->validationError(entryPoint, GL_INVALID_OPERATION, kInvalidTextureName);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidTextureName);
                 return false;
             }
             return true;
@@ -201,8 +202,7 @@ bool ValidateObjectIdentifierAndName(const Context *context,
         case GL_RENDERBUFFER:
             if (!context->isRenderbuffer({name}))
             {
-                context->validationError(entryPoint, GL_INVALID_OPERATION,
-                                         kInvalidRenderbufferName);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidRenderbufferName);
                 return false;
             }
             return true;
@@ -210,7 +210,7 @@ bool ValidateObjectIdentifierAndName(const Context *context,
         case GL_FRAMEBUFFER:
             if (context->getFramebuffer({name}) == nullptr)
             {
-                context->validationError(entryPoint, GL_INVALID_OPERATION, kInvalidFramebufferName);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidFramebufferName);
                 return false;
             }
             return true;
@@ -218,22 +218,157 @@ bool ValidateObjectIdentifierAndName(const Context *context,
         case GL_PROGRAM_PIPELINE_OBJECT_EXT:
             if (!isGLES31 && !context->getExtensions().separateShaderObjectsEXT)
             {
-                context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidType);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidType);
                 return false;
             }
             if (context->getProgramPipeline({name}) == nullptr)
             {
-                context->validationError(entryPoint, GL_INVALID_OPERATION,
-                                         kInvalidProgramPipelineName);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidProgramPipelineName);
                 return false;
             }
             return true;
 
         default:
-            context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidIndentifier);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidIndentifier);
             return false;
     }
 }
+
+bool ValidateClearTexImageFormat(const Context *context,
+                                 angle::EntryPoint entryPoint,
+                                 TextureType textureType,
+                                 const Format &textureFormat,
+                                 GLenum format,
+                                 GLenum type)
+{
+    if (textureFormat.info->compressed)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kTextureIsCompressed);
+        return false;
+    }
+
+    if (!ValidateTexImageFormatCombination(context, entryPoint, textureType,
+                                           textureFormat.info->internalFormat, format, type))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool ValidateClearTexImageCommon(const Context *context,
+                                 angle::EntryPoint entryPoint,
+                                 TextureID texturePacked,
+                                 GLint level,
+                                 const std::optional<Box> &area,
+                                 GLenum format,
+                                 GLenum type,
+                                 const void *data)
+{
+    if (!context->getExtensions().clearTextureEXT)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
+        return false;
+    }
+
+    if (texturePacked.value == 0)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kMissingTextureName);
+        return false;
+    }
+
+    Texture *tex = context->getTexture(texturePacked);
+    if (tex == nullptr)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kMissingTextureName);
+        return false;
+    }
+
+    if (tex->getType() == TextureType::Buffer)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kBufferTextureNotAllowed);
+        return false;
+    }
+
+    if (!ValidMipLevel(context, tex->getType(), level))
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidMipLevel);
+        return false;
+    }
+
+    if (area.has_value() && (area->x < 0 || area->y < 0 || area->z < 0 || area->width < 0 ||
+                             area->height < 0 || area->depth < 0))
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kNegativeOffset);
+        return false;
+    }
+
+    if (tex->getType() == TextureType::CubeMap)
+    {
+        if (area.has_value() && area->z + area->depth > 6)
+        {
+            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kDestinationTextureTooSmall);
+            return false;
+        }
+
+        ImageIndexIterator it = ImageIndexIterator::MakeGeneric(
+            tex->getType(), level, level + 1, area.has_value() ? area->z : ImageIndex::kEntireLevel,
+            area.has_value() ? area->z + area->depth : ImageIndex::kEntireLevel);
+        while (it.hasNext())
+        {
+            const ImageIndex index = it.next();
+            TextureTarget target   = index.getTarget();
+            const Extents extents  = tex->getExtents(target, level);
+
+            if (!tex->getState().getImageDesc(index).format.valid())
+            {
+                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kDestinationLevelNotDefined);
+                return false;
+            }
+
+            if (area.has_value() &&
+                (area->x + area->width > extents.width || area->y + area->height > extents.height))
+            {
+                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kDestinationTextureTooSmall);
+                return false;
+            }
+
+            if (!ValidateClearTexImageFormat(context, entryPoint, tex->getType(),
+                                             tex->getFormat(target, level), format, type))
+            {
+                return false;
+            }
+        }
+    }
+    else
+    {
+        TextureTarget target  = NonCubeTextureTypeToTarget(tex->getType());
+        const Extents extents = tex->getExtents(target, level);
+
+        if (!tex->getState().getImageDesc(target, level).format.valid())
+        {
+            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kDestinationLevelNotDefined);
+            return false;
+        }
+
+        if (area.has_value() &&
+            (area->x + area->width > extents.width || area->y + area->height > extents.height ||
+             area->z + area->depth > extents.depth))
+        {
+            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kDestinationTextureTooSmall);
+            return false;
+        }
+
+        if (!ValidateClearTexImageFormat(context, entryPoint, tex->getType(),
+                                         tex->getFormat(target, level), format, type))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 }  // namespace
 
 bool ValidateGetTexImage(const Context *context,
@@ -243,27 +378,27 @@ bool ValidateGetTexImage(const Context *context,
 {
     if (!context->getExtensions().getImageANGLE)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kGetImageExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kGetImageExtensionNotEnabled);
         return false;
     }
 
     if (!ValidTexture2DDestinationTarget(context, target) &&
         !ValidTexture3DDestinationTarget(context, target))
     {
-        context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidTextureTarget);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidTextureTarget);
         return false;
     }
 
     if (level < 0)
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kNegativeLevel);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kNegativeLevel);
         return false;
     }
 
     TextureType textureType = TextureTargetToType(target);
     if (!ValidMipLevel(context, textureType, level))
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kInvalidMipLevel);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidMipLevel);
         return false;
     }
 
@@ -300,7 +435,7 @@ bool ValidateGetTexImageANGLE(const Context *context,
 
     if (texture->getFormat(target, level).info->compressed)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kGetImageCompressed);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kGetImageCompressed);
         return false;
     }
 
@@ -321,14 +456,7 @@ bool ValidateGetCompressedTexImageANGLE(const Context *context,
     Texture *texture = context->getTextureByTarget(target);
     if (!texture->getFormat(target, level).info->compressed)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kGetImageNotCompressed);
-        return false;
-    }
-
-    if (texture->isCompressedFormatEmulated(context, target, level))
-    {
-        // TODO (anglebug.com/7464): We can't currently read back from an emulated format
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kInvalidEmulatedFormat);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kGetImageNotCompressed);
         return false;
     }
 
@@ -344,13 +472,13 @@ bool ValidateGetRenderbufferImageANGLE(const Context *context,
 {
     if (!context->getExtensions().getImageANGLE)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kGetImageExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kGetImageExtensionNotEnabled);
         return false;
     }
 
     if (target != GL_RENDERBUFFER)
     {
-        context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidRenderbufferTarget);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidRenderbufferTarget);
         return false;
     }
 
@@ -382,7 +510,7 @@ bool ValidateDrawElementsBaseVertexEXT(const Context *context,
 {
     if (!context->getExtensions().drawElementsBaseVertexAny())
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -400,12 +528,12 @@ bool ValidateDrawElementsInstancedBaseVertexEXT(const Context *context,
 {
     if (!context->getExtensions().drawElementsBaseVertexAny())
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
     return ValidateDrawElementsInstancedBase(context, entryPoint, mode, count, type, indices,
-                                             instancecount);
+                                             instancecount, 0);
 }
 
 bool ValidateDrawRangeElementsBaseVertexEXT(const Context *context,
@@ -420,13 +548,13 @@ bool ValidateDrawRangeElementsBaseVertexEXT(const Context *context,
 {
     if (!context->getExtensions().drawElementsBaseVertexAny())
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
     if (end < start)
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kInvalidElementRange);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidElementRange);
         return false;
     }
 
@@ -449,7 +577,7 @@ bool ValidateDrawRangeElementsBaseVertexEXT(const Context *context,
     if (indexRange.end > end || indexRange.start < start)
     {
         // GL spec says that behavior in this case is undefined - generating an error is fine.
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExceedsElementRange);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExceedsElementRange);
         return false;
     }
     return true;
@@ -517,8 +645,7 @@ bool ValidateMultiDrawElementsIndirectEXT(const Context *context,
             if (!ValidateTransformFeedbackPrimitiveMode(
                     context, entryPoint, curTransformFeedback->getPrimitiveMode(), modePacked))
             {
-                context->validationError(entryPoint, GL_INVALID_OPERATION,
-                                         kInvalidDrawModeTransformFeedback);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidDrawModeTransformFeedback);
                 return false;
             }
         }
@@ -526,8 +653,7 @@ bool ValidateMultiDrawElementsIndirectEXT(const Context *context,
         {
             // An INVALID_OPERATION error is generated if transform feedback is active and not
             // paused.
-            context->validationError(entryPoint, GL_INVALID_OPERATION,
-                                     kUnsupportedDrawModeForTransformFeedback);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kUnsupportedDrawModeForTransformFeedback);
             return false;
         }
     }
@@ -545,11 +671,12 @@ bool ValidateDrawArraysInstancedBaseInstanceEXT(const Context *context,
 {
     if (!context->getExtensions().baseInstanceEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    return ValidateDrawArraysInstancedBase(context, entryPoint, mode, first, count, instanceCount);
+    return ValidateDrawArraysInstancedBase(context, entryPoint, mode, first, count, instanceCount,
+                                           baseInstance);
 }
 
 bool ValidateDrawElementsInstancedBaseInstanceEXT(const Context *context,
@@ -563,12 +690,12 @@ bool ValidateDrawElementsInstancedBaseInstanceEXT(const Context *context,
 {
     if (!context->getExtensions().baseInstanceEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
     return ValidateDrawElementsInstancedBase(context, entryPoint, mode, count, type, indices,
-                                             instancecount);
+                                             instancecount, baseinstance);
 }
 
 bool ValidateDrawElementsInstancedBaseVertexBaseInstanceEXT(const Context *context,
@@ -583,12 +710,12 @@ bool ValidateDrawElementsInstancedBaseVertexBaseInstanceEXT(const Context *conte
 {
     if (!context->getExtensions().baseInstanceEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
     return ValidateDrawElementsInstancedBase(context, entryPoint, mode, count, typePacked, indices,
-                                             instancecount);
+                                             instancecount, baseinstance);
 }
 
 bool ValidateDrawElementsBaseVertexOES(const Context *context,
@@ -601,7 +728,7 @@ bool ValidateDrawElementsBaseVertexOES(const Context *context,
 {
     if (!context->getExtensions().drawElementsBaseVertexAny())
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -619,12 +746,12 @@ bool ValidateDrawElementsInstancedBaseVertexOES(const Context *context,
 {
     if (!context->getExtensions().drawElementsBaseVertexAny())
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
     return ValidateDrawElementsInstancedBase(context, entryPoint, mode, count, type, indices,
-                                             instancecount);
+                                             instancecount, 0);
 }
 
 bool ValidateDrawRangeElementsBaseVertexOES(const Context *context,
@@ -639,13 +766,13 @@ bool ValidateDrawRangeElementsBaseVertexOES(const Context *context,
 {
     if (!context->getExtensions().drawElementsBaseVertexAny())
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
     if (end < start)
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kInvalidElementRange);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidElementRange);
         return false;
     }
 
@@ -668,7 +795,7 @@ bool ValidateDrawRangeElementsBaseVertexOES(const Context *context,
     if (indexRange.end > end || indexRange.start < start)
     {
         // GL spec says that behavior in this case is undefined - generating an error is fine.
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExceedsElementRange);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExceedsElementRange);
         return false;
     }
     return true;
@@ -677,46 +804,174 @@ bool ValidateDrawRangeElementsBaseVertexOES(const Context *context,
 // GL_KHR_blend_equation_advanced
 bool ValidateBlendBarrierKHR(const Context *context, angle::EntryPoint entryPoint)
 {
-    const Extensions &extensions = context->getExtensions();
-
-    if (!extensions.blendEquationAdvancedKHR)
+    if (context->getClientVersion() < ES_2_0)
     {
-        context->validationError(entryPoint, GL_INVALID_ENUM, kAdvancedBlendExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES2Required);
+        return false;
+    }
+
+    if (!context->getExtensions().blendEquationAdvancedKHR)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kAdvancedBlendExtensionNotEnabled);
     }
 
     return true;
 }
 
-bool ValidateBlendEquationSeparateiEXT(const Context *context,
+bool ValidateGetGraphicsResetStatusKHR(const Context *context, angle::EntryPoint entryPoint)
+{
+    if (context->getClientVersion() < ES_2_0)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES2Required);
+        return false;
+    }
+
+    if (!context->getExtensions().robustnessKHR)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
+        return false;
+    }
+
+    return true;
+}
+
+bool ValidateGetnUniformfvKHR(const Context *context,
+                              angle::EntryPoint entryPoint,
+                              ShaderProgramID programPacked,
+                              UniformLocation locationPacked,
+                              GLsizei bufSize,
+                              const GLfloat *params)
+{
+    if (context->getClientVersion() < ES_2_0)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES2Required);
+        return false;
+    }
+
+    if (!context->getExtensions().robustnessKHR)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
+        return false;
+    }
+
+    return ValidateSizedGetUniform(context, entryPoint, programPacked, locationPacked, bufSize,
+                                   nullptr);
+}
+
+bool ValidateGetnUniformivKHR(const Context *context,
+                              angle::EntryPoint entryPoint,
+                              ShaderProgramID programPacked,
+                              UniformLocation locationPacked,
+                              GLsizei bufSize,
+                              const GLint *params)
+{
+    if (context->getClientVersion() < ES_2_0)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES2Required);
+        return false;
+    }
+
+    if (!context->getExtensions().robustnessKHR)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
+        return false;
+    }
+
+    return ValidateSizedGetUniform(context, entryPoint, programPacked, locationPacked, bufSize,
+                                   nullptr);
+}
+
+bool ValidateGetnUniformuivKHR(const Context *context,
+                               angle::EntryPoint entryPoint,
+                               ShaderProgramID programPacked,
+                               UniformLocation locationPacked,
+                               GLsizei bufSize,
+                               const GLuint *params)
+{
+    // Based on the spec, if ES 3.0 or later is not supported, all references to GetnUniformuiv
+    // should be removed.
+    if (context->getClientVersion() < ES_3_0)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES3Required);
+        return false;
+    }
+
+    if (!context->getExtensions().robustnessKHR)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
+        return false;
+    }
+
+    return ValidateSizedGetUniform(context, entryPoint, programPacked, locationPacked, bufSize,
+                                   nullptr);
+}
+
+bool ValidateReadnPixelsKHR(const Context *context,
+                            angle::EntryPoint entryPoint,
+                            GLint x,
+                            GLint y,
+                            GLsizei width,
+                            GLsizei height,
+                            GLenum format,
+                            GLenum type,
+                            GLsizei bufSize,
+                            const void *data)
+{
+    if (context->getClientVersion() < ES_2_0)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES2Required);
+        return false;
+    }
+
+    if (!context->getExtensions().robustnessKHR)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
+        return false;
+    }
+
+    if (bufSize < 0)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kNegativeBufferSize);
+        return false;
+    }
+
+    return ValidateReadPixelsBase(context, entryPoint, x, y, width, height, format, type, bufSize,
+                                  nullptr, nullptr, nullptr, data);
+}
+
+bool ValidateBlendEquationSeparateiEXT(const PrivateState &state,
+                                       ErrorSet *errors,
                                        angle::EntryPoint entryPoint,
                                        GLuint buf,
                                        GLenum modeRGB,
                                        GLenum modeAlpha)
 {
-    if (!context->getExtensions().drawBuffersIndexedEXT)
+    if (!state.getExtensions().drawBuffersIndexedEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    return ValidateBlendEquationSeparatei(context, entryPoint, buf, modeRGB, modeAlpha);
+    return ValidateBlendEquationSeparatei(state, errors, entryPoint, buf, modeRGB, modeAlpha);
 }
 
-bool ValidateBlendEquationiEXT(const Context *context,
+bool ValidateBlendEquationiEXT(const PrivateState &state,
+                               ErrorSet *errors,
                                angle::EntryPoint entryPoint,
                                GLuint buf,
                                GLenum mode)
 {
-    if (!context->getExtensions().drawBuffersIndexedEXT)
+    if (!state.getExtensions().drawBuffersIndexedEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    return ValidateBlendEquationi(context, entryPoint, buf, mode);
+    return ValidateBlendEquationi(state, errors, entryPoint, buf, mode);
 }
 
-bool ValidateBlendFuncSeparateiEXT(const Context *context,
+bool ValidateBlendFuncSeparateiEXT(const PrivateState &state,
+                                   ErrorSet *errors,
                                    angle::EntryPoint entryPoint,
                                    GLuint buf,
                                    GLenum srcRGB,
@@ -724,31 +979,34 @@ bool ValidateBlendFuncSeparateiEXT(const Context *context,
                                    GLenum srcAlpha,
                                    GLenum dstAlpha)
 {
-    if (!context->getExtensions().drawBuffersIndexedEXT)
+    if (!state.getExtensions().drawBuffersIndexedEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    return ValidateBlendFuncSeparatei(context, entryPoint, buf, srcRGB, dstRGB, srcAlpha, dstAlpha);
+    return ValidateBlendFuncSeparatei(state, errors, entryPoint, buf, srcRGB, dstRGB, srcAlpha,
+                                      dstAlpha);
 }
 
-bool ValidateBlendFunciEXT(const Context *context,
+bool ValidateBlendFunciEXT(const PrivateState &state,
+                           ErrorSet *errors,
                            angle::EntryPoint entryPoint,
                            GLuint buf,
                            GLenum src,
                            GLenum dst)
 {
-    if (!context->getExtensions().drawBuffersIndexedEXT)
+    if (!state.getExtensions().drawBuffersIndexedEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    return ValidateBlendFunci(context, entryPoint, buf, src, dst);
+    return ValidateBlendFunci(state, errors, entryPoint, buf, src, dst);
 }
 
-bool ValidateColorMaskiEXT(const Context *context,
+bool ValidateColorMaskiEXT(const PrivateState &state,
+                           ErrorSet *errors,
                            angle::EntryPoint entryPoint,
                            GLuint index,
                            GLboolean r,
@@ -756,87 +1014,93 @@ bool ValidateColorMaskiEXT(const Context *context,
                            GLboolean b,
                            GLboolean a)
 {
-    if (!context->getExtensions().drawBuffersIndexedEXT)
+    if (!state.getExtensions().drawBuffersIndexedEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    return ValidateColorMaski(context, entryPoint, index, r, g, b, a);
+    return ValidateColorMaski(state, errors, entryPoint, index, r, g, b, a);
 }
 
-bool ValidateDisableiEXT(const Context *context,
+bool ValidateDisableiEXT(const PrivateState &state,
+                         ErrorSet *errors,
                          angle::EntryPoint entryPoint,
                          GLenum target,
                          GLuint index)
 {
-    if (!context->getExtensions().drawBuffersIndexedEXT)
+    if (!state.getExtensions().drawBuffersIndexedEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    return ValidateDisablei(context, entryPoint, target, index);
+    return ValidateDisablei(state, errors, entryPoint, target, index);
 }
 
-bool ValidateEnableiEXT(const Context *context,
+bool ValidateEnableiEXT(const PrivateState &state,
+                        ErrorSet *errors,
                         angle::EntryPoint entryPoint,
                         GLenum target,
                         GLuint index)
 {
-    if (!context->getExtensions().drawBuffersIndexedEXT)
+    if (!state.getExtensions().drawBuffersIndexedEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    return ValidateEnablei(context, entryPoint, target, index);
+    return ValidateEnablei(state, errors, entryPoint, target, index);
 }
 
-bool ValidateIsEnablediEXT(const Context *context,
+bool ValidateIsEnablediEXT(const PrivateState &state,
+                           ErrorSet *errors,
                            angle::EntryPoint entryPoint,
                            GLenum target,
                            GLuint index)
 {
-    if (!context->getExtensions().drawBuffersIndexedEXT)
+    if (!state.getExtensions().drawBuffersIndexedEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    return ValidateIsEnabledi(context, entryPoint, target, index);
+    return ValidateIsEnabledi(state, errors, entryPoint, target, index);
 }
 
-bool ValidateBlendEquationSeparateiOES(const Context *context,
+bool ValidateBlendEquationSeparateiOES(const PrivateState &state,
+                                       ErrorSet *errors,
                                        angle::EntryPoint entryPoint,
                                        GLuint buf,
                                        GLenum modeRGB,
                                        GLenum modeAlpha)
 {
-    if (!context->getExtensions().drawBuffersIndexedOES)
+    if (!state.getExtensions().drawBuffersIndexedOES)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    return ValidateBlendEquationSeparatei(context, entryPoint, buf, modeRGB, modeAlpha);
+    return ValidateBlendEquationSeparatei(state, errors, entryPoint, buf, modeRGB, modeAlpha);
 }
 
-bool ValidateBlendEquationiOES(const Context *context,
+bool ValidateBlendEquationiOES(const PrivateState &state,
+                               ErrorSet *errors,
                                angle::EntryPoint entryPoint,
                                GLuint buf,
                                GLenum mode)
 {
-    if (!context->getExtensions().drawBuffersIndexedOES)
+    if (!state.getExtensions().drawBuffersIndexedOES)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    return ValidateBlendEquationi(context, entryPoint, buf, mode);
+    return ValidateBlendEquationi(state, errors, entryPoint, buf, mode);
 }
 
-bool ValidateBlendFuncSeparateiOES(const Context *context,
+bool ValidateBlendFuncSeparateiOES(const PrivateState &state,
+                                   ErrorSet *errors,
                                    angle::EntryPoint entryPoint,
                                    GLuint buf,
                                    GLenum srcRGB,
@@ -844,31 +1108,34 @@ bool ValidateBlendFuncSeparateiOES(const Context *context,
                                    GLenum srcAlpha,
                                    GLenum dstAlpha)
 {
-    if (!context->getExtensions().drawBuffersIndexedOES)
+    if (!state.getExtensions().drawBuffersIndexedOES)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    return ValidateBlendFuncSeparatei(context, entryPoint, buf, srcRGB, dstRGB, srcAlpha, dstAlpha);
+    return ValidateBlendFuncSeparatei(state, errors, entryPoint, buf, srcRGB, dstRGB, srcAlpha,
+                                      dstAlpha);
 }
 
-bool ValidateBlendFunciOES(const Context *context,
+bool ValidateBlendFunciOES(const PrivateState &state,
+                           ErrorSet *errors,
                            angle::EntryPoint entryPoint,
                            GLuint buf,
                            GLenum src,
                            GLenum dst)
 {
-    if (!context->getExtensions().drawBuffersIndexedOES)
+    if (!state.getExtensions().drawBuffersIndexedOES)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    return ValidateBlendFunci(context, entryPoint, buf, src, dst);
+    return ValidateBlendFunci(state, errors, entryPoint, buf, src, dst);
 }
 
-bool ValidateColorMaskiOES(const Context *context,
+bool ValidateColorMaskiOES(const PrivateState &state,
+                           ErrorSet *errors,
                            angle::EntryPoint entryPoint,
                            GLuint index,
                            GLboolean r,
@@ -876,64 +1143,68 @@ bool ValidateColorMaskiOES(const Context *context,
                            GLboolean b,
                            GLboolean a)
 {
-    if (!context->getExtensions().drawBuffersIndexedOES)
+    if (!state.getExtensions().drawBuffersIndexedOES)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    return ValidateColorMaski(context, entryPoint, index, r, g, b, a);
+    return ValidateColorMaski(state, errors, entryPoint, index, r, g, b, a);
 }
 
-bool ValidateDisableiOES(const Context *context,
+bool ValidateDisableiOES(const PrivateState &state,
+                         ErrorSet *errors,
                          angle::EntryPoint entryPoint,
                          GLenum target,
                          GLuint index)
 {
-    if (!context->getExtensions().drawBuffersIndexedOES)
+    if (!state.getExtensions().drawBuffersIndexedOES)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    return ValidateDisablei(context, entryPoint, target, index);
+    return ValidateDisablei(state, errors, entryPoint, target, index);
 }
 
-bool ValidateEnableiOES(const Context *context,
+bool ValidateEnableiOES(const PrivateState &state,
+                        ErrorSet *errors,
                         angle::EntryPoint entryPoint,
                         GLenum target,
                         GLuint index)
 {
-    if (!context->getExtensions().drawBuffersIndexedOES)
+    if (!state.getExtensions().drawBuffersIndexedOES)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    return ValidateEnablei(context, entryPoint, target, index);
+    return ValidateEnablei(state, errors, entryPoint, target, index);
 }
 
-bool ValidateIsEnablediOES(const Context *context,
+bool ValidateIsEnablediOES(const PrivateState &state,
+                           ErrorSet *errors,
                            angle::EntryPoint entryPoint,
                            GLenum target,
                            GLuint index)
 {
-    if (!context->getExtensions().drawBuffersIndexedOES)
+    if (!state.getExtensions().drawBuffersIndexedOES)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    return ValidateIsEnabledi(context, entryPoint, target, index);
+    return ValidateIsEnabledi(state, errors, entryPoint, target, index);
 }
 
-bool ValidateProvokingVertexANGLE(const Context *context,
+bool ValidateProvokingVertexANGLE(const PrivateState &state,
+                                  ErrorSet *errors,
                                   angle::EntryPoint entryPoint,
                                   ProvokingVertexConvention provokeModePacked)
 {
-    if (!context->getExtensions().provokingVertexANGLE)
+    if (!state.getExtensions().provokingVertexANGLE)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -943,7 +1214,7 @@ bool ValidateProvokingVertexANGLE(const Context *context,
         case ProvokingVertexConvention::LastVertexConvention:
             break;
         default:
-            context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidProvokingVertex);
+            errors->validationError(entryPoint, GL_INVALID_ENUM, kInvalidProvokingVertex);
             return false;
     }
 
@@ -957,7 +1228,7 @@ bool ValidateGetInteger64vEXT(const Context *context,
 {
     if (!context->getExtensions().disjointTimerQueryEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -991,7 +1262,7 @@ bool ValidateCopyImageSubDataEXT(const Context *context,
 {
     if (!context->getExtensions().copyImageEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -1018,9 +1289,9 @@ bool ValidateCopyImageSubDataOES(const Context *context,
                                  GLsizei srcHeight,
                                  GLsizei srcDepth)
 {
-    if (!context->getExtensions().copyImageEXT)
+    if (!context->getExtensions().copyImageOES)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -1038,7 +1309,7 @@ bool ValidateBufferStorageMemEXT(const Context *context,
 {
     if (!context->getExtensions().memoryObjectEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -1053,7 +1324,7 @@ bool ValidateCreateMemoryObjectsEXT(const Context *context,
 {
     if (!context->getExtensions().memoryObjectEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -1067,7 +1338,7 @@ bool ValidateDeleteMemoryObjectsEXT(const Context *context,
 {
     if (!context->getExtensions().memoryObjectEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -1082,19 +1353,19 @@ bool ValidateGetMemoryObjectParameterivEXT(const Context *context,
 {
     if (!context->getExtensions().memoryObjectEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
     const MemoryObject *memory = context->getMemoryObject(memoryObject);
     if (memory == nullptr)
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kInvalidMemoryObject);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidMemoryObject);
     }
 
     if (!IsValidMemoryObjectParamater(context, entryPoint, pname))
     {
-        context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidMemoryObjectParameter);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidMemoryObjectParameter);
         return false;
     }
 
@@ -1108,7 +1379,7 @@ bool ValidateGetUnsignedBytevEXT(const Context *context,
 {
     if (!context->getExtensions().memoryObjectEXT && !context->getExtensions().semaphoreEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -1124,7 +1395,7 @@ bool ValidateGetUnsignedBytei_vEXT(const Context *context,
 {
     if (!context->getExtensions().memoryObjectEXT && !context->getExtensions().semaphoreEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -1138,7 +1409,7 @@ bool ValidateIsMemoryObjectEXT(const Context *context,
 {
     if (!context->getExtensions().memoryObjectEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -1153,26 +1424,26 @@ bool ValidateMemoryObjectParameterivEXT(const Context *context,
 {
     if (!context->getExtensions().memoryObjectEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
     const MemoryObject *memory = context->getMemoryObject(memoryObject);
     if (memory == nullptr)
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kInvalidMemoryObject);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidMemoryObject);
         return false;
     }
 
     if (memory->isImmutable())
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kImmutableMemoryObject);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kImmutableMemoryObject);
         return false;
     }
 
     if (!IsValidMemoryObjectParamater(context, entryPoint, pname))
     {
-        context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidMemoryObjectParameter);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidMemoryObjectParameter);
         return false;
     }
 
@@ -1191,7 +1462,7 @@ bool ValidateTexStorageMem2DEXT(const Context *context,
 {
     if (!context->getExtensions().memoryObjectEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -1219,7 +1490,7 @@ bool ValidateTexStorageMem3DEXT(const Context *context,
 {
     if (!context->getExtensions().memoryObjectEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -1236,7 +1507,7 @@ bool ValidateImportMemoryFdEXT(const Context *context,
 {
     if (!context->getExtensions().memoryObjectFdEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -1245,7 +1516,7 @@ bool ValidateImportMemoryFdEXT(const Context *context,
         case HandleType::OpaqueFd:
             break;
         default:
-            context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidHandleType);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidHandleType);
             return false;
     }
 
@@ -1261,7 +1532,7 @@ bool ValidateImportMemoryZirconHandleANGLE(const Context *context,
 {
     if (!context->getExtensions().memoryObjectFuchsiaANGLE)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -1270,7 +1541,7 @@ bool ValidateImportMemoryZirconHandleANGLE(const Context *context,
         case HandleType::ZirconVmo:
             break;
         default:
-            context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidHandleType);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidHandleType);
             return false;
     }
 
@@ -1284,7 +1555,7 @@ bool ValidateDeleteSemaphoresEXT(const Context *context,
 {
     if (!context->getExtensions().semaphoreEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -1298,7 +1569,7 @@ bool ValidateGenSemaphoresEXT(const Context *context,
 {
     if (!context->getExtensions().semaphoreEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -1313,7 +1584,7 @@ bool ValidateGetSemaphoreParameterui64vEXT(const Context *context,
 {
     if (!context->getExtensions().semaphoreEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -1327,7 +1598,7 @@ bool ValidateIsSemaphoreEXT(const Context *context,
 {
     if (!context->getExtensions().semaphoreEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -1342,7 +1613,7 @@ bool ValidateSemaphoreParameterui64vEXT(const Context *context,
 {
     if (!context->getExtensions().semaphoreEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -1361,7 +1632,7 @@ bool ValidateSignalSemaphoreEXT(const Context *context,
 {
     if (!context->getExtensions().semaphoreEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -1369,7 +1640,7 @@ bool ValidateSignalSemaphoreEXT(const Context *context,
     {
         if (!context->getBuffer(buffers[i]))
         {
-            context->validationError(entryPoint, GL_INVALID_OPERATION, kInvalidBufferName);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidBufferName);
             return false;
         }
     }
@@ -1378,12 +1649,12 @@ bool ValidateSignalSemaphoreEXT(const Context *context,
     {
         if (!context->getTexture(textures[i]))
         {
-            context->validationError(entryPoint, GL_INVALID_OPERATION, kInvalidTextureName);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidTextureName);
             return false;
         }
         if (!IsValidImageLayout(FromGLenum<ImageLayout>(dstLayouts[i])))
         {
-            context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidImageLayout);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidImageLayout);
             return false;
         }
     }
@@ -1402,7 +1673,7 @@ bool ValidateWaitSemaphoreEXT(const Context *context,
 {
     if (!context->getExtensions().semaphoreEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -1410,7 +1681,7 @@ bool ValidateWaitSemaphoreEXT(const Context *context,
     {
         if (!context->getBuffer(buffers[i]))
         {
-            context->validationError(entryPoint, GL_INVALID_OPERATION, kInvalidBufferName);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidBufferName);
             return false;
         }
     }
@@ -1419,12 +1690,12 @@ bool ValidateWaitSemaphoreEXT(const Context *context,
     {
         if (!context->getTexture(textures[i]))
         {
-            context->validationError(entryPoint, GL_INVALID_OPERATION, kInvalidTextureName);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidTextureName);
             return false;
         }
         if (!IsValidImageLayout(FromGLenum<ImageLayout>(srcLayouts[i])))
         {
-            context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidImageLayout);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidImageLayout);
             return false;
         }
     }
@@ -1440,7 +1711,7 @@ bool ValidateImportSemaphoreFdEXT(const Context *context,
 {
     if (!context->getExtensions().semaphoreFdEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -1449,11 +1720,163 @@ bool ValidateImportSemaphoreFdEXT(const Context *context,
         case HandleType::OpaqueFd:
             break;
         default:
-            context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidHandleType);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidHandleType);
             return false;
     }
 
     return true;
+}
+
+bool ValidateGetTexParameterIivOES(const Context *context,
+                                   angle::EntryPoint entryPoint,
+                                   TextureType target,
+                                   GLenum pname,
+                                   const GLint *params)
+{
+    if (context->getClientMajorVersion() < 3)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES3Required);
+    }
+
+    if (!context->getExtensions().textureBorderClampOES)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
+        return false;
+    }
+    return ValidateGetTexParameterBase(context, entryPoint, target, pname, nullptr);
+}
+
+bool ValidateGetTexParameterIuivOES(const Context *context,
+                                    angle::EntryPoint entryPoint,
+                                    TextureType target,
+                                    GLenum pname,
+                                    const GLuint *params)
+{
+    if (context->getClientMajorVersion() < 3)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES3Required);
+    }
+
+    if (!context->getExtensions().textureBorderClampOES)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
+    }
+    return ValidateGetTexParameterBase(context, entryPoint, target, pname, nullptr);
+}
+
+bool ValidateTexParameterIivOES(const Context *context,
+                                angle::EntryPoint entryPoint,
+                                TextureType target,
+                                GLenum pname,
+                                const GLint *params)
+{
+    if (context->getClientMajorVersion() < 3)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES3Required);
+    }
+
+    if (!context->getExtensions().textureBorderClampOES)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
+        return false;
+    }
+    return ValidateTexParameterBase(context, entryPoint, target, pname, -1, true, params);
+}
+
+bool ValidateTexParameterIuivOES(const Context *context,
+                                 angle::EntryPoint entryPoint,
+                                 TextureType target,
+                                 GLenum pname,
+                                 const GLuint *params)
+{
+    if (context->getClientMajorVersion() < 3)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES3Required);
+    }
+
+    if (!context->getExtensions().textureBorderClampOES)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
+        return false;
+    }
+
+    return ValidateTexParameterBase(context, entryPoint, target, pname, -1, true, params);
+}
+
+bool ValidateGetSamplerParameterIivOES(const Context *context,
+                                       angle::EntryPoint entryPoint,
+                                       SamplerID sampler,
+                                       GLenum pname,
+                                       const GLint *params)
+{
+    if (context->getClientMajorVersion() < 3)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES3Required);
+    }
+
+    if (!context->getExtensions().textureBorderClampOES)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
+        return false;
+    }
+    return ValidateGetSamplerParameterBase(context, entryPoint, sampler, pname, nullptr);
+}
+
+bool ValidateGetSamplerParameterIuivOES(const Context *context,
+                                        angle::EntryPoint entryPoint,
+                                        SamplerID sampler,
+                                        GLenum pname,
+                                        const GLuint *params)
+{
+    if (context->getClientMajorVersion() < 3)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES3Required);
+    }
+
+    if (!context->getExtensions().textureBorderClampOES)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
+        return false;
+    }
+    return ValidateGetSamplerParameterBase(context, entryPoint, sampler, pname, nullptr);
+}
+
+bool ValidateSamplerParameterIivOES(const Context *context,
+                                    angle::EntryPoint entryPoint,
+                                    SamplerID sampler,
+                                    GLenum pname,
+                                    const GLint *params)
+{
+    if (context->getClientMajorVersion() < 3)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES3Required);
+    }
+
+    if (!context->getExtensions().textureBorderClampOES)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
+        return false;
+    }
+    return ValidateSamplerParameterBase(context, entryPoint, sampler, pname, -1, true, params);
+}
+
+bool ValidateSamplerParameterIuivOES(const Context *context,
+                                     angle::EntryPoint entryPoint,
+                                     SamplerID sampler,
+                                     GLenum pname,
+                                     const GLuint *params)
+{
+    if (context->getClientMajorVersion() < 3)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES3Required);
+    }
+
+    if (!context->getExtensions().textureBorderClampOES)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
+        return false;
+    }
+    return ValidateSamplerParameterBase(context, entryPoint, sampler, pname, -1, true, params);
 }
 
 bool ValidateGetSamplerParameterIivEXT(const Context *context,
@@ -1464,7 +1887,12 @@ bool ValidateGetSamplerParameterIivEXT(const Context *context,
 {
     if (context->getClientMajorVersion() < 3)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kES3Required);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES3Required);
+    }
+
+    if (!context->getExtensions().textureBorderClampEXT)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
     return ValidateGetSamplerParameterBase(context, entryPoint, samplerPacked, pname, nullptr);
@@ -1478,7 +1906,12 @@ bool ValidateGetSamplerParameterIuivEXT(const Context *context,
 {
     if (context->getClientMajorVersion() < 3)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kES3Required);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES3Required);
+    }
+
+    if (!context->getExtensions().textureBorderClampEXT)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
     return ValidateGetSamplerParameterBase(context, entryPoint, samplerPacked, pname, nullptr);
@@ -1492,7 +1925,12 @@ bool ValidateGetTexParameterIivEXT(const Context *context,
 {
     if (context->getClientMajorVersion() < 3)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kES3Required);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES3Required);
+    }
+
+    if (!context->getExtensions().textureBorderClampEXT)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
     return ValidateGetTexParameterBase(context, entryPoint, targetPacked, pname, nullptr);
@@ -1506,7 +1944,12 @@ bool ValidateGetTexParameterIuivEXT(const Context *context,
 {
     if (context->getClientMajorVersion() < 3)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kES3Required);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES3Required);
+    }
+
+    if (!context->getExtensions().textureBorderClampEXT)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
     return ValidateGetTexParameterBase(context, entryPoint, targetPacked, pname, nullptr);
@@ -1520,7 +1963,12 @@ bool ValidateSamplerParameterIivEXT(const Context *context,
 {
     if (context->getClientMajorVersion() < 3)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kES3Required);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES3Required);
+    }
+
+    if (!context->getExtensions().textureBorderClampEXT)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
     return ValidateSamplerParameterBase(context, entryPoint, samplerPacked, pname, -1, true, param);
@@ -1534,7 +1982,12 @@ bool ValidateSamplerParameterIuivEXT(const Context *context,
 {
     if (context->getClientMajorVersion() < 3)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kES3Required);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES3Required);
+    }
+
+    if (!context->getExtensions().textureBorderClampEXT)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
     return ValidateSamplerParameterBase(context, entryPoint, samplerPacked, pname, -1, true, param);
@@ -1548,7 +2001,12 @@ bool ValidateTexParameterIivEXT(const Context *context,
 {
     if (context->getClientMajorVersion() < 3)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kES3Required);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES3Required);
+    }
+
+    if (!context->getExtensions().textureBorderClampEXT)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
     return ValidateTexParameterBase(context, entryPoint, targetPacked, pname, -1, true, params);
@@ -1562,7 +2020,12 @@ bool ValidateTexParameterIuivEXT(const Context *context,
 {
     if (context->getClientMajorVersion() < 3)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kES3Required);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kES3Required);
+    }
+
+    if (!context->getExtensions().textureBorderClampEXT)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
     return ValidateTexParameterBase(context, entryPoint, targetPacked, pname, -1, true, params);
@@ -1576,7 +2039,7 @@ bool ValidateImportSemaphoreZirconHandleANGLE(const Context *context,
 {
     if (!context->getExtensions().semaphoreFuchsiaANGLE)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -1585,7 +2048,7 @@ bool ValidateImportSemaphoreZirconHandleANGLE(const Context *context,
         case HandleType::ZirconEvent:
             break;
         default:
-            context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidHandleType);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidHandleType);
             return false;
     }
 
@@ -1608,7 +2071,7 @@ bool ValidatePLSCommon(const Context *context,
     // Check that the pixel local storage extension is enabled at all.
     if (!context->getExtensions().shaderPixelLocalStorageANGLE)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kPLSExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kPLSExtensionNotEnabled);
         return false;
     }
 
@@ -1619,8 +2082,7 @@ bool ValidatePLSCommon(const Context *context,
         // bound to DRAW_FRAMEBUFFER.
         if (framebuffer->id().value == 0)
         {
-            context->validationError(entryPoint, GL_INVALID_FRAMEBUFFER_OPERATION,
-                                     kPLSDefaultFramebufferBound);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_FRAMEBUFFER_OPERATION, kPLSDefaultFramebufferBound);
             return false;
         }
     }
@@ -1630,7 +2092,7 @@ bool ValidatePLSCommon(const Context *context,
     const PixelLocalStorage *pls = framebuffer->peekPixelLocalStorage();
     if (pls != nullptr && pls->interruptCount() != 0)
     {
-        context->validationError(entryPoint, GL_INVALID_FRAMEBUFFER_OPERATION, kPLSInterrupted);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_FRAMEBUFFER_OPERATION, kPLSInterrupted);
         return false;
     }
 
@@ -1639,7 +2101,7 @@ bool ValidatePLSCommon(const Context *context,
         // INVALID_OPERATION is generated if PIXEL_LOCAL_STORAGE_ACTIVE_PLANES_ANGLE is zero.
         if (context->getState().getPixelLocalStorageActivePlanes() == 0)
         {
-            context->validationError(entryPoint, GL_INVALID_OPERATION, kPLSInactive);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kPLSInactive);
             return false;
         }
     }
@@ -1666,12 +2128,12 @@ bool ValidatePLSCommon(const Context *context,
     // INVALID_VALUE is generated if <plane> < 0 or <plane> >= MAX_PIXEL_LOCAL_STORAGE_PLANES_ANGLE.
     if (plane < 0)
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kPLSPlaneLessThanZero);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kPLSPlaneLessThanZero);
         return false;
     }
     if (plane >= static_cast<GLint>(context->getCaps().maxPixelLocalStoragePlanes))
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kPLSPlaneOutOfRange);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kPLSPlaneOutOfRange);
         return false;
     }
 
@@ -1693,7 +2155,7 @@ bool ValidatePLSInternalformat(const Context *context,
         case GL_R32UI:
             return true;
         default:
-            context->validationError(entryPoint, GL_INVALID_ENUM, kPLSInvalidInternalformat);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kPLSInvalidInternalformat);
             return false;
     }
 }
@@ -1703,8 +2165,8 @@ bool ValidatePLSTextureType(const Context *context,
                             Texture *tex,
                             size_t *textureDepth)
 {
-    // INVALID_OPERATION is generated if <backingtexture> is nonzero and not of type TEXTURE_2D,
-    // TEXTURE_2D_ARRAY, or TEXTURE_3D.
+    // INVALID_OPERATION is generated if <backingtexture> is nonzero
+    // and not of type TEXTURE_2D or TEXTURE_2D_ARRAY.
     switch (tex->getType())
     {
         case TextureType::_2D:
@@ -1713,12 +2175,60 @@ bool ValidatePLSTextureType(const Context *context,
         case TextureType::_2DArray:
             *textureDepth = tex->getDepth(TextureTarget::_2DArray, 0);
             return true;
-        case TextureType::_3D:
-            *textureDepth = tex->getDepth(TextureTarget::_3D, 0);
-            return true;
         default:
-            context->validationError(entryPoint, GL_INVALID_OPERATION, kPLSInvalidTextureType);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kPLSInvalidTextureType);
             return false;
+    }
+}
+
+bool ValidatePLSActiveBlendFunc(const Context *context,
+                                angle::EntryPoint entryPoint,
+                                gl::BlendFactorType blendFunc)
+{
+    // INVALID_OPERATION is generated if BLEND_DST_ALPHA, BLEND_DST_RGB, BLEND_SRC_ALPHA, or
+    // BLEND_SRC_RGB, for any draw buffer, is a blend function requiring the secondary color input,
+    // as specified in EXT_blend_func_extended.
+    ASSERT(context->getState().getExtensions().blendFuncExtendedEXT);
+    switch (blendFunc)
+    {
+        case gl::BlendFactorType::Src1Color:
+        case gl::BlendFactorType::OneMinusSrc1Color:
+        case gl::BlendFactorType::Src1Alpha:
+        case gl::BlendFactorType::OneMinusSrc1Alpha:
+            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kPLSSecondaryBlendEnabled);
+            return false;
+        default:
+            return true;
+    }
+}
+bool ValidatePLSActiveBlendEquation(const Context *context,
+                                    angle::EntryPoint entryPoint,
+                                    gl::BlendEquationType blendEquation)
+{
+    // INVALID_OPERATION is generated if BLEND_EQUATION_RGB and/or BLEND_EQUATION_ALPHA is an
+    // advanced blend equation defined in KHR_blend_equation_advanced.
+    ASSERT(context->getState().getExtensions().blendEquationAdvancedKHR);
+    switch (blendEquation)
+    {
+        case gl::BlendEquationType::Multiply:
+        case gl::BlendEquationType::Screen:
+        case gl::BlendEquationType::Overlay:
+        case gl::BlendEquationType::Darken:
+        case gl::BlendEquationType::Lighten:
+        case gl::BlendEquationType::Colordodge:
+        case gl::BlendEquationType::Colorburn:
+        case gl::BlendEquationType::Hardlight:
+        case gl::BlendEquationType::Softlight:
+        case gl::BlendEquationType::Difference:
+        case gl::BlendEquationType::Exclusion:
+        case gl::BlendEquationType::HslHue:
+        case gl::BlendEquationType::HslSaturation:
+        case gl::BlendEquationType::HslColor:
+        case gl::BlendEquationType::HslLuminosity:
+            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kPLSAdvancedBlendEnabled);
+            return false;
+        default:
+            return true;
     }
 }
 
@@ -1734,8 +2244,7 @@ bool ValidatePLSLoadOperation(const Context *context, angle::EntryPoint entryPoi
         case GL_DONT_CARE:
             return true;
         default:
-            context->validationErrorF(entryPoint, GL_INVALID_ENUM, kPLSInvalidLoadOperation,
-                                      loadop);
+            ANGLE_VALIDATION_ERRORF(GL_INVALID_ENUM, kPLSInvalidLoadOperation, loadop);
             return false;
     }
 }
@@ -1750,8 +2259,7 @@ bool ValidatePLSStoreOperation(const Context *context, angle::EntryPoint entryPo
         case GL_DONT_CARE:
             return true;
         default:
-            context->validationErrorF(entryPoint, GL_INVALID_ENUM, kPLSInvalidStoreOperation,
-                                      storeop);
+            ANGLE_VALIDATION_ERRORF(GL_INVALID_ENUM, kPLSInvalidStoreOperation, storeop);
             return false;
     }
 }
@@ -1766,13 +2274,13 @@ bool ValidatePLSQueryCommon(const Context *context,
     // parameter.
     if (paramCount > bufSize)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kInsufficientParams);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInsufficientParams);
         return false;
     }
     // INVALID_VALUE is generated if <params> is NULL.
     if (params == nullptr)
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kPLSParamsNULL);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kPLSParamsNULL);
         return false;
     }
     return true;
@@ -1822,17 +2330,17 @@ bool ValidateFramebufferTexturePixelLocalStorageANGLE(const Context *context,
         // immutable texture object, or zero.
         if (!tex)
         {
-            context->validationError(entryPoint, GL_INVALID_OPERATION, kInvalidTextureName);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidTextureName);
             return false;
         }
         if (!tex->getImmutableFormat())
         {
-            context->validationError(entryPoint, GL_INVALID_OPERATION, kTextureIsNotImmutable);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kTextureIsNotImmutable);
             return false;
         }
 
-        // INVALID_ENUM is generated if <backingtexture> is nonzero and not of type GL_TEXTURE_2D,
-        // GL_TEXTURE_CUBE_MAP, GL_TEXTURE_2D_ARRAY, or GL_TEXTURE_3D.
+        // INVALID_OPERATION is generated if <backingtexture> is nonzero
+        // and not of type GL_TEXTURE_2D or GL_TEXTURE_2D_ARRAY.
         size_t textureDepth;
         if (!ValidatePLSTextureType(context, entryPoint, tex, &textureDepth))
         {
@@ -1842,7 +2350,7 @@ bool ValidateFramebufferTexturePixelLocalStorageANGLE(const Context *context,
         // INVALID_VALUE is generated if <backingtexture> is nonzero and <level> < 0.
         if (level < 0)
         {
-            context->validationError(entryPoint, GL_INVALID_VALUE, kNegativeLevel);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kNegativeLevel);
             return false;
         }
 
@@ -1850,14 +2358,14 @@ bool ValidateFramebufferTexturePixelLocalStorageANGLE(const Context *context,
         // immutable number of mipmap levels in <backingtexture>.
         if (static_cast<GLuint>(level) >= tex->getImmutableLevels())
         {
-            context->validationError(entryPoint, GL_INVALID_VALUE, kTextureLevelOutOfRange);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kTextureLevelOutOfRange);
             return false;
         }
 
         // INVALID_VALUE is generated if <backingtexture> is nonzero and <layer> < 0.
         if (layer < 0)
         {
-            context->validationError(entryPoint, GL_INVALID_VALUE, kNegativeLayer);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kNegativeLayer);
             return false;
         }
 
@@ -1865,7 +2373,7 @@ bool ValidateFramebufferTexturePixelLocalStorageANGLE(const Context *context,
         // number of texture layers in <backingtexture>.
         if ((size_t)layer >= textureDepth)
         {
-            context->validationError(entryPoint, GL_INVALID_VALUE, kTextureLayerOutOfRange);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kTextureLayerOutOfRange);
             return false;
         }
 
@@ -1923,33 +2431,70 @@ bool ValidateBeginPixelLocalStorageANGLE(const Context *context,
     // multisampled framebuffer).
     if (framebuffer->getSamples(context) != 0)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kPLSMultisamplingEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kPLSMultisamplingEnabled);
         return false;
     }
 
     // INVALID_OPERATION is generated if DITHER is enabled.
     if (state.isDitherEnabled())
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kPLSDitherEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kPLSDitherEnabled);
         return false;
     }
 
     // INVALID_OPERATION is generated if RASTERIZER_DISCARD is enabled.
     if (state.isRasterizerDiscardEnabled())
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kPLSRasterizerDiscardEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kPLSRasterizerDiscardEnabled);
         return false;
     }
 
+    // INVALID_OPERATION is generated if TRANSFORM_FEEDBACK_ACTIVE is true.
+    if (state.isTransformFeedbackActive())
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kPLSTransformFeedbackActive);
+        return false;
+    }
+
+    // INVALID_OPERATION is generated if BLEND_DST_ALPHA, BLEND_DST_RGB, BLEND_SRC_ALPHA, or
+    // BLEND_SRC_RGB, for any draw buffer, is a blend function requiring the secondary color input,
+    // as specified in EXT_blend_func_extended.
+    if (state.getExtensions().blendFuncExtendedEXT)
+    {
+        for (GLsizei i = 0; i < state.getCaps().maxDrawBuffers; ++i)
+        {
+            const BlendStateExt &blend = state.getBlendStateExt();
+            if (!ValidatePLSActiveBlendFunc(context, entryPoint, blend.getDstAlphaIndexed(i)) ||
+                !ValidatePLSActiveBlendFunc(context, entryPoint, blend.getDstColorIndexed(i)) ||
+                !ValidatePLSActiveBlendFunc(context, entryPoint, blend.getSrcAlphaIndexed(i)) ||
+                !ValidatePLSActiveBlendFunc(context, entryPoint, blend.getSrcColorIndexed(i)))
+            {
+                return false;
+            }
+        }
+    }
+
+    // INVALID_OPERATION is generated if BLEND_EQUATION_RGB and/or BLEND_EQUATION_ALPHA is an
+    // advanced blend equation defined in KHR_blend_equation_advanced.
+    if (state.getExtensions().blendEquationAdvancedKHR)
+    {
+        if (!ValidatePLSActiveBlendEquation(context, entryPoint,
+                                            state.getBlendStateExt().getEquationColorIndexed(0)) ||
+            !ValidatePLSActiveBlendEquation(context, entryPoint,
+                                            state.getBlendStateExt().getEquationAlphaIndexed(0)))
+        {
+            return false;
+        }
+    }
     // INVALID_VALUE is generated if <n> < 1 or <n> > MAX_PIXEL_LOCAL_STORAGE_PLANES_ANGLE.
     if (n < 1)
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kPLSPlanesLessThanOne);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kPLSPlanesLessThanOne);
         return false;
     }
     if (n > static_cast<GLsizei>(context->getCaps().maxPixelLocalStoragePlanes))
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kPLSPlanesOutOfRange);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kPLSPlanesOutOfRange);
         return false;
     }
 
@@ -1965,8 +2510,8 @@ bool ValidateBeginPixelLocalStorageANGLE(const Context *context,
     {
         if (framebuffer->getColorAttachment(i))
         {
-            context->validationError(entryPoint, GL_INVALID_FRAMEBUFFER_OPERATION,
-                                     kPLSMaxColorAttachmentsExceded);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_FRAMEBUFFER_OPERATION,
+                                   kPLSMaxColorAttachmentsExceded);
             return false;
         }
     }
@@ -1981,8 +2526,8 @@ bool ValidateBeginPixelLocalStorageANGLE(const Context *context,
     {
         if (framebuffer->getColorAttachment(i))
         {
-            context->validationError(entryPoint, GL_INVALID_FRAMEBUFFER_OPERATION,
-                                     kPLSMaxCombinedDrawBuffersAndPlanesExceded);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_FRAMEBUFFER_OPERATION,
+                                   kPLSMaxCombinedDrawBuffersAndPlanesExceded);
             return false;
         }
     }
@@ -1990,7 +2535,7 @@ bool ValidateBeginPixelLocalStorageANGLE(const Context *context,
     // INVALID_VALUE is generated if <loadops> is NULL.
     if (loadops == nullptr)
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kPLSLoadOpsNULL);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kPLSLoadOpsNULL);
         return false;
     }
 
@@ -2011,8 +2556,7 @@ bool ValidateBeginPixelLocalStorageANGLE(const Context *context,
         // deinitialized state.
         if (pls == nullptr || pls->getPlane(i).isDeinitialized())
         {
-            context->validationError(entryPoint, GL_INVALID_OPERATION,
-                                     kPLSEnablingDeinitializedPlane);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kPLSEnablingDeinitializedPlane);
             return false;
         }
 
@@ -2034,8 +2578,7 @@ bool ValidateBeginPixelLocalStorageANGLE(const Context *context,
             }
             else if (textureExtents != textureBackedPLSExtents)
             {
-                context->validationError(entryPoint, GL_INVALID_OPERATION,
-                                         kPLSMismatchedBackingTextureSizes);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kPLSMismatchedBackingTextureSizes);
                 return false;
             }
         }
@@ -2046,8 +2589,7 @@ bool ValidateBeginPixelLocalStorageANGLE(const Context *context,
             // index is memoryless.
             if (loadops[i] == GL_LOAD_OP_LOAD_ANGLE)
             {
-                context->validationError(entryPoint, GL_INVALID_OPERATION,
-                                         kPLSKeepingMemorylessPlane);
+                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kPLSKeepingMemorylessPlane);
                 return false;
             }
         }
@@ -2063,8 +2605,7 @@ bool ValidateBeginPixelLocalStorageANGLE(const Context *context,
         if (hasTextureBackedPLSPlanes &&
             textureBackedPLSExtents != framebuffer->getState().getAttachmentExtentsIntersection())
         {
-            context->validationError(entryPoint, GL_INVALID_OPERATION,
-                                     kPLSDimensionsDontMatchRenderingArea);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kPLSDimensionsDontMatchRenderingArea);
             return false;
         }
     }
@@ -2074,8 +2615,7 @@ bool ValidateBeginPixelLocalStorageANGLE(const Context *context,
         // enabled, texture-backed pixel local storage planes.
         if (!hasTextureBackedPLSPlanes)
         {
-            context->validationError(entryPoint, GL_INVALID_OPERATION,
-                                     kPLSNoAttachmentsNoTextureBacked);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kPLSNoAttachmentsNoTextureBacked);
             return false;
         }
     }
@@ -2083,13 +2623,13 @@ bool ValidateBeginPixelLocalStorageANGLE(const Context *context,
     // INVALID_OPERATION is generated if a single texture image is bound to more than one pixel
     // local storage plane.
     //
-    //   TODO(anglebug.com/7279): Block feedback loops
+    //   TODO(anglebug.com/40096838): Block feedback loops
     //
 
     // INVALID_OPERATION is generated if a single texture image is simultaneously bound to a pixel
     // local storage plane and attached to the draw framebuffer.
     //
-    //   TODO(anglebug.com/7279): Block feedback loops
+    //   TODO(anglebug.com/40096838): Block feedback loops
     //
 
     return true;
@@ -2108,7 +2648,7 @@ bool ValidateEndPixelLocalStorageANGLE(const Context *context,
     // INVALID_VALUE is generated if <n> != PIXEL_LOCAL_STORAGE_ACTIVE_PLANES_ANGLE.
     if (n != context->getState().getPixelLocalStorageActivePlanes())
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kPLSNNotEqualActivePlanes);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kPLSNNotEqualActivePlanes);
         return false;
     }
 
@@ -2136,7 +2676,7 @@ bool ValidateFramebufferPixelLocalStorageInterruptANGLE(const Context *context,
     // Check that the pixel local storage extension is enabled at all.
     if (!context->getExtensions().shaderPixelLocalStorageANGLE)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kPLSExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kPLSExtensionNotEnabled);
         return false;
     }
 
@@ -2146,8 +2686,7 @@ bool ValidateFramebufferPixelLocalStorageInterruptANGLE(const Context *context,
         context->getState().getDrawFramebuffer()->peekPixelLocalStorage();
     if (pls != nullptr && pls->interruptCount() >= 255)
     {
-        context->validationError(entryPoint, GL_INVALID_FRAMEBUFFER_OPERATION,
-                                 kPLSInterruptOverflow);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_FRAMEBUFFER_OPERATION, kPLSInterruptOverflow);
         return false;
     }
 
@@ -2160,7 +2699,7 @@ bool ValidateFramebufferPixelLocalStorageRestoreANGLE(const Context *context,
     // Check that the pixel local storage extension is enabled at all.
     if (!context->getExtensions().shaderPixelLocalStorageANGLE)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kPLSExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kPLSExtensionNotEnabled);
         return false;
     }
 
@@ -2176,7 +2715,7 @@ bool ValidateFramebufferPixelLocalStorageRestoreANGLE(const Context *context,
     const PixelLocalStorage *pls = framebuffer->peekPixelLocalStorage();
     if (pls == nullptr || pls->interruptCount() == 0)
     {
-        context->validationError(entryPoint, GL_INVALID_FRAMEBUFFER_OPERATION, kPLSNotInterrupted);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_FRAMEBUFFER_OPERATION, kPLSNotInterrupted);
         return false;
     }
 
@@ -2224,7 +2763,7 @@ bool ValidateGetFramebufferPixelLocalStorageParameterfvRobustANGLE(const Context
         default:
             // INVALID_ENUM is generated if <pname> is not in Table 6.Y, or if the command issued is
             // not the associated "Get Command" for <pname> in Table 6.Y.
-            context->validationErrorF(entryPoint, GL_INVALID_ENUM, kEnumNotSupported, pname);
+            ANGLE_VALIDATION_ERRORF(GL_INVALID_ENUM, kEnumNotSupported, pname);
             return false;
     }
     return ValidatePLSQueryCommon(context, entryPoint, paramCount, bufSize, params);
@@ -2258,7 +2797,7 @@ bool ValidateGetFramebufferPixelLocalStorageParameterivRobustANGLE(const Context
         default:
             // INVALID_ENUM is generated if <pname> is not in Table 6.Y, or if the command issued is
             // not the associated "Get Command" for <pname> in Table 6.Y.
-            context->validationErrorF(entryPoint, GL_INVALID_ENUM, kEnumNotSupported, pname);
+            ANGLE_VALIDATION_ERRORF(GL_INVALID_ENUM, kEnumNotSupported, pname);
             return false;
     }
     return ValidatePLSQueryCommon(context, entryPoint, paramCount, bufSize, params);
@@ -2268,44 +2807,41 @@ bool ValidateFramebufferFetchBarrierEXT(const Context *context, angle::EntryPoin
 {
     if (!context->getExtensions().shaderFramebufferFetchNonCoherentEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION,
-                                 kFramebufferFetchNonCoherentExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION,
+                               kFramebufferFetchNonCoherentExtensionNotEnabled);
         return false;
     }
     return true;
 }
 
-bool ValidatePatchParameteriEXT(const Context *context,
+bool ValidatePatchParameteriEXT(const PrivateState &state,
+                                ErrorSet *errors,
                                 angle::EntryPoint entryPoint,
                                 GLenum pname,
                                 GLint value)
 {
-    if (!context->getExtensions().tessellationShaderEXT)
+    if (!state.getExtensions().tessellationShaderEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION,
-                                 kTessellationShaderExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kTessellationShaderEXTNotEnabled);
         return false;
     }
 
-    if (pname != GL_PATCH_VERTICES)
+    return ValidatePatchParameteriBase(state, errors, entryPoint, pname, value);
+}
+
+bool ValidatePatchParameteriOES(const PrivateState &state,
+                                ErrorSet *errors,
+                                angle::EntryPoint entryPoint,
+                                GLenum pname,
+                                GLint value)
+{
+    if (!state.getExtensions().tessellationShaderOES)
     {
-        context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidPname);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kTessellationShaderOESNotEnabled);
         return false;
     }
 
-    if (value <= 0)
-    {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kInvalidValueNonPositive);
-        return false;
-    }
-
-    if (value > context->getCaps().maxPatchVertices)
-    {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kInvalidValueExceedsMaxPatchSize);
-        return false;
-    }
-
-    return true;
+    return ValidatePatchParameteriBase(state, errors, entryPoint, pname, value);
 }
 
 bool ValidateTexStorageMemFlags2DANGLE(const Context *context,
@@ -2323,7 +2859,7 @@ bool ValidateTexStorageMemFlags2DANGLE(const Context *context,
 {
     if (!context->getExtensions().memoryObjectFlagsANGLE)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2346,7 +2882,7 @@ bool ValidateTexStorageMemFlags2DANGLE(const Context *context,
 
     if ((createFlags & ~kAllCreateFlags) != 0)
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kInvalidExternalCreateFlags);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidExternalCreateFlags);
         return false;
     }
 
@@ -2359,7 +2895,7 @@ bool ValidateTexStorageMemFlags2DANGLE(const Context *context,
 
     if ((usageFlags & ~kAllUsageFlags) != 0)
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kInvalidExternalUsageFlags);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidExternalUsageFlags);
         return false;
     }
 
@@ -2431,13 +2967,13 @@ bool ValidateBufferStorageEXT(const Context *context,
 {
     if (!context->isValidBufferBinding(targetPacked))
     {
-        context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidBufferTypes);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidBufferTypes);
         return false;
     }
 
     if (size <= 0)
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kNonPositiveSize);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kNonPositiveSize);
         return false;
     }
 
@@ -2446,20 +2982,20 @@ bool ValidateBufferStorageEXT(const Context *context,
          GL_MAP_PERSISTENT_BIT_EXT | GL_MAP_COHERENT_BIT_EXT | GL_CLIENT_STORAGE_BIT_EXT);
     if ((flags & ~kAllUsageFlags) != 0)
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kInvalidBufferUsageFlags);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidBufferUsageFlags);
         return false;
     }
 
     if (((flags & GL_MAP_PERSISTENT_BIT_EXT) != 0) &&
         ((flags & (GL_MAP_READ_BIT | GL_MAP_WRITE_BIT)) == 0))
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kInvalidBufferUsageFlags);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidBufferUsageFlags);
         return false;
     }
 
     if (((flags & GL_MAP_COHERENT_BIT_EXT) != 0) && ((flags & GL_MAP_PERSISTENT_BIT_EXT) == 0))
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kInvalidBufferUsageFlags);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidBufferUsageFlags);
         return false;
     }
 
@@ -2467,40 +3003,73 @@ bool ValidateBufferStorageEXT(const Context *context,
 
     if (buffer == nullptr)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kBufferNotBound);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kBufferNotBound);
         return false;
     }
 
     if (buffer->isImmutable())
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kBufferImmutable);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kBufferImmutable);
         return false;
     }
 
     return true;
 }
 
+// GL_EXT_clear_texture
+bool ValidateClearTexImageEXT(const Context *context,
+                              angle::EntryPoint entryPoint,
+                              TextureID texturePacked,
+                              GLint level,
+                              GLenum format,
+                              GLenum type,
+                              const void *data)
+{
+    return ValidateClearTexImageCommon(context, entryPoint, texturePacked, level, std::nullopt,
+                                       format, type, data);
+}
+
+bool ValidateClearTexSubImageEXT(const Context *context,
+                                 angle::EntryPoint entryPoint,
+                                 TextureID texturePacked,
+                                 GLint level,
+                                 GLint xoffset,
+                                 GLint yoffset,
+                                 GLint zoffset,
+                                 GLsizei width,
+                                 GLsizei height,
+                                 GLsizei depth,
+                                 GLenum format,
+                                 GLenum type,
+                                 const void *data)
+{
+    return ValidateClearTexImageCommon(context, entryPoint, texturePacked, level,
+                                       Box(xoffset, yoffset, zoffset, width, height, depth), format,
+                                       type, data);
+}
+
 // GL_EXT_clip_control
-bool ValidateClipControlEXT(const Context *context,
+bool ValidateClipControlEXT(const PrivateState &state,
+                            ErrorSet *errors,
                             angle::EntryPoint entryPoint,
                             ClipOrigin originPacked,
                             ClipDepthMode depthPacked)
 {
-    if (!context->getExtensions().clipControlEXT)
+    if (!state.getExtensions().clipControlEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
     if (originPacked == ClipOrigin::InvalidEnum)
     {
-        context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidOriginEnum);
+        errors->validationError(entryPoint, GL_INVALID_ENUM, kInvalidOriginEnum);
         return false;
     }
 
     if (depthPacked == ClipDepthMode::InvalidEnum)
     {
-        context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidDepthEnum);
+        errors->validationError(entryPoint, GL_INVALID_ENUM, kInvalidDepthEnum);
         return false;
     }
 
@@ -2523,13 +3092,13 @@ bool ValidateBufferStorageExternalEXT(const Context *context,
 
     if (offset != 0)
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kExternalBufferInvalidOffset);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kExternalBufferInvalidOffset);
         return false;
     }
 
     if (clientBuffer == nullptr && size > 0)
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kClientBufferInvalid);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kClientBufferInvalid);
         return false;
     }
 
@@ -2548,16 +3117,73 @@ bool ValidateNamedBufferStorageExternalEXT(const Context *context,
     return false;
 }
 
+// GL_ANGLE_polygon_mode
+bool ValidatePolygonModeANGLE(const PrivateState &state,
+                              ErrorSet *errors,
+                              angle::EntryPoint entryPoint,
+                              GLenum face,
+                              PolygonMode modePacked)
+{
+    if (!state.getExtensions().polygonModeANGLE)
+    {
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        return false;
+    }
+
+    if (face != GL_FRONT_AND_BACK)
+    {
+        errors->validationError(entryPoint, GL_INVALID_ENUM, kInvalidCullMode);
+        return false;
+    }
+
+    if (modePacked == PolygonMode::Point || modePacked == PolygonMode::InvalidEnum)
+    {
+        errors->validationError(entryPoint, GL_INVALID_ENUM, kInvalidPolygonMode);
+        return false;
+    }
+
+    return true;
+}
+
+// GL_NV_polygon_mode
+bool ValidatePolygonModeNV(const PrivateState &state,
+                           ErrorSet *errors,
+                           angle::EntryPoint entryPoint,
+                           GLenum face,
+                           PolygonMode modePacked)
+{
+    if (!state.getExtensions().polygonModeNV)
+    {
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        return false;
+    }
+
+    if (face != GL_FRONT_AND_BACK)
+    {
+        errors->validationError(entryPoint, GL_INVALID_ENUM, kInvalidCullMode);
+        return false;
+    }
+
+    if (modePacked == PolygonMode::InvalidEnum)
+    {
+        errors->validationError(entryPoint, GL_INVALID_ENUM, kInvalidPolygonMode);
+        return false;
+    }
+
+    return true;
+}
+
 // GL_EXT_polygon_offset_clamp
-bool ValidatePolygonOffsetClampEXT(const Context *context,
+bool ValidatePolygonOffsetClampEXT(const PrivateState &state,
+                                   ErrorSet *errors,
                                    angle::EntryPoint entryPoint,
                                    GLfloat factor,
                                    GLfloat units,
                                    GLfloat clamp)
 {
-    if (!context->getExtensions().polygonOffsetClampEXT)
+    if (!state.getExtensions().polygonOffsetClampEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2565,7 +3191,8 @@ bool ValidatePolygonOffsetClampEXT(const Context *context,
 }
 
 // GL_EXT_primitive_bounding_box
-bool ValidatePrimitiveBoundingBoxEXT(const Context *context,
+bool ValidatePrimitiveBoundingBoxEXT(const PrivateState &state,
+                                     ErrorSet *errors,
                                      angle::EntryPoint entryPoint,
                                      GLfloat minX,
                                      GLfloat minY,
@@ -2576,9 +3203,9 @@ bool ValidatePrimitiveBoundingBoxEXT(const Context *context,
                                      GLfloat maxZ,
                                      GLfloat maxW)
 {
-    if (!context->getExtensions().primitiveBoundingBoxEXT)
+    if (!state.getExtensions().primitiveBoundingBoxEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2586,7 +3213,8 @@ bool ValidatePrimitiveBoundingBoxEXT(const Context *context,
 }
 
 // GL_OES_primitive_bounding_box
-bool ValidatePrimitiveBoundingBoxOES(const Context *context,
+bool ValidatePrimitiveBoundingBoxOES(const PrivateState &state,
+                                     ErrorSet *errors,
                                      angle::EntryPoint entryPoint,
                                      GLfloat minX,
                                      GLfloat minY,
@@ -2597,9 +3225,9 @@ bool ValidatePrimitiveBoundingBoxOES(const Context *context,
                                      GLfloat maxZ,
                                      GLfloat maxW)
 {
-    if (!context->getExtensions().primitiveBoundingBoxOES)
+    if (!state.getExtensions().primitiveBoundingBoxOES)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2614,7 +3242,7 @@ bool ValidateActiveShaderProgramEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2627,7 +3255,7 @@ bool ValidateBindProgramPipelineEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2642,7 +3270,7 @@ bool ValidateCreateShaderProgramvEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2656,7 +3284,7 @@ bool ValidateDeleteProgramPipelinesEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2670,7 +3298,7 @@ bool ValidateGenProgramPipelinesEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2686,7 +3314,7 @@ bool ValidateGetProgramPipelineInfoLogEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2702,7 +3330,7 @@ bool ValidateGetProgramPipelineivEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2715,7 +3343,7 @@ bool ValidateIsProgramPipelineEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2730,7 +3358,7 @@ bool ValidateProgramParameteriEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2745,7 +3373,7 @@ bool ValidateProgramUniform1fEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2761,7 +3389,7 @@ bool ValidateProgramUniform1fvEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2777,7 +3405,7 @@ bool ValidateProgramUniform1iEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2793,7 +3421,7 @@ bool ValidateProgramUniform1ivEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2809,7 +3437,7 @@ bool ValidateProgramUniform1uiEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2825,7 +3453,7 @@ bool ValidateProgramUniform1uivEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2842,7 +3470,7 @@ bool ValidateProgramUniform2fEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2858,7 +3486,7 @@ bool ValidateProgramUniform2fvEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2875,7 +3503,7 @@ bool ValidateProgramUniform2iEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2891,7 +3519,7 @@ bool ValidateProgramUniform2ivEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2908,7 +3536,7 @@ bool ValidateProgramUniform2uiEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2925,7 +3553,7 @@ bool ValidateProgramUniform2uivEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2943,7 +3571,7 @@ bool ValidateProgramUniform3fEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2960,7 +3588,7 @@ bool ValidateProgramUniform3fvEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2978,7 +3606,7 @@ bool ValidateProgramUniform3iEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -2995,7 +3623,7 @@ bool ValidateProgramUniform3ivEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3013,7 +3641,7 @@ bool ValidateProgramUniform3uiEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3030,7 +3658,7 @@ bool ValidateProgramUniform3uivEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3049,7 +3677,7 @@ bool ValidateProgramUniform4fEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3066,7 +3694,7 @@ bool ValidateProgramUniform4fvEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3085,7 +3713,7 @@ bool ValidateProgramUniform4iEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3115,7 +3743,7 @@ bool ValidateProgramUniform4uiEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3144,7 +3772,7 @@ bool ValidateProgramUniformMatrix2fvEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3162,7 +3790,7 @@ bool ValidateProgramUniformMatrix2x3fvEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3180,7 +3808,7 @@ bool ValidateProgramUniformMatrix2x4fvEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3198,7 +3826,7 @@ bool ValidateProgramUniformMatrix3fvEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3216,7 +3844,7 @@ bool ValidateProgramUniformMatrix3x2fvEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3234,7 +3862,7 @@ bool ValidateProgramUniformMatrix3x4fvEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3252,7 +3880,7 @@ bool ValidateProgramUniformMatrix4fvEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3270,7 +3898,7 @@ bool ValidateProgramUniformMatrix4x2fvEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3288,7 +3916,7 @@ bool ValidateProgramUniformMatrix4x3fvEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3304,7 +3932,7 @@ bool ValidateUseProgramStagesEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3317,7 +3945,7 @@ bool ValidateValidateProgramPipelineEXT(const Context *context,
 {
     if (!context->getExtensions().separateShaderObjectsEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3335,13 +3963,13 @@ bool ValidateGetObjectLabelEXT(const Context *context,
 {
     if (!context->getExtensions().debugLabelEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
     if (bufSize < 0)
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kNegativeBufferSize);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kNegativeBufferSize);
         return false;
     }
 
@@ -3357,13 +3985,13 @@ bool ValidateLabelObjectEXT(const Context *context,
 {
     if (!context->getExtensions().debugLabelEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
     if (length < 0)
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kNegativeLength);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kNegativeLength);
         return false;
     }
 
@@ -3388,7 +4016,7 @@ bool ValidateEGLImageTargetTexStorageEXT(const Context *context,
 {
     if (!context->getExtensions().EGLImageStorageEXT)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3398,15 +4026,13 @@ bool ValidateEGLImageTargetTexStorageEXT(const Context *context,
         case TextureType::External:
             if (!context->getExtensions().EGLImageExternalOES)
             {
-                context->validationErrorF(entryPoint, GL_INVALID_ENUM, kEnumNotSupported,
-                                          ToGLenum(targetType));
+                ANGLE_VALIDATION_ERRORF(GL_INVALID_ENUM, kEnumNotSupported, ToGLenum(targetType));
             }
             break;
         case TextureType::CubeMapArray:
             if (!context->getExtensions().textureCubeMapArrayAny())
             {
-                context->validationErrorF(entryPoint, GL_INVALID_ENUM, kEnumNotSupported,
-                                          ToGLenum(targetType));
+                ANGLE_VALIDATION_ERRORF(GL_INVALID_ENUM, kEnumNotSupported, ToGLenum(targetType));
             }
             break;
         case TextureType::_2D:
@@ -3415,7 +4041,7 @@ bool ValidateEGLImageTargetTexStorageEXT(const Context *context,
         case TextureType::CubeMap:
             break;
         default:
-            context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidTextureTarget);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidTextureTarget);
             return false;
     }
 
@@ -3429,7 +4055,7 @@ bool ValidateEGLImageTargetTexStorageEXT(const Context *context,
     // attrib list validation
     if (attrib_list != nullptr && attrib_list[0] != GL_NONE)
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kAttributeListNotNull);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kAttributeListNotNull);
         return false;
     }
 
@@ -3442,7 +4068,7 @@ bool ValidateEGLImageTargetTexStorageEXT(const Context *context,
 
     if (width < 1 || height < 1 || depth < 1 || levelCount < 1)
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kTextureSizeTooSmall);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kTextureSizeTooSmall);
         return false;
     }
 
@@ -3458,7 +4084,7 @@ bool ValidateEGLImageTargetTexStorageEXT(const Context *context,
         const Caps &caps = context->getCaps();
         if (width > caps.max2DTextureSize || height > caps.max2DTextureSize)
         {
-            context->validationError(entryPoint, GL_INVALID_VALUE, kResourceMaxTextureSize);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kResourceMaxTextureSize);
             return false;
         }
     }
@@ -3493,7 +4119,7 @@ bool ValidateAcquireTexturesANGLE(const Context *context,
 {
     if (!context->getExtensions().vulkanImageANGLE)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3501,12 +4127,12 @@ bool ValidateAcquireTexturesANGLE(const Context *context,
     {
         if (!context->getTexture(textures[i]))
         {
-            context->validationError(entryPoint, GL_INVALID_OPERATION, kInvalidTextureName);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidTextureName);
             return false;
         }
         if (!IsValidImageLayout(FromGLenum<ImageLayout>(layouts[i])))
         {
-            context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidImageLayout);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidImageLayout);
             return false;
         }
     }
@@ -3522,14 +4148,14 @@ bool ValidateReleaseTexturesANGLE(const Context *context,
 {
     if (!context->getExtensions().vulkanImageANGLE)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
     for (GLuint i = 0; i < numTextures; ++i)
     {
         if (!context->getTexture(textures[i]))
         {
-            context->validationError(entryPoint, GL_INVALID_OPERATION, kInvalidTextureName);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidTextureName);
             return false;
         }
     }
@@ -3545,7 +4171,7 @@ bool ValidateFramebufferParameteriMESA(const Context *context,
 {
     if (pname != GL_FRAMEBUFFER_FLIP_Y_MESA)
     {
-        context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidPname);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidPname);
         return false;
     }
     return ValidateFramebufferParameteriBase(context, entryPoint, target, pname, param);
@@ -3559,7 +4185,7 @@ bool ValidateGetFramebufferParameterivMESA(const Context *context,
 {
     if (pname != GL_FRAMEBUFFER_FLIP_Y_MESA)
     {
-        context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidPname);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidPname);
         return false;
     }
     return ValidateGetFramebufferParameterivBase(context, entryPoint, target, pname, params);
@@ -3572,12 +4198,11 @@ bool ValidateBeginPerfMonitorAMD(const Context *context,
 {
     if (!context->getExtensions().performanceMonitorAMD)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    UNIMPLEMENTED();
-    return false;
+    return true;
 }
 
 bool ValidateDeletePerfMonitorsAMD(const Context *context,
@@ -3587,24 +4212,29 @@ bool ValidateDeletePerfMonitorsAMD(const Context *context,
 {
     if (!context->getExtensions().performanceMonitorAMD)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    UNIMPLEMENTED();
-    return false;
+    // Note: ANGLE does not really create monitor objects or track ids.
+    return true;
 }
 
 bool ValidateEndPerfMonitorAMD(const Context *context, angle::EntryPoint entryPoint, GLuint monitor)
 {
     if (!context->getExtensions().performanceMonitorAMD)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    UNIMPLEMENTED();
-    return false;
+    if (!context->getState().isPerfMonitorActive())
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kPerfMonitorNotActive);
+        return false;
+    }
+
+    return true;
 }
 
 bool ValidateGenPerfMonitorsAMD(const Context *context,
@@ -3614,12 +4244,11 @@ bool ValidateGenPerfMonitorsAMD(const Context *context,
 {
     if (!context->getExtensions().performanceMonitorAMD)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    UNIMPLEMENTED();
-    return false;
+    return true;
 }
 
 bool ValidateGetPerfMonitorCounterDataAMD(const Context *context,
@@ -3632,13 +4261,13 @@ bool ValidateGetPerfMonitorCounterDataAMD(const Context *context,
 {
     if (!context->getExtensions().performanceMonitorAMD)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
     if (monitor != 0)
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kInvalidPerfMonitor);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidPerfMonitor);
         return false;
     }
 
@@ -3650,7 +4279,7 @@ bool ValidateGetPerfMonitorCounterDataAMD(const Context *context,
             break;
 
         default:
-            context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidPname);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidPname);
             return false;
     }
 
@@ -3666,7 +4295,7 @@ bool ValidateGetPerfMonitorCounterInfoAMD(const Context *context,
 {
     if (!context->getExtensions().performanceMonitorAMD)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3674,13 +4303,13 @@ bool ValidateGetPerfMonitorCounterInfoAMD(const Context *context,
 
     if (group >= groups.size())
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kInvalidPerfMonitorGroup);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidPerfMonitorGroup);
         return false;
     }
 
     if (counter >= groups[group].counters.size())
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kInvalidPerfMonitorCounter);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidPerfMonitorCounter);
         return false;
     }
 
@@ -3691,7 +4320,7 @@ bool ValidateGetPerfMonitorCounterInfoAMD(const Context *context,
             break;
 
         default:
-            context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidPname);
+            ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidPname);
             return false;
     }
 
@@ -3708,7 +4337,7 @@ bool ValidateGetPerfMonitorCounterStringAMD(const Context *context,
 {
     if (!context->getExtensions().performanceMonitorAMD)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3716,13 +4345,13 @@ bool ValidateGetPerfMonitorCounterStringAMD(const Context *context,
 
     if (group >= groups.size())
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kInvalidPerfMonitorGroup);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidPerfMonitorGroup);
         return false;
     }
 
     if (counter >= groups[group].counters.size())
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kInvalidPerfMonitorCounter);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidPerfMonitorCounter);
         return false;
     }
 
@@ -3739,7 +4368,7 @@ bool ValidateGetPerfMonitorCountersAMD(const Context *context,
 {
     if (!context->getExtensions().performanceMonitorAMD)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3747,7 +4376,7 @@ bool ValidateGetPerfMonitorCountersAMD(const Context *context,
 
     if (group >= groups.size())
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kInvalidPerfMonitorGroup);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidPerfMonitorGroup);
         return false;
     }
 
@@ -3763,7 +4392,7 @@ bool ValidateGetPerfMonitorGroupStringAMD(const Context *context,
 {
     if (!context->getExtensions().performanceMonitorAMD)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3771,7 +4400,7 @@ bool ValidateGetPerfMonitorGroupStringAMD(const Context *context,
 
     if (group >= groups.size())
     {
-        context->validationError(entryPoint, GL_INVALID_VALUE, kInvalidPerfMonitorGroup);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidPerfMonitorGroup);
         return false;
     }
 
@@ -3786,7 +4415,7 @@ bool ValidateGetPerfMonitorGroupsAMD(const Context *context,
 {
     if (!context->getExtensions().performanceMonitorAMD)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3803,7 +4432,7 @@ bool ValidateSelectPerfMonitorCountersAMD(const Context *context,
 {
     if (!context->getExtensions().performanceMonitorAMD)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
@@ -3811,34 +4440,231 @@ bool ValidateSelectPerfMonitorCountersAMD(const Context *context,
     return false;
 }
 
-bool ValidateShadingRateQCOM(const Context *context, angle::EntryPoint entryPoint, GLenum rate)
+bool ValidateShadingRateQCOM(const PrivateState &state,
+                             ErrorSet *errors,
+                             angle::EntryPoint entryPoint,
+                             GLenum rate)
 {
-    if (!context->getExtensions().shadingRateQCOM)
+    if (!state.getExtensions().shadingRateQCOM)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
     gl::ShadingRate shadingRate = gl::FromGLenum<gl::ShadingRate>(rate);
     if (shadingRate == gl::ShadingRate::Undefined || shadingRate == gl::ShadingRate::InvalidEnum)
     {
-        context->validationError(entryPoint, GL_INVALID_ENUM, kInvalidShadingRate);
+        errors->validationError(entryPoint, GL_INVALID_ENUM, kInvalidShadingRate);
         return false;
     }
 
     return true;
 }
 
-bool ValidateLogicOpANGLE(const Context *context,
+bool ValidateLogicOpANGLE(const PrivateState &state,
+                          ErrorSet *errors,
                           angle::EntryPoint entryPoint,
                           LogicalOperation opcodePacked)
 {
-    if (!context->getExtensions().logicOpANGLE)
+    if (!state.getExtensions().logicOpANGLE)
     {
-        context->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
+        errors->validationError(entryPoint, GL_INVALID_OPERATION, kExtensionNotEnabled);
         return false;
     }
 
-    return ValidateLogicOpCommon(context, entryPoint, opcodePacked);
+    return ValidateLogicOpCommon(state, errors, entryPoint, opcodePacked);
 }
+
+bool ValidateFramebufferFoveationConfigQCOM(const Context *context,
+                                            angle::EntryPoint entryPoint,
+                                            FramebufferID framebufferPacked,
+                                            GLuint numLayers,
+                                            GLuint focalPointsPerLayer,
+                                            GLuint requestedFeatures,
+                                            const GLuint *providedFeatures)
+{
+    Framebuffer *framebuffer = context->getFramebuffer(framebufferPacked);
+
+    // INVALID_VALUE is generated by FramebufferFoveationConfigQCOM if 'fbo' is not a valid
+    // framebuffer.
+    if (framebuffer == nullptr)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidFramebufferName);
+        return false;
+    }
+
+    // INVALID_VALUE is generated by FramebufferFoveationConfigQCOM if 'numLayers' is greater than
+    // GL_MAX_ARRAY_TEXTURE_LAYERS - 1.
+    if (numLayers > static_cast<GLuint>(context->getState().getCaps().maxArrayTextureLayers) - 1)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kFramebufferFoveationLayersExceedMaxArrayLayers);
+        return false;
+    }
+
+    // INVALID_VALUE is generated by FramebufferFoveationConfigQCOM if 'numFocalPoints' is greater
+    // than implementation can support.
+    if (focalPointsPerLayer > gl::IMPLEMENTATION_MAX_FOCAL_POINTS)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kFocalPointsExceedMaxFocalPoints);
+        return false;
+    }
+
+    // INVALID_OPERATION is generated by FramebufferFoveationConfigQCOM if it is called for a fbo
+    // that has already been cofigured for foveated rendering.
+    if (framebuffer->isFoveationConfigured())
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kFramebufferFoveationAlreadyConfigured);
+        return false;
+    }
+
+    return true;
+}
+
+bool ValidateFramebufferFoveationParametersQCOM(const Context *context,
+                                                angle::EntryPoint entryPoint,
+                                                FramebufferID framebufferPacked,
+                                                GLuint layer,
+                                                GLuint focalPoint,
+                                                GLfloat focalX,
+                                                GLfloat focalY,
+                                                GLfloat gainX,
+                                                GLfloat gainY,
+                                                GLfloat foveaArea)
+{
+    Framebuffer *framebuffer = context->getFramebuffer(framebufferPacked);
+
+    // INVALID_VALUE is generated by FramebufferFoveationParametersQCOM if 'fbo' is not a valid
+    // framebuffer.
+    if (framebuffer == nullptr)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidFramebufferName);
+        return false;
+    }
+
+    // INVALID_OPERATION is generated by FramebufferFoveationParametersQCOM if 'fbo' has not been
+    // configured for foveated rendering.
+    if (!framebuffer->isFoveationConfigured())
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kFramebufferFoveationNotConfigured);
+        return false;
+    }
+
+    // INVALID_VALUE is generated by FramebufferFoveationParametersQCOM if 'layer' is greater than
+    // or equal to the numLayers that the fbo was previously configured for in
+    // FramebufferFoveationConfigQCOM.
+    if (layer >= gl::IMPLEMENTATION_MAX_NUM_LAYERS)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kFramebufferFoveationLayersExceedMaxArrayLayers);
+        return false;
+    }
+
+    // INVALID_VALUE is generated by FramebufferFoveationParametersQCOM if 'numFocalPoints' is
+    // greater than implementation can support. INVALID_OPERATION is generated by
+    if (focalPoint >= gl::IMPLEMENTATION_MAX_FOCAL_POINTS)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kFocalPointsExceedMaxFocalPoints);
+        return false;
+    }
+    return true;
+}
+
+bool ValidateTextureFoveationParametersQCOM(const Context *context,
+                                            angle::EntryPoint entryPoint,
+                                            TextureID texturePacked,
+                                            GLuint layer,
+                                            GLuint focalPoint,
+                                            GLfloat focalX,
+                                            GLfloat focalY,
+                                            GLfloat gainX,
+                                            GLfloat gainY,
+                                            GLfloat foveaArea)
+{
+    Texture *texture = context->getTexture(texturePacked);
+
+    // INVALID_VALUE is generated by TextureFoveationParametersQCOM if 'texture' is not a valid
+    // texture object.
+    if (texture == nullptr)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidTextureName);
+        return false;
+    }
+
+    // INVALID_OPERATION is generated by TextureFoveationParametersQCOM if 'texture' has not been
+    // set as foveated. i.e. 'texture's parameter TEXTURE_FOVEATED_FEATURE_BITS_QCOM does not
+    // contain FOVEATION_ENABLE_BIT_QCOM.
+    if (!texture->isFoveationEnabled())
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kTextureFoveationNotEnabled);
+        return false;
+    }
+
+    // INVALID_VALUE is generated by TextureFoveationParametersQCOM if 'focalPoint' is larger than
+    // TEXTURE_FOVEATED_NUM_FOCAL_POINTS_QUERY_QCOM minus one.
+    if (focalPoint > texture->getNumFocalPoints() - 1)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kFocalPointsExceedMaxFocalPoints);
+        return false;
+    }
+
+    return true;
+}
+
+bool ValidateEndTilingQCOM(const Context *context,
+                           angle::EntryPoint entryPoint,
+                           GLbitfield preserveMask)
+{
+    if (!context->getExtensions().tiledRenderingQCOM)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
+        return false;
+    }
+
+    const gl::PrivateState &privateState = context->getPrivateState();
+    if (!privateState.isTiledRendering())
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kTilingEndCalledWithoutStart);
+        return false;
+    }
+
+    // preserveMask does not need to be validated. The bitfield covers the entire 32 bits of
+    // GLbitfield and unbound attachments are siliently ignored like in glClear
+
+    return true;
+}
+
+bool ValidateStartTilingQCOM(const Context *context,
+                             angle::EntryPoint entryPoint,
+                             GLuint x,
+                             GLuint y,
+                             GLuint width,
+                             GLuint height,
+                             GLbitfield preserveMask)
+{
+    if (!context->getExtensions().tiledRenderingQCOM)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kExtensionNotEnabled);
+        return false;
+    }
+
+    const gl::PrivateState &privateState = context->getPrivateState();
+    if (privateState.isTiledRendering())
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kTilingStartCalledWithoutEnd);
+        return false;
+    }
+
+    Framebuffer *framebuffer                   = context->getState().getDrawFramebuffer();
+    const FramebufferStatus &framebufferStatus = framebuffer->checkStatus(context);
+    if (!framebufferStatus.isComplete())
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, framebufferStatus.reason);
+        return false;
+    }
+
+    // preserveMask does not need to be validated. The bitfield covers the entire 32 bits of
+    // GLbitfield and unbound attachments are siliently ignored like in glClear
+
+    return true;
+}
+
 }  // namespace gl

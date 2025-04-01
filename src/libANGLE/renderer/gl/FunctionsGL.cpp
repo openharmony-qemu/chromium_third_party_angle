@@ -156,6 +156,9 @@ void FunctionsGL::initialize(const egl::AttributeMap &displayAttributes)
 #endif  // defined(ANGLE_ENABLE_GL_NULL)
             {
                 initProcsDesktopGL(version, extensionSet);
+                // Test that ANGLE_ENABLE_GL_DESKTOP_BACKEND has been enabled
+                // See http://anglebug.com/42266631
+                ASSERT(getString != nullptr && getError != nullptr);
             }
             break;
         }

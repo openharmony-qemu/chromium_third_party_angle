@@ -246,11 +246,17 @@ void ProgramCachePopulateANGLE(Thread *thread,
                                EGLint binarysize);
 EGLint ProgramCacheResizeANGLE(Thread *thread, egl::Display *dpyPacked, EGLint limit, EGLint mode);
 const char *QueryStringiANGLE(Thread *thread, egl::Display *dpyPacked, EGLint name, EGLint index);
+void AcquireExternalContextANGLE(Thread *thread,
+                                 egl::Display *dpyPacked,
+                                 SurfaceID drawAndReadPacked);
+void ReleaseExternalContextANGLE(Thread *thread, egl::Display *dpyPacked);
 EGLBoolean SwapBuffersWithFrameTokenANGLE(Thread *thread,
                                           egl::Display *dpyPacked,
                                           SurfaceID surfacePacked,
                                           EGLFrameTokenANGLE frametoken);
-EGLBoolean PrepareSwapBuffersANGLE(EGLDisplay dpy, EGLSurface surface);
+EGLBoolean PrepareSwapBuffersANGLE(Thread *thread,
+                                   egl::Display *dpyPacked,
+                                   SurfaceID surfacePacked);
 void ReleaseHighPowerGPUANGLE(Thread *thread, egl::Display *dpyPacked, gl::ContextID ctxPacked);
 void ReacquireHighPowerGPUANGLE(Thread *thread, egl::Display *dpyPacked, gl::ContextID ctxPacked);
 void HandleGPUSwitchANGLE(Thread *thread, egl::Display *dpyPacked);
@@ -269,5 +275,6 @@ EGLBoolean ExportVkImageANGLE(Thread *thread,
                               void *vk_image_create_info);
 void *CopyMetalSharedEventANGLE(Thread *thread, egl::Display *dpyPacked, egl::SyncID syncPacked);
 void WaitUntilWorkScheduledANGLE(Thread *thread, egl::Display *dpyPacked);
+void SetValidationEnabledANGLE(Thread *thread, EGLBoolean validationState);
 }  // namespace egl
 #endif  // LIBGLESV2_EGL_EXT_STUBS_AUTOGEN_H_

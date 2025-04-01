@@ -8,6 +8,7 @@
 // ANGLE Format table:
 //   Queries for typed format information from the ANGLE format enum.
 
+#include "libANGLE/cl_types.h"
 #include "libANGLE/renderer/Format.h"
 
 #include "image_util/copyimage.h"
@@ -99,6 +100,7 @@ const Format gFormatInfoTable[] = {
     { FormatID::B8G8R8A8_UNORM, GL_BGRA8_EXT, GL_BGRA8_EXT, GenerateMip<B8G8R8A8>, BGRACopyFunctions, ReadColor<B8G8R8A8, GLfloat>, WriteColor<B8G8R8A8, GLfloat>, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 8, 0, 0, 0, 4, 0, false, false, false, false, false, gl::VertexAttribType::UnsignedByte },
     { FormatID::B8G8R8A8_UNORM_SRGB, GL_BGRA8_SRGB_ANGLEX, GL_BGRA8_SRGB_ANGLEX, GenerateMip<B8G8R8A8>, NoCopyFunctions, ReadColor<B8G8R8A8, GLfloat>, WriteColor<B8G8R8A8, GLfloat>, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 8, 0, 0, 0, 4, 0, false, false, false, true, false, gl::VertexAttribType::Byte },
     { FormatID::B8G8R8X8_UNORM, GL_BGRA8_EXT, GL_BGRA8_EXT, GenerateMip<B8G8R8X8>, NoCopyFunctions, ReadColor<B8G8R8X8, GLfloat>, WriteColor<B8G8R8X8, GLfloat>, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 0, 0, 0, 0, 4, std::numeric_limits<GLuint>::max(), false, false, false, false, false, gl::VertexAttribType::UnsignedByte },
+    { FormatID::B8G8R8X8_UNORM_SRGB, GL_BGRX8_SRGB_ANGLEX, GL_BGRX8_SRGB_ANGLEX, GenerateMip<B8G8R8X8>, NoCopyFunctions, ReadColor<B8G8R8X8, GLfloat>, WriteColor<B8G8R8X8, GLfloat>, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 0, 0, 0, 0, 4, std::numeric_limits<GLuint>::max(), false, false, false, true, false, gl::VertexAttribType::Byte },
     { FormatID::BC1_RGBA_UNORM_BLOCK, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, nullptr, NoCopyFunctions, nullptr, nullptr, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 8, 0, 0, 0, 8, std::numeric_limits<GLuint>::max(), true, false, false, false, false, gl::VertexAttribType::InvalidEnum },
     { FormatID::BC1_RGBA_UNORM_SRGB_BLOCK, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT, nullptr, NoCopyFunctions, nullptr, nullptr, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 8, 0, 0, 0, 8, std::numeric_limits<GLuint>::max(), true, false, false, true, false, gl::VertexAttribType::InvalidEnum },
     { FormatID::BC1_RGB_UNORM_BLOCK, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, nullptr, NoCopyFunctions, nullptr, nullptr, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 0, 0, 0, 0, 8, std::numeric_limits<GLuint>::max(), true, false, false, false, false, gl::VertexAttribType::InvalidEnum },
@@ -233,7 +235,8 @@ const Format gFormatInfoTable[] = {
     { FormatID::R8G8B8A8_UNORM, GL_RGBA8, GL_RGBA8, GenerateMip<R8G8B8A8>, NoCopyFunctions, ReadColor<R8G8B8A8, GLfloat>, WriteColor<R8G8B8A8, GLfloat>, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 8, 0, 0, 0, 4, 0, false, false, false, false, false, gl::VertexAttribType::UnsignedByte },
     { FormatID::R8G8B8A8_UNORM_SRGB, GL_SRGB8_ALPHA8, GL_SRGB8_ALPHA8, GenerateMip<R8G8B8A8SRGB>, NoCopyFunctions, ReadColor<R8G8B8A8SRGB, GLfloat>, WriteColor<R8G8B8A8SRGB, GLfloat>, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 8, 0, 0, 0, 4, 0, false, false, false, true, false, gl::VertexAttribType::Byte },
     { FormatID::R8G8B8A8_USCALED, GL_RGBA8_USCALED_ANGLEX, GL_RGBA8_USCALED_ANGLEX, GenerateMip<R8G8B8A8>, NoCopyFunctions, ReadColor<R8G8B8A8, GLuint>, WriteColor<R8G8B8A8, GLuint>, GL_UNSIGNED_INT, 8, 8, 8, 8, 0, 0, 0, 4, 0, false, false, true, false, false, gl::VertexAttribType::UnsignedByte },
-    { FormatID::R8G8B8X8_UNORM, GL_RGBA8, GL_RGBA8, GenerateMip<R8G8B8X8>, NoCopyFunctions, ReadColor<R8G8B8X8, GLfloat>, WriteColor<R8G8B8X8, GLfloat>, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 0, 0, 0, 0, 4, std::numeric_limits<GLuint>::max(), false, false, false, false, false, gl::VertexAttribType::UnsignedByte },
+    { FormatID::R8G8B8X8_UNORM, GL_RGBX8_ANGLE, GL_RGBX8_ANGLE, GenerateMip<R8G8B8X8>, NoCopyFunctions, ReadColor<R8G8B8X8, GLfloat>, WriteColor<R8G8B8X8, GLfloat>, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 0, 0, 0, 0, 4, std::numeric_limits<GLuint>::max(), false, false, false, false, false, gl::VertexAttribType::UnsignedByte },
+    { FormatID::R8G8B8X8_UNORM_SRGB, GL_RGBX8_SRGB_ANGLEX, GL_RGBX8_SRGB_ANGLEX, GenerateMip<R8G8B8X8>, NoCopyFunctions, ReadColor<R8G8B8X8, GLfloat>, WriteColor<R8G8B8X8, GLfloat>, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 0, 0, 0, 0, 4, std::numeric_limits<GLuint>::max(), false, false, false, true, false, gl::VertexAttribType::Byte },
     { FormatID::R8G8B8_SINT, GL_RGB8I, GL_RGB8I, GenerateMip<R8G8B8S>, NoCopyFunctions, ReadColor<R8G8B8S, GLint>, WriteColor<R8G8B8S, GLint>, GL_INT, 8, 8, 8, 0, 0, 0, 0, 3, 0, false, false, false, false, false, gl::VertexAttribType::Byte },
     { FormatID::R8G8B8_SNORM, GL_RGB8_SNORM, GL_RGB8_SNORM, GenerateMip<R8G8B8S>, NoCopyFunctions, ReadColor<R8G8B8S, GLfloat>, WriteColor<R8G8B8S, GLfloat>, GL_SIGNED_NORMALIZED, 8, 8, 8, 0, 0, 0, 0, 3, 0, false, false, false, false, false, gl::VertexAttribType::Byte },
     { FormatID::R8G8B8_SSCALED, GL_RGB8_SSCALED_ANGLEX, GL_RGB8_SSCALED_ANGLEX, GenerateMip<R8G8B8S>, NoCopyFunctions, ReadColor<R8G8B8S, GLint>, WriteColor<R8G8B8S, GLint>, GL_INT, 8, 8, 8, 0, 0, 0, 0, 3, 0, false, false, true, false, false, gl::VertexAttribType::Byte },
@@ -262,6 +265,14 @@ const Format gFormatInfoTable[] = {
     { FormatID::X2R10G10B10_UINT_VERTEX, GL_X2_RGB10_UINT_ANGLEX, GL_X2_RGB10_UINT_ANGLEX, nullptr, NoCopyFunctions, nullptr, nullptr, GL_UNSIGNED_INT, 10, 10, 10, 0, 0, 0, 0, 4, std::numeric_limits<GLuint>::max(), false, false, false, false, false, gl::VertexAttribType::UnsignedInt1010102 },
     { FormatID::X2R10G10B10_UNORM_VERTEX, GL_X2_RGB10_UNORM_ANGLEX, GL_X2_RGB10_UNORM_ANGLEX, nullptr, NoCopyFunctions, nullptr, nullptr, GL_UNSIGNED_NORMALIZED, 10, 10, 10, 0, 0, 0, 0, 4, std::numeric_limits<GLuint>::max(), false, false, false, false, false, gl::VertexAttribType::UnsignedInt1010102 },
     { FormatID::X2R10G10B10_USCALED_VERTEX, GL_X2_RGB10_USCALED_ANGLEX, GL_X2_RGB10_USCALED_ANGLEX, nullptr, NoCopyFunctions, nullptr, nullptr, GL_UNSIGNED_INT, 10, 10, 10, 0, 0, 0, 0, 4, std::numeric_limits<GLuint>::max(), false, false, true, false, false, gl::VertexAttribType::UnsignedInt1010102 },
+    { FormatID::EXTERNAL0, GL_NONE, GL_NONE, nullptr, NoCopyFunctions, nullptr, nullptr, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 8, 0, 0, 0, 4, 0, false, false, false, false, true, gl::VertexAttribType::InvalidEnum },
+    { FormatID::EXTERNAL1, GL_NONE, GL_NONE, nullptr, NoCopyFunctions, nullptr, nullptr, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 8, 0, 0, 0, 4, 0, false, false, false, false, true, gl::VertexAttribType::InvalidEnum },
+    { FormatID::EXTERNAL2, GL_NONE, GL_NONE, nullptr, NoCopyFunctions, nullptr, nullptr, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 8, 0, 0, 0, 4, 0, false, false, false, false, true, gl::VertexAttribType::InvalidEnum },
+    { FormatID::EXTERNAL3, GL_NONE, GL_NONE, nullptr, NoCopyFunctions, nullptr, nullptr, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 8, 0, 0, 0, 4, 0, false, false, false, false, true, gl::VertexAttribType::InvalidEnum },
+    { FormatID::EXTERNAL4, GL_NONE, GL_NONE, nullptr, NoCopyFunctions, nullptr, nullptr, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 8, 0, 0, 0, 4, 0, false, false, false, false, true, gl::VertexAttribType::InvalidEnum },
+    { FormatID::EXTERNAL5, GL_NONE, GL_NONE, nullptr, NoCopyFunctions, nullptr, nullptr, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 8, 0, 0, 0, 4, 0, false, false, false, false, true, gl::VertexAttribType::InvalidEnum },
+    { FormatID::EXTERNAL6, GL_NONE, GL_NONE, nullptr, NoCopyFunctions, nullptr, nullptr, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 8, 0, 0, 0, 4, 0, false, false, false, false, true, gl::VertexAttribType::InvalidEnum },
+    { FormatID::EXTERNAL7, GL_NONE, GL_NONE, nullptr, NoCopyFunctions, nullptr, nullptr, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 8, 0, 0, 0, 4, 0, false, false, false, false, true, gl::VertexAttribType::InvalidEnum },
     // clang-format on
 };
 
@@ -304,6 +315,8 @@ FormatID Format::InternalFormatToID(GLenum internalFormat)
             return FormatID::B8G8R8A8_TYPELESS_SRGB;
         case GL_BGRX8_ANGLEX:
             return FormatID::B8G8R8X8_UNORM;
+        case GL_BGRX8_SRGB_ANGLEX:
+            return FormatID::B8G8R8X8_UNORM_SRGB;
         case GL_COMPRESSED_R11_EAC:
             return FormatID::EAC_R11_UNORM_BLOCK;
         case GL_COMPRESSED_RED_GREEN_RGTC2_EXT:
@@ -726,6 +739,8 @@ FormatID Format::InternalFormatToID(GLenum internalFormat)
             return FormatID::R8G8B8A8_USCALED;
         case GL_RGBX8_ANGLE:
             return FormatID::R8G8B8X8_UNORM;
+        case GL_RGBX8_SRGB_ANGLEX:
+            return FormatID::R8G8B8X8_UNORM_SRGB;
         case GL_SR8_EXT:
             return FormatID::R8_UNORM_SRGB;
         case GL_SRG8_EXT:
@@ -754,6 +769,196 @@ FormatID Format::InternalFormatToID(GLenum internalFormat)
             return FormatID::NONE;
     }
 }
+
+#if defined(ANGLE_ENABLE_CL)
+// static
+FormatID Format::CLRFormatToID(cl_channel_type internalChannelType)
+{
+    switch (internalChannelType)
+    {
+        case CL_FLOAT:
+            return FormatID::R32_FLOAT;
+        case CL_HALF_FLOAT:
+            return FormatID::R16_FLOAT;
+        case CL_SIGNED_INT16:
+            return FormatID::R16_SINT;
+        case CL_SIGNED_INT32:
+            return FormatID::R32_SINT;
+        case CL_SIGNED_INT8:
+            return FormatID::R8_SINT;
+        case CL_SNORM_INT16:
+            return FormatID::R16_SNORM;
+        case CL_SNORM_INT8:
+            return FormatID::R8_SNORM;
+        case CL_UNORM_INT16:
+            return FormatID::R16_UNORM;
+        case CL_UNORM_INT8:
+            return FormatID::R8_UNORM;
+        case CL_UNSIGNED_INT16:
+            return FormatID::R16_UINT;
+        case CL_UNSIGNED_INT32:
+            return FormatID::R32_UINT;
+        case CL_UNSIGNED_INT8:
+            return FormatID::R8_UINT;
+        default:
+            return FormatID::NONE;
+    }
+}
+
+// static
+FormatID Format::CLRGFormatToID(cl_channel_type internalChannelType)
+{
+    switch (internalChannelType)
+    {
+        case CL_FLOAT:
+            return FormatID::R32G32_FLOAT;
+        case CL_HALF_FLOAT:
+            return FormatID::R16G16_FLOAT;
+        case CL_SIGNED_INT16:
+            return FormatID::R16G16_SINT;
+        case CL_SIGNED_INT32:
+            return FormatID::R32G32_SINT;
+        case CL_SIGNED_INT8:
+            return FormatID::R8G8_SINT;
+        case CL_SNORM_INT16:
+            return FormatID::R16G16_SNORM;
+        case CL_SNORM_INT8:
+            return FormatID::R8G8_SNORM;
+        case CL_UNORM_INT16:
+            return FormatID::R16G16_UNORM;
+        case CL_UNORM_INT8:
+            return FormatID::R8G8_UNORM;
+        case CL_UNSIGNED_INT16:
+            return FormatID::R16G16_UINT;
+        case CL_UNSIGNED_INT32:
+            return FormatID::R32G32_UINT;
+        case CL_UNSIGNED_INT8:
+            return FormatID::R8G8_UINT;
+        default:
+            return FormatID::NONE;
+    }
+}
+
+// static
+FormatID Format::CLRGBFormatToID(cl_channel_type internalChannelType)
+{
+    switch (internalChannelType)
+    {
+        case CL_FLOAT:
+            return FormatID::R32G32B32_FLOAT;
+        case CL_HALF_FLOAT:
+            return FormatID::R16G16B16_FLOAT;
+        case CL_SIGNED_INT16:
+            return FormatID::R16G16B16_SINT;
+        case CL_SIGNED_INT32:
+            return FormatID::R32G32B32_SINT;
+        case CL_SIGNED_INT8:
+            return FormatID::R8G8B8_SINT;
+        case CL_SNORM_INT16:
+            return FormatID::R16G16B16_SNORM;
+        case CL_SNORM_INT8:
+            return FormatID::R8G8B8_SNORM;
+        case CL_UNORM_INT16:
+            return FormatID::R16G16B16_UNORM;
+        case CL_UNORM_INT8:
+            return FormatID::R8G8B8_UNORM;
+        case CL_UNSIGNED_INT16:
+            return FormatID::R16G16B16_UINT;
+        case CL_UNSIGNED_INT32:
+            return FormatID::R32G32B32_UINT;
+        case CL_UNSIGNED_INT8:
+            return FormatID::R8G8B8_UINT;
+        default:
+            return FormatID::NONE;
+    }
+}
+
+// static
+FormatID Format::CLRGBAFormatToID(cl_channel_type internalChannelType)
+{
+    switch (internalChannelType)
+    {
+        case CL_FLOAT:
+            return FormatID::R32G32B32A32_FLOAT;
+        case CL_HALF_FLOAT:
+            return FormatID::R16G16B16A16_FLOAT;
+        case CL_SIGNED_INT16:
+            return FormatID::R16G16B16A16_SINT;
+        case CL_SIGNED_INT32:
+            return FormatID::R32G32B32A32_SINT;
+        case CL_SIGNED_INT8:
+            return FormatID::R8G8B8A8_SINT;
+        case CL_SNORM_INT16:
+            return FormatID::R16G16B16A16_SNORM;
+        case CL_SNORM_INT8:
+            return FormatID::R8G8B8A8_SNORM;
+        case CL_UNORM_INT16:
+            return FormatID::R16G16B16A16_UNORM;
+        case CL_UNORM_INT8:
+            return FormatID::R8G8B8A8_UNORM;
+        case CL_UNSIGNED_INT16:
+            return FormatID::R16G16B16A16_UINT;
+        case CL_UNSIGNED_INT32:
+            return FormatID::R32G32B32A32_UINT;
+        case CL_UNSIGNED_INT8:
+            return FormatID::R8G8B8A8_UINT;
+        default:
+            return FormatID::NONE;
+    }
+}
+
+// static
+FormatID Format::CLBGRAFormatToID(cl_channel_type internalChannelType)
+{
+    switch (internalChannelType)
+    {
+        case CL_UNORM_INT8:
+            return FormatID::B8G8R8A8_UNORM;
+        default:
+            return FormatID::NONE;
+    }
+}
+
+// static
+FormatID Format::CLsRGBAFormatToID(cl_channel_type internalChannelType)
+{
+    switch (internalChannelType)
+    {
+        case CL_UNORM_INT8:
+            return FormatID::R8G8B8A8_UNORM_SRGB;
+        default:
+            return FormatID::NONE;
+    }
+}
+
+// static
+FormatID Format::CLDEPTHFormatToID(cl_channel_type internalChannelType)
+{
+    switch (internalChannelType)
+    {
+        case CL_FLOAT:
+            return FormatID::D32_FLOAT;
+        case CL_UNORM_INT16:
+            return FormatID::D16_UNORM;
+        default:
+            return FormatID::NONE;
+    }
+}
+
+// static
+FormatID Format::CLDEPTHSTENCILFormatToID(cl_channel_type internalChannelType)
+{
+    switch (internalChannelType)
+    {
+        case CL_FLOAT:
+            return FormatID::D32_FLOAT_S8X24_UINT;
+        case CL_UNORM_INT24:
+            return FormatID::D24_UNORM_S8_UINT;
+        default:
+            return FormatID::NONE;
+    }
+}
+#endif  // ANGLE_ENABLE_CL
 
 const Format *GetFormatInfoTable()
 {

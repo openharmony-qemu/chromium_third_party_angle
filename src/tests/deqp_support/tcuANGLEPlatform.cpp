@@ -26,7 +26,7 @@
 #include "tcuDefs.hpp"
 #include "tcuNullContextFactory.hpp"
 #include "tcuPlatform.hpp"
-#include "util/angle_features_autogen.h"
+#include "util/autogen/angle_features_autogen.h"
 #include "util/test_utils.h"
 
 #ifndef _EGLUPLATFORM_HPP
@@ -182,6 +182,17 @@ ANGLEPlatform::ANGLEPlatform(angle::LogErrorFunc logErrorFunc, uint32_t preRotat
             EGL_PLATFORM_ANGLE_TYPE_VULKAN_ANGLE, EGL_PLATFORM_ANGLE_DEVICE_TYPE_SWIFTSHADER_ANGLE);
         m_nativeDisplayFactoryRegistry.registerFactory(new ANGLENativeDisplayFactory(
             "angle-swiftshader", "ANGLE SwiftShader Display", swsAttribs, &mEvents));
+    }
+#endif
+
+#if (DE_OS == DE_OS_WIN32) || (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_OSX)
+    {
+        std::vector<eglw::EGLAttrib> webgpuAttribs =
+            initAttribs(EGL_PLATFORM_ANGLE_TYPE_WEBGPU_ANGLE);
+
+        auto *webgpuFactory = new ANGLENativeDisplayFactory("angle-webgpu", "ANGLE WebGPU Display",
+                                                            webgpuAttribs, &mEvents);
+        m_nativeDisplayFactoryRegistry.registerFactory(webgpuFactory);
     }
 #endif
 

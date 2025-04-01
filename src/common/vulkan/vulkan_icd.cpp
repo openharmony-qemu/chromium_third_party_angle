@@ -16,8 +16,6 @@
 #include "common/debug.h"
 #include "common/system_utils.h"
 
-#include "common/vulkan/vk_google_filtering_precision.h"
-
 namespace
 {
 void ResetEnvironmentVar(const char *variableName, const Optional<std::string> &value)
@@ -50,7 +48,12 @@ namespace
 [[maybe_unused]] const std::string WrapICDEnvironment(const char *icdEnvironment)
 {
     // The libraries are bundled into the module directory
-    std::string ret = ConcatenatePath(angle::GetModuleDirectory(), icdEnvironment);
+    std::string moduleDir = angle::GetModuleDirectory();
+    std::string ret       = ConcatenatePath(moduleDir, icdEnvironment);
+#if defined(ANGLE_PLATFORM_MACOS)
+    std::string moduleDirWithLibraries = ConcatenatePath(moduleDir, "Libraries");
+    ret += ":" + ConcatenatePath(moduleDirWithLibraries, icdEnvironment);
+#endif
     return ret;
 }
 
@@ -100,11 +103,11 @@ ICDFilterFunc GetFilterForICD(vk::ICD preferredICD)
 
 }  // namespace
 
-// If we're loading the validation layers, we could be running from any random directory.
+// If we're loading the vulkan layers, we could be running from any random directory.
 // Change to the executable directory so we can find the layers, then change back to the
 // previous directory to be safe we don't disrupt the application.
-ScopedVkLoaderEnvironment::ScopedVkLoaderEnvironment(bool enableValidationLayers, vk::ICD icd)
-    : mEnableValidationLayers(enableValidationLayers),
+ScopedVkLoaderEnvironment::ScopedVkLoaderEnvironment(bool enableDebugLayers, vk::ICD icd)
+    : mEnableDebugLayers(enableDebugLayers),
       mICD(icd),
       mChangedCWD(false),
       mChangedICDEnv(false),
@@ -132,14 +135,14 @@ ScopedVkLoaderEnvironment::ScopedVkLoaderEnvironment(bool enableValidationLayers
 #    endif  // defined(ANGLE_VK_SWIFTSHADER_ICD_JSON)
 
 #    if !defined(ANGLE_PLATFORM_MACOS)
-    if (mEnableValidationLayers || icd != vk::ICD::Default)
+    if (mEnableDebugLayers || icd != vk::ICD::Default)
     {
         const auto &cwd = angle::GetCWD();
         if (!cwd.valid())
         {
             ERR() << "Error getting CWD for Vulkan layers init.";
-            mEnableValidationLayers = false;
-            mICD                    = vk::ICD::Default;
+            mEnableDebugLayers = false;
+            mICD               = vk::ICD::Default;
         }
         else
         {
@@ -149,36 +152,23 @@ ScopedVkLoaderEnvironment::ScopedVkLoaderEnvironment(bool enableValidationLayers
             if (!mChangedCWD)
             {
                 ERR() << "Error setting CWD for Vulkan layers init.";
-                mEnableValidationLayers = false;
-                mICD                    = vk::ICD::Default;
+                mEnableDebugLayers = false;
+                mICD               = vk::ICD::Default;
             }
         }
     }
 #    endif  // defined(ANGLE_PLATFORM_MACOS)
 
     // Override environment variable to use the ANGLE layers.
-    if (mEnableValidationLayers)
+    if (mEnableDebugLayers)
     {
 #    if defined(ANGLE_VK_LAYERS_DIR)
         if (!angle::PrependPathToEnvironmentVar(kLoaderLayersPathEnv, ANGLE_VK_LAYERS_DIR))
         {
             ERR() << "Error setting environment for Vulkan layers init.";
-            mEnableValidationLayers = false;
+            mEnableDebugLayers = false;
         }
 #    endif  // defined(ANGLE_VK_LAYERS_DIR)
-
-        if (!angle::PrependPathToEnvironmentVar(
-                kLayerEnablesEnv, "VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION"))
-        {
-            ERR() << "Error setting synchronization validation environment for Vulkan validation "
-                     "layers init.";
-        }
-
-        if (!setCustomExtensionsEnvironment())
-        {
-            ERR() << "Error setting custom list for custom extensions for Vulkan layers init.";
-            mEnableValidationLayers = false;
-        }
     }
 #endif  // !defined(ANGLE_PLATFORM_ANDROID)
 
@@ -228,38 +218,6 @@ bool ScopedVkLoaderEnvironment::setICDEnvironment(const char *icd)
     return mChangedICDEnv;
 }
 
-bool ScopedVkLoaderEnvironment::setCustomExtensionsEnvironment()
-{
-    struct CustomExtension
-    {
-        VkStructureType type;
-        size_t size;
-    };
-
-    CustomExtension customExtensions[] = {
-
-        {VK_STRUCTURE_TYPE_SAMPLER_FILTERING_PRECISION_GOOGLE,
-         sizeof(VkSamplerFilteringPrecisionGOOGLE)},
-
-    };
-
-    mPreviousCustomExtensionsEnv = angle::GetEnvironmentVar(kValidationLayersCustomSTypeListEnv);
-
-    std::stringstream strstr;
-    for (CustomExtension &extension : customExtensions)
-    {
-        if (strstr.tellp() != std::streampos(0))
-        {
-            strstr << angle::GetPathSeparatorForEnvironmentVar();
-        }
-
-        strstr << extension.type << angle::GetPathSeparatorForEnvironmentVar() << extension.size;
-    }
-
-    return angle::PrependPathToEnvironmentVar(kValidationLayersCustomSTypeListEnv,
-                                              strstr.str().c_str());
-}
-
 void ChoosePhysicalDevice(PFN_vkGetPhysicalDeviceProperties pGetPhysicalDeviceProperties,
                           const std::vector<VkPhysicalDevice> &physicalDevices,
                           vk::ICD preferredICD,
@@ -277,6 +235,14 @@ void ChoosePhysicalDevice(PFN_vkGetPhysicalDeviceProperties pGetPhysicalDevicePr
     for (const VkPhysicalDevice &physicalDevice : physicalDevices)
     {
         pGetPhysicalDeviceProperties(physicalDevice, physicalDevicePropertiesOut);
+
+        if (physicalDevicePropertiesOut->apiVersion < kMinimumVulkanAPIVersion)
+        {
+            // Skip any devices that don't support our minimum API version. This
+            // takes precedence over all other considerations.
+            continue;
+        }
+
         if (filter(*physicalDevicePropertiesOut))
         {
             *physicalDeviceOut = physicalDevice;
@@ -315,6 +281,14 @@ void ChoosePhysicalDevice(PFN_vkGetPhysicalDeviceProperties pGetPhysicalDevicePr
     for (const VkPhysicalDevice &physicalDevice : physicalDevices)
     {
         pGetPhysicalDeviceProperties(physicalDevice, physicalDevicePropertiesOut);
+
+        if (physicalDevicePropertiesOut->apiVersion < kMinimumVulkanAPIVersion)
+        {
+            // Skip any devices that don't support our minimum API version. This
+            // takes precedence over all other considerations.
+            continue;
+        }
+
         // If discrete GPU exists, uses it by default.
         if (physicalDevicePropertiesOut->deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
         {

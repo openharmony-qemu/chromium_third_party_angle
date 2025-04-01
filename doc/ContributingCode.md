@@ -56,7 +56,7 @@
    * To kick off a try job, use the 'CQ Dry Run' button, or set the Commit-Queue +1 label to trigger
      a dry run of the CQ (will not land the change).
    * If you are not part of the `angle-committers` group, you will need to either ask to be added or
-     ask a member of the group to submit the tryjob for you. Add jmadill or geofflang as a reviewer
+     ask a member of the group to submit the tryjob for you. Add syoussefi or geofflang as a reviewer
      for assistance.
    * Wait for the bots to report the result on the code review page. The bot results should be
      visible in Gerrit as yellow (in-progress), green (passed), or red (failed). This can take up to
@@ -103,7 +103,7 @@
    fill out the [Corporate Contributor License Agreement][Corporate-CLA] and send it to Google as
    described on that page.
 2. Once you've submitted the CLA, please email the following information (as entered on the CLA) to
-   `shannonwoods at chromium dot org` for record keeping purposes:
+   `geofflang at chromium dot org` for record keeping purposes:
    * Full Name:
    * Email:
    * Company (If applicable):

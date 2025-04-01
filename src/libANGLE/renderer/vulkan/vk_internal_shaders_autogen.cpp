@@ -19,6 +19,9 @@ namespace vk
 {
 namespace
 {
+#include "libANGLE/renderer/vulkan/shaders/gen/Blit3DSrc.frag.00000000.inc"
+#include "libANGLE/renderer/vulkan/shaders/gen/Blit3DSrc.frag.00000001.inc"
+#include "libANGLE/renderer/vulkan/shaders/gen/Blit3DSrc.frag.00000002.inc"
 #include "libANGLE/renderer/vulkan/shaders/gen/BlitResolve.frag.00000000.inc"
 #include "libANGLE/renderer/vulkan/shaders/gen/BlitResolve.frag.00000001.inc"
 #include "libANGLE/renderer/vulkan/shaders/gen/BlitResolve.frag.00000002.inc"
@@ -63,10 +66,13 @@ namespace
 #include "libANGLE/renderer/vulkan/shaders/gen/ConvertVertex.comp.00000005.inc"
 #include "libANGLE/renderer/vulkan/shaders/gen/ConvertVertex.comp.00000006.inc"
 #include "libANGLE/renderer/vulkan/shaders/gen/ConvertVertex.comp.00000007.inc"
+#include "libANGLE/renderer/vulkan/shaders/gen/CopyImageToBuffer.comp.00000000.inc"
+#include "libANGLE/renderer/vulkan/shaders/gen/CopyImageToBuffer.comp.00000001.inc"
 #include "libANGLE/renderer/vulkan/shaders/gen/EtcToBc.comp.00000000.inc"
 #include "libANGLE/renderer/vulkan/shaders/gen/EtcToBc.comp.00000001.inc"
 #include "libANGLE/renderer/vulkan/shaders/gen/ExportStencil.frag.00000000.inc"
 #include "libANGLE/renderer/vulkan/shaders/gen/FullScreenTri.vert.00000000.inc"
+#include "libANGLE/renderer/vulkan/shaders/gen/GenerateFragmentShadingRate.comp.00000000.inc"
 #include "libANGLE/renderer/vulkan/shaders/gen/GenerateMipmap.comp.00000000.inc"
 #include "libANGLE/renderer/vulkan/shaders/gen/GenerateMipmap.comp.00000001.inc"
 #include "libANGLE/renderer/vulkan/shaders/gen/GenerateMipmap.comp.00000002.inc"
@@ -152,6 +158,8 @@ namespace
 #include "libANGLE/renderer/vulkan/shaders/gen/ImageCopy.frag.00000028.inc"
 #include "libANGLE/renderer/vulkan/shaders/gen/ImageCopy.frag.00000029.inc"
 #include "libANGLE/renderer/vulkan/shaders/gen/ImageCopy.frag.0000002A.inc"
+#include "libANGLE/renderer/vulkan/shaders/gen/ImageCopyFloat.frag.00000000.inc"
+#include "libANGLE/renderer/vulkan/shaders/gen/ImageCopyFloat.frag.00000001.inc"
 #include "libANGLE/renderer/vulkan/shaders/gen/OverlayDraw.frag.00000000.inc"
 #include "libANGLE/renderer/vulkan/shaders/gen/OverlayDraw.vert.00000000.inc"
 
@@ -162,6 +170,11 @@ struct CompressedShaderBlob
     uint32_t size;
 };
 
+constexpr CompressedShaderBlob kBlit3DSrc_frag_shaders[] = {
+    {kBlit3DSrc_frag_00000000, sizeof(kBlit3DSrc_frag_00000000)},
+    {kBlit3DSrc_frag_00000001, sizeof(kBlit3DSrc_frag_00000001)},
+    {kBlit3DSrc_frag_00000002, sizeof(kBlit3DSrc_frag_00000002)},
+};
 constexpr CompressedShaderBlob kBlitResolve_frag_shaders[] = {
     {kBlitResolve_frag_00000000, sizeof(kBlitResolve_frag_00000000)},
     {kBlitResolve_frag_00000001, sizeof(kBlitResolve_frag_00000001)},
@@ -221,6 +234,10 @@ constexpr CompressedShaderBlob kConvertVertex_comp_shaders[] = {
     {kConvertVertex_comp_00000006, sizeof(kConvertVertex_comp_00000006)},
     {kConvertVertex_comp_00000007, sizeof(kConvertVertex_comp_00000007)},
 };
+constexpr CompressedShaderBlob kCopyImageToBuffer_comp_shaders[] = {
+    {kCopyImageToBuffer_comp_00000000, sizeof(kCopyImageToBuffer_comp_00000000)},
+    {kCopyImageToBuffer_comp_00000001, sizeof(kCopyImageToBuffer_comp_00000001)},
+};
 constexpr CompressedShaderBlob kEtcToBc_comp_shaders[] = {
     {kEtcToBc_comp_00000000, sizeof(kEtcToBc_comp_00000000)},
     {kEtcToBc_comp_00000001, sizeof(kEtcToBc_comp_00000001)},
@@ -230,6 +247,10 @@ constexpr CompressedShaderBlob kExportStencil_frag_shaders[] = {
 };
 constexpr CompressedShaderBlob kFullScreenTri_vert_shaders[] = {
     {kFullScreenTri_vert_00000000, sizeof(kFullScreenTri_vert_00000000)},
+};
+constexpr CompressedShaderBlob kGenerateFragmentShadingRate_comp_shaders[] = {
+    {kGenerateFragmentShadingRate_comp_00000000,
+     sizeof(kGenerateFragmentShadingRate_comp_00000000)},
 };
 constexpr CompressedShaderBlob kGenerateMipmap_comp_shaders[] = {
     {kGenerateMipmap_comp_00000000, sizeof(kGenerateMipmap_comp_00000000)},
@@ -338,6 +359,10 @@ constexpr CompressedShaderBlob kImageCopy_frag_shaders[] = {
     {kImageCopy_frag_00000029, sizeof(kImageCopy_frag_00000029)},
     {kImageCopy_frag_0000002A, sizeof(kImageCopy_frag_0000002A)},
 };
+constexpr CompressedShaderBlob kImageCopyFloat_frag_shaders[] = {
+    {kImageCopyFloat_frag_00000000, sizeof(kImageCopyFloat_frag_00000000)},
+    {kImageCopyFloat_frag_00000001, sizeof(kImageCopyFloat_frag_00000001)},
+};
 constexpr CompressedShaderBlob kOverlayDraw_frag_shaders[] = {
     {kOverlayDraw_frag_00000000, sizeof(kOverlayDraw_frag_00000000)},
 };
@@ -390,6 +415,10 @@ ShaderLibrary::~ShaderLibrary() {}
 
 void ShaderLibrary::destroy(VkDevice device)
 {
+    for (RefCounted<ShaderModule> &shader : mBlit3DSrc_frag_shaders)
+    {
+        shader.get().destroy(device);
+    }
     for (RefCounted<ShaderModule> &shader : mBlitResolve_frag_shaders)
     {
         shader.get().destroy(device);
@@ -414,6 +443,10 @@ void ShaderLibrary::destroy(VkDevice device)
     {
         shader.get().destroy(device);
     }
+    for (RefCounted<ShaderModule> &shader : mCopyImageToBuffer_comp_shaders)
+    {
+        shader.get().destroy(device);
+    }
     for (RefCounted<ShaderModule> &shader : mEtcToBc_comp_shaders)
     {
         shader.get().destroy(device);
@@ -423,6 +456,10 @@ void ShaderLibrary::destroy(VkDevice device)
         shader.get().destroy(device);
     }
     for (RefCounted<ShaderModule> &shader : mFullScreenTri_vert_shaders)
+    {
+        shader.get().destroy(device);
+    }
+    for (RefCounted<ShaderModule> &shader : mGenerateFragmentShadingRate_comp_shaders)
     {
         shader.get().destroy(device);
     }
@@ -438,6 +475,10 @@ void ShaderLibrary::destroy(VkDevice device)
     {
         shader.get().destroy(device);
     }
+    for (RefCounted<ShaderModule> &shader : mImageCopyFloat_frag_shaders)
+    {
+        shader.get().destroy(device);
+    }
     for (RefCounted<ShaderModule> &shader : mOverlayDraw_frag_shaders)
     {
         shader.get().destroy(device);
@@ -446,6 +487,14 @@ void ShaderLibrary::destroy(VkDevice device)
     {
         shader.get().destroy(device);
     }
+}
+
+angle::Result ShaderLibrary::getBlit3DSrc_frag(Context *context,
+                                               uint32_t shaderFlags,
+                                               RefCounted<ShaderModule> **shaderOut)
+{
+    return GetShader(context, mBlit3DSrc_frag_shaders, kBlit3DSrc_frag_shaders,
+                     ArraySize(kBlit3DSrc_frag_shaders), shaderFlags, shaderOut);
 }
 
 angle::Result ShaderLibrary::getBlitResolve_frag(Context *context,
@@ -501,6 +550,14 @@ angle::Result ShaderLibrary::getConvertVertex_comp(Context *context,
                      ArraySize(kConvertVertex_comp_shaders), shaderFlags, shaderOut);
 }
 
+angle::Result ShaderLibrary::getCopyImageToBuffer_comp(Context *context,
+                                                       uint32_t shaderFlags,
+                                                       RefCounted<ShaderModule> **shaderOut)
+{
+    return GetShader(context, mCopyImageToBuffer_comp_shaders, kCopyImageToBuffer_comp_shaders,
+                     ArraySize(kCopyImageToBuffer_comp_shaders), shaderFlags, shaderOut);
+}
+
 angle::Result ShaderLibrary::getEtcToBc_comp(Context *context,
                                              uint32_t shaderFlags,
                                              RefCounted<ShaderModule> **shaderOut)
@@ -525,6 +582,16 @@ angle::Result ShaderLibrary::getFullScreenTri_vert(Context *context,
                      ArraySize(kFullScreenTri_vert_shaders), shaderFlags, shaderOut);
 }
 
+angle::Result ShaderLibrary::getGenerateFragmentShadingRate_comp(
+    Context *context,
+    uint32_t shaderFlags,
+    RefCounted<ShaderModule> **shaderOut)
+{
+    return GetShader(context, mGenerateFragmentShadingRate_comp_shaders,
+                     kGenerateFragmentShadingRate_comp_shaders,
+                     ArraySize(kGenerateFragmentShadingRate_comp_shaders), shaderFlags, shaderOut);
+}
+
 angle::Result ShaderLibrary::getGenerateMipmap_comp(Context *context,
                                                     uint32_t shaderFlags,
                                                     RefCounted<ShaderModule> **shaderOut)
@@ -547,6 +614,14 @@ angle::Result ShaderLibrary::getImageCopy_frag(Context *context,
 {
     return GetShader(context, mImageCopy_frag_shaders, kImageCopy_frag_shaders,
                      ArraySize(kImageCopy_frag_shaders), shaderFlags, shaderOut);
+}
+
+angle::Result ShaderLibrary::getImageCopyFloat_frag(Context *context,
+                                                    uint32_t shaderFlags,
+                                                    RefCounted<ShaderModule> **shaderOut)
+{
+    return GetShader(context, mImageCopyFloat_frag_shaders, kImageCopyFloat_frag_shaders,
+                     ArraySize(kImageCopyFloat_frag_shaders), shaderFlags, shaderOut);
 }
 
 angle::Result ShaderLibrary::getOverlayDraw_frag(Context *context,

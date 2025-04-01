@@ -12,7 +12,7 @@ static char gDefaultMetallibSrc[] = R"(
 # 1 "temp_master_source.metal"
 # 1 "<built-in>" 1
 # 1 "<built-in>" 3
-# 477 "<built-in>" 3
+# 467 "<built-in>" 3
 # 1 "<command line>" 1
 # 1 "<built-in>" 2
 # 1 "temp_master_source.metal" 2
@@ -153,7 +153,7 @@ static inline vec<T, 4> resolveTextureMS(texture2d_ms<T> srcTexture, uint2 coord
 static inline float4 sRGBtoLinear(float4 color)
 {
     float3 linear1 = color.rgb / 12.92;
-    float3 linear2 = pow((color.rgb + float3(0.055)) / 1.055, 2.4);
+    float3 linear2 = powr((color.rgb + float3(0.055)) / 1.055, 2.4);
     float3 factor = float3(color.rgb <= float3(0.04045));
     float4 linear = float4(factor * linear1 + float3(1.0 - factor) * linear2, color.a);
 
@@ -164,12 +164,11 @@ static inline float linearToSRGB(float color)
 {
     if (color <= 0.0f)
         return 0.0f;
-    else if (color < 0.0031308f)
+    if (color < 0.0031308f)
         return 12.92f * color;
-    else if (color < 1.0f)
-        return 1.055f * pow(color, 0.41666f) - 0.055f;
-    else
-        return 1.0f;
+    if (color < 1.0f)
+        return 1.055f * powr(color, 0.41666f) - 0.055f;
+    return 1.0f;
 }
 
 static inline float4 linearToSRGB(float4 color)
@@ -288,9 +287,13 @@ static inline T floatToNormalized(float input)
 {
     static_assert(outputBitCount <= (sizeof(T) * 8),
                   "T must have more bits than or same bits as inputBitCount.");
-    static_assert(outputBitCount <= 23, "Only single precision is supported");
+    static_assert(outputBitCount > (metal::is_unsigned<T>::value ? 0 : 1),
+                  "outputBitCount must be at least 1 not counting the sign bit.");
+    constexpr unsigned int bits =
+        metal::is_unsigned<T>::value ? outputBitCount : outputBitCount - 1;
+    static_assert(bits <= 23, "Only single precision is supported");
 
-    return static_cast<T>(((1 << outputBitCount) - 1) * input + 0.5f);
+    return static_cast<T>(metal::round(((1 << bits) - 1) * input));
 }
 
 template <typename T>
@@ -308,8 +311,9 @@ using namespace rx::mtl_shader;
 
 constant bool kPremultiplyAlpha [[function_constant(1)]];
 constant bool kUnmultiplyAlpha [[function_constant(2)]];
-constant int kSourceTextureType [[function_constant(3)]];
-constant int kSourceTexture2Type [[function_constant(4)]];
+constant bool kTransformLinearToSrgb [[function_constant(3)]];
+constant int kSourceTextureType [[function_constant(4)]];
+constant int kSourceTexture2Type [[function_constant(5)]];
 
 constant bool kSourceTextureType2D = kSourceTextureType == kTextureType2D;
 constant bool kSourceTextureType2DArray = kSourceTextureType == kTextureType2DArray;
@@ -325,37 +329,25 @@ constant bool kSourceTexture2TypeCube = kSourceTexture2Type == kTextureTypeCube;
 struct BlitParams
 {
 
-    float2 srcTexCoords[3];
+    float4 srcTexCoords;
     int srcLevel;
     int srcLayer;
-    bool dstFlipViewportX;
-    bool dstFlipViewportY;
     bool dstLuminance;
-    uint8_t padding[13];
+    uint8_t padding[7];
 };
 
 struct BlitVSOut
 {
     float4 position [[position]];
-    float2 texCoords [[user(locn1)]];
+    float2 texCoords [[center_no_perspective, user(locn1)]];
 };
 
 vertex BlitVSOut blitVS(unsigned int vid [[vertex_id]], constant BlitParams &options [[buffer(0)]])
 {
     BlitVSOut output;
-    output.position = float4(gCorners[vid], 0.0, 1.0);
-    output.texCoords = options.srcTexCoords[vid];
-
-    if (options.dstFlipViewportX)
-    {
-        output.position.x = -output.position.x;
-    }
-    if (!options.dstFlipViewportY)
-    {
-
-
-        output.position.y = -output.position.y;
-    }
+    output.position.xy = select(float2(-1.0f), float2(1.0f), bool2(vid & uint2(2, 1)));
+    output.position.zw = float2(0.0, 1.0);
+    output.texCoords = select(options.srcTexCoords.xy, options.srcTexCoords.zw, bool2(vid & uint2(2, 1)));
 
     return output;
 }
@@ -387,7 +379,7 @@ static inline vec<T, 4> blitSampleTexture3D(texture3d<T> srcTexture,
 
     return srcTexture.sample(textureSampler, float3(texCoords, zCoord), level(options.srcLevel));
 }
-# 112 "./blit.metal"
+# 101 "./blit.metal"
 template <typename T>
 static inline vec<T, 4> blitReadTexture(BlitVSOut input [[stage_in]], texture2d<T> srcTexture2d [[texture(0), function_constant(kSourceTextureType2D)]], texture2d_array<T> srcTexture2dArray [[texture(0), function_constant(kSourceTextureType2DArray)]], texture2d_ms<T> srcTexture2dMS [[texture(0), function_constant(kSourceTextureType2DMS)]], texturecube<T> srcTextureCube [[texture(0), function_constant(kSourceTextureTypeCube)]], texture3d<T> srcTexture3d [[texture(0), function_constant(kSourceTextureType3D)]], sampler textureSampler [[sampler(0)]], constant BlitParams &options [[buffer(0)]])
 {
@@ -415,16 +407,21 @@ static inline vec<T, 4> blitReadTexture(BlitVSOut input [[stage_in]], texture2d<
             break;
     }
 
-    if (kPremultiplyAlpha)
-    {
-        output.xyz *= output.a;
+    if (kTransformLinearToSrgb) {
+        output.x = linearToSRGB(output.x);
+        output.y = linearToSRGB(output.y);
+        output.z = linearToSRGB(output.z);
     }
-    else if (kUnmultiplyAlpha)
+    if (kUnmultiplyAlpha)
     {
         if (output.a != 0.0)
         {
             output.xyz /= output.a;
         }
+    }
+    if (kPremultiplyAlpha)
+    {
+        output.xyz *= output.a;
     }
 
     if (options.dstLuminance)
@@ -1568,6 +1565,7 @@ enum
     B8G8R8A8_UNORM,
     B8G8R8A8_UNORM_SRGB,
     B8G8R8X8_UNORM,
+    B8G8R8X8_UNORM_SRGB,
     BC1_RGBA_UNORM_BLOCK,
     BC1_RGBA_UNORM_SRGB_BLOCK,
     BC1_RGB_UNORM_BLOCK,
@@ -1703,6 +1701,7 @@ enum
     R8G8B8A8_UNORM_SRGB,
     R8G8B8A8_USCALED,
     R8G8B8X8_UNORM,
+    R8G8B8X8_UNORM_SRGB,
     R8G8B8_SINT,
     R8G8B8_SNORM,
     R8G8B8_SSCALED,
@@ -1730,7 +1729,15 @@ enum
     X2R10G10B10_SSCALED_VERTEX,
     X2R10G10B10_UINT_VERTEX,
     X2R10G10B10_UNORM_VERTEX,
-    X2R10G10B10_USCALED_VERTEX
+    X2R10G10B10_USCALED_VERTEX,
+    EXTERNAL0,
+    EXTERNAL1,
+    EXTERNAL2,
+    EXTERNAL3,
+    EXTERNAL4,
+    EXTERNAL5,
+    EXTERNAL6,
+    EXTERNAL7
 };
 
 }
@@ -2151,7 +2158,7 @@ static inline float4 readR8_SNORM(uint bufferOffset, constant uchar *buffer)
 }
 static inline void writeR8_SNORM(ushort2 gIndices, constant WritePixelParams &options, uint bufferOffset, vec<float, 4> color, device uchar *buffer)
 {
-    buffer[bufferOffset] = as_type<uchar>(floatToNormalized<7, char>(color.r));
+    buffer[bufferOffset] = as_type<uchar>(floatToNormalized<char>(color.r));
 }
 
 
@@ -2209,8 +2216,8 @@ static inline float4 readR8G8_SNORM(uint bufferOffset, constant uchar *buffer)
 }
 static inline void writeR8G8_SNORM(ushort2 gIndices, constant WritePixelParams &options, uint bufferOffset, vec<float, 4> color, device uchar *buffer)
 {
-    buffer[bufferOffset] = as_type<uchar>(floatToNormalized<7, char>(color.r));
-    buffer[bufferOffset + 1] = as_type<uchar>(floatToNormalized<7, char>(color.g));
+    buffer[bufferOffset] = as_type<uchar>(floatToNormalized<char>(color.r));
+    buffer[bufferOffset + 1] = as_type<uchar>(floatToNormalized<char>(color.g));
 }
 
 
@@ -2329,6 +2336,14 @@ static inline float4 readR16_NORM(uint bufferOffset, constant uchar *buffer)
 
 
 
+template<typename ShortType>
+static inline void writeR16_NORM(ushort2 gIndices, constant WritePixelParams &options, uint bufferOffset, vec<float, 4> color, device uchar *buffer)
+{
+    shortToBytes(floatToNormalized<ShortType>(color.r), bufferOffset, buffer);
+}
+
+
+
 
 static inline int4 readR16_SINT(uint bufferOffset, constant uchar *buffer)
 {
@@ -2423,6 +2438,15 @@ static inline float4 readR16G16_NORM(uint bufferOffset, constant uchar *buffer)
     color.b = 0.0;
     color.a = 1.0;
     return color;
+}
+
+
+
+template<typename ShortType>
+static inline void writeR16G16_NORM(ushort2 gIndices, constant WritePixelParams &options, uint bufferOffset, vec<float, 4> color, device uchar *buffer)
+{
+    shortToBytes(floatToNormalized<ShortType>(color.r), bufferOffset, buffer);
+    shortToBytes(floatToNormalized<ShortType>(color.g), bufferOffset + 2, buffer);
 }
 
 
@@ -2533,6 +2557,17 @@ static inline float4 readR16G16B16A16_NORM(uint bufferOffset, constant uchar *bu
     color.b = normalizedToFloat<ShortType>(bytesToShort<ShortType>(buffer, bufferOffset + 4));
     color.a = normalizedToFloat<ShortType>(bytesToShort<ShortType>(buffer, bufferOffset + 6));
     return color;
+}
+
+
+
+template<typename ShortType>
+static inline void writeR16G16B16A16_NORM(ushort2 gIndices, constant WritePixelParams &options, uint bufferOffset, vec<float, 4> color, device uchar *buffer)
+{
+    shortToBytes(floatToNormalized<ShortType>(color.r), bufferOffset, buffer);
+    shortToBytes(floatToNormalized<ShortType>(color.g), bufferOffset + 2, buffer);
+    shortToBytes(floatToNormalized<ShortType>(color.b), bufferOffset + 4, buffer);
+    shortToBytes(floatToNormalized<ShortType>(color.a), bufferOffset + 6, buffer);
 }
 
 
@@ -2890,7 +2925,7 @@ static inline void writeR32G32B32A32_UINT(ushort2 gIndices, constant WritePixelP
     intToBytes(color.b, bufferOffset + 8, buffer);
     intToBytes(color.a, bufferOffset + 12, buffer);
 }
-# 1292 "./copy_buffer.metal"
+# 1320 "./copy_buffer.metal"
 static inline int4 readR8_SSCALED(uint bufferOffset, constant uchar *buffer) { return readR8_SINT(bufferOffset, buffer); } static inline uint4 readR8_USCALED(uint bufferOffset, constant uchar *buffer) { return readR8_UINT(bufferOffset, buffer); } static inline int4 readR8G8_SSCALED(uint bufferOffset, constant uchar *buffer) { return readR8G8_SINT(bufferOffset, buffer); } static inline uint4 readR8G8_USCALED(uint bufferOffset, constant uchar *buffer) { return readR8G8_UINT(bufferOffset, buffer); } static inline int4 readR8G8B8_SSCALED(uint bufferOffset, constant uchar *buffer) { return readR8G8B8_SINT(bufferOffset, buffer); } static inline uint4 readR8G8B8_USCALED(uint bufferOffset, constant uchar *buffer) { return readR8G8B8_UINT(bufferOffset, buffer); } static inline int4 readR8G8B8A8_SSCALED(uint bufferOffset, constant uchar *buffer) { return readR8G8B8A8_SINT(bufferOffset, buffer); } static inline uint4 readR8G8B8A8_USCALED(uint bufferOffset, constant uchar *buffer) { return readR8G8B8A8_UINT(bufferOffset, buffer); }
 static inline int4 readR16_SSCALED(uint bufferOffset, constant uchar *buffer) { return readR16_SINT(bufferOffset, buffer); } static inline uint4 readR16_USCALED(uint bufferOffset, constant uchar *buffer) { return readR16_UINT(bufferOffset, buffer); } static inline int4 readR16G16_SSCALED(uint bufferOffset, constant uchar *buffer) { return readR16G16_SINT(bufferOffset, buffer); } static inline uint4 readR16G16_USCALED(uint bufferOffset, constant uchar *buffer) { return readR16G16_UINT(bufferOffset, buffer); } static inline int4 readR16G16B16_SSCALED(uint bufferOffset, constant uchar *buffer) { return readR16G16B16_SINT(bufferOffset, buffer); } static inline uint4 readR16G16B16_USCALED(uint bufferOffset, constant uchar *buffer) { return readR16G16B16_UINT(bufferOffset, buffer); } static inline int4 readR16G16B16A16_SSCALED(uint bufferOffset, constant uchar *buffer) { return readR16G16B16A16_SINT(bufferOffset, buffer); } static inline uint4 readR16G16B16A16_USCALED(uint bufferOffset, constant uchar *buffer) { return readR16G16B16A16_UINT(bufferOffset, buffer); }
 static inline int4 readR32_SSCALED(uint bufferOffset, constant uchar *buffer) { return readR32_SINT(bufferOffset, buffer); } static inline uint4 readR32_USCALED(uint bufferOffset, constant uchar *buffer) { return readR32_UINT(bufferOffset, buffer); } static inline int4 readR32G32_SSCALED(uint bufferOffset, constant uchar *buffer) { return readR32G32_SINT(bufferOffset, buffer); } static inline uint4 readR32G32_USCALED(uint bufferOffset, constant uchar *buffer) { return readR32G32_UINT(bufferOffset, buffer); } static inline int4 readR32G32B32_SSCALED(uint bufferOffset, constant uchar *buffer) { return readR32G32B32_SINT(bufferOffset, buffer); } static inline uint4 readR32G32B32_USCALED(uint bufferOffset, constant uchar *buffer) { return readR32G32B32_UINT(bufferOffset, buffer); } static inline int4 readR32G32B32A32_SSCALED(uint bufferOffset, constant uchar *buffer) { return readR32G32B32A32_SINT(bufferOffset, buffer); } static inline uint4 readR32G32B32A32_USCALED(uint bufferOffset, constant uchar *buffer) { return readR32G32B32A32_UINT(bufferOffset, buffer); }
@@ -2901,12 +2936,12 @@ static inline int4 readR10G10B10A2_SSCALED(uint bufferOffset, constant uchar *bu
 kernel void readFromBufferToFloatTexture(ushort3 gIndices [[thread_position_in_grid]], constant CopyPixelParams &options[[buffer(0)]], constant uchar *buffer [[buffer(1)]], texture2d<float, access::write> dstTexture2d [[texture(0), function_constant(kCopyTextureType2D)]], texture2d_array<float, access::write> dstTexture2dArray [[texture(0), function_constant(kCopyTextureType2DArray)]], texture3d<float, access::write> dstTexture3d [[texture(0), function_constant(kCopyTextureType3D)]], texturecube<float, access::write> dstTextureCube [[texture(0), function_constant(kCopyTextureTypeCube)]])
 {
     if (gIndices.x >= options.copySize.x || gIndices.y >= options.copySize.y || gIndices.z >= options.copySize.z) { return; }
-# 1336 "./copy_buffer.metal"
+# 1372 "./copy_buffer.metal"
     uint bufferOffset = options.bufferStartOffset + (gIndices.z * options.bufferDepthPitch + gIndices.y * options.bufferRowPitch + gIndices.x * options.pixelSize);
 
     switch (kCopyFormatType)
     {
-        case FormatID::R5G6B5_UNORM: { auto color = readR5G6B5_UNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R8G8B8A8_UNORM: { auto color = readR8G8B8A8_UNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R8G8B8A8_UNORM_SRGB: { auto color = readR8G8B8A8_UNORM_SRGB(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R8G8B8A8_SNORM: { auto color = readR8G8B8A8_SNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::B8G8R8A8_UNORM: { auto color = readB8G8R8A8_UNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::B8G8R8A8_UNORM_SRGB: { auto color = readB8G8R8A8_UNORM_SRGB(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R8G8B8_UNORM: { auto color = readR8G8B8_UNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R8G8B8_UNORM_SRGB: { auto color = readR8G8B8_UNORM_SRGB(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R8G8B8_SNORM: { auto color = readR8G8B8_SNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::L8_UNORM: { auto color = readL8_UNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::L8A8_UNORM: { auto color = readL8A8_UNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R5G5B5A1_UNORM: { auto color = readR5G5B5A1_UNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R4G4B4A4_UNORM: { auto color = readR4G4B4A4_UNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R8_UNORM: { auto color = readR8_UNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R8_SNORM: { auto color = readR8_SNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R8G8_UNORM: { auto color = readR8G8_UNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R8G8_SNORM: { auto color = readR8G8_SNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R16_FLOAT: { auto color = readR16_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::A16_FLOAT: { auto color = readA16_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::L16_FLOAT: { auto color = readL16_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::L16A16_FLOAT: { auto color = readL16A16_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R16G16_FLOAT: { auto color = readR16G16_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R16G16B16_FLOAT: { auto color = readR16G16B16_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R16G16B16A16_FLOAT: { auto color = readR16G16B16A16_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R32_FLOAT: { auto color = readR32_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::A32_FLOAT: { auto color = readA32_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::L32_FLOAT: { auto color = readL32_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::L32A32_FLOAT: { auto color = readL32A32_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R32G32_FLOAT: { auto color = readR32G32_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R32G32B32_FLOAT: { auto color = readR32G32B32_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R32G32B32A32_FLOAT: { auto color = readR32G32B32A32_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break;
+        case FormatID::R5G6B5_UNORM: { auto color = readR5G6B5_UNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R8G8B8A8_UNORM: { auto color = readR8G8B8A8_UNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R8G8B8A8_UNORM_SRGB: { auto color = readR8G8B8A8_UNORM_SRGB(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R8G8B8A8_SNORM: { auto color = readR8G8B8A8_SNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::B8G8R8A8_UNORM: { auto color = readB8G8R8A8_UNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::B8G8R8A8_UNORM_SRGB: { auto color = readB8G8R8A8_UNORM_SRGB(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R8G8B8_UNORM: { auto color = readR8G8B8_UNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R8G8B8_UNORM_SRGB: { auto color = readR8G8B8_UNORM_SRGB(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R8G8B8_SNORM: { auto color = readR8G8B8_SNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::L8_UNORM: { auto color = readL8_UNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::L8A8_UNORM: { auto color = readL8A8_UNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R5G5B5A1_UNORM: { auto color = readR5G5B5A1_UNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R4G4B4A4_UNORM: { auto color = readR4G4B4A4_UNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R8_UNORM: { auto color = readR8_UNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R8_SNORM: { auto color = readR8_SNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R8G8_UNORM: { auto color = readR8G8_UNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R8G8_SNORM: { auto color = readR8G8_SNORM(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R16_FLOAT: { auto color = readR16_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R16_SNORM: { auto color = readR16_NORM<short>(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R16_UNORM: { auto color = readR16_NORM<ushort>(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::A16_FLOAT: { auto color = readA16_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::L16_FLOAT: { auto color = readL16_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::L16A16_FLOAT: { auto color = readL16A16_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R16G16_FLOAT: { auto color = readR16G16_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R16G16_SNORM: { auto color = readR16G16_NORM<short>(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R16G16_UNORM: { auto color = readR16G16_NORM<ushort>(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R16G16B16_FLOAT: { auto color = readR16G16B16_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R16G16B16_SNORM: { auto color = readR16G16B16_NORM<short>(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R16G16B16_UNORM: { auto color = readR16G16B16_NORM<ushort>(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R16G16B16A16_FLOAT: { auto color = readR16G16B16A16_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R16G16B16A16_SNORM: { auto color = readR16G16B16A16_NORM<short>(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R16G16B16A16_UNORM: { auto color = readR16G16B16A16_NORM<ushort>(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R32_FLOAT: { auto color = readR32_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::A32_FLOAT: { auto color = readA32_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::L32_FLOAT: { auto color = readL32_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::L32A32_FLOAT: { auto color = readL32A32_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R32G32_FLOAT: { auto color = readR32G32_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R32G32B32_FLOAT: { auto color = readR32G32B32_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break; case FormatID::R32G32B32A32_FLOAT: { auto color = readR32G32B32A32_FLOAT(bufferOffset, buffer); textureWrite(gIndices, options, color, dstTexture2d, dstTexture2dArray, dstTexture3d, dstTextureCube); } break;
     }
 
 
@@ -2915,7 +2950,7 @@ kernel void readFromBufferToFloatTexture(ushort3 gIndices [[thread_position_in_g
 kernel void readFromBufferToIntTexture(ushort3 gIndices [[thread_position_in_grid]], constant CopyPixelParams &options[[buffer(0)]], constant uchar *buffer [[buffer(1)]], texture2d<int, access::write> dstTexture2d [[texture(0), function_constant(kCopyTextureType2D)]], texture2d_array<int, access::write> dstTexture2dArray [[texture(0), function_constant(kCopyTextureType2DArray)]], texture3d<int, access::write> dstTexture3d [[texture(0), function_constant(kCopyTextureType3D)]], texturecube<int, access::write> dstTextureCube [[texture(0), function_constant(kCopyTextureTypeCube)]])
 {
     if (gIndices.x >= options.copySize.x || gIndices.y >= options.copySize.y || gIndices.z >= options.copySize.z) { return; }
-# 1364 "./copy_buffer.metal"
+# 1400 "./copy_buffer.metal"
     uint bufferOffset = options.bufferStartOffset + (gIndices.z * options.bufferDepthPitch + gIndices.y * options.bufferRowPitch + gIndices.x * options.pixelSize);
 
     switch (kCopyFormatType)
@@ -2929,7 +2964,7 @@ kernel void readFromBufferToIntTexture(ushort3 gIndices [[thread_position_in_gri
 kernel void readFromBufferToUIntTexture(ushort3 gIndices [[thread_position_in_grid]], constant CopyPixelParams &options[[buffer(0)]], constant uchar *buffer [[buffer(1)]], texture2d<uint, access::write> dstTexture2d [[texture(0), function_constant(kCopyTextureType2D)]], texture2d_array<uint, access::write> dstTexture2dArray [[texture(0), function_constant(kCopyTextureType2DArray)]], texture3d<uint, access::write> dstTexture3d [[texture(0), function_constant(kCopyTextureType3D)]], texturecube<uint, access::write> dstTextureCube [[texture(0), function_constant(kCopyTextureTypeCube)]])
 {
     if (gIndices.x >= options.copySize.x || gIndices.y >= options.copySize.y || gIndices.z >= options.copySize.z) { return; }
-# 1392 "./copy_buffer.metal"
+# 1428 "./copy_buffer.metal"
     uint bufferOffset = options.bufferStartOffset + (gIndices.z * options.bufferDepthPitch + gIndices.y * options.bufferRowPitch + gIndices.x * options.pixelSize);
 
     switch (kCopyFormatType)
@@ -2944,12 +2979,12 @@ kernel void readFromBufferToUIntTexture(ushort3 gIndices [[thread_position_in_gr
 kernel void writeFromFloatTextureToBuffer(ushort2 gIndices [[thread_position_in_grid]], constant WritePixelParams &options[[buffer(0)]], texture2d<float, access::read> srcTexture2d [[texture(0), function_constant(kCopyTextureType2D)]], texture2d_array<float, access::read> srcTexture2dArray [[texture(0), function_constant(kCopyTextureType2DArray)]], texture3d<float, access::read> srcTexture3d [[texture(0), function_constant(kCopyTextureType3D)]], texturecube<float, access::read> srcTextureCube [[texture(0), function_constant(kCopyTextureTypeCube)]], texture2d_ms<float, access::read> srcTexture2dMS [[texture(0), function_constant(kCopyTextureType2DMS)]], device uchar *buffer [[buffer(1)]])
 {
     if (gIndices.x >= options.copySize.x || gIndices.y >= options.copySize.y) { return; }
-# 1439 "./copy_buffer.metal"
+# 1481 "./copy_buffer.metal"
     uint bufferOffset = options.bufferStartOffset + (gIndices.y * options.bufferRowPitch + gIndices.x * options.pixelSize);
 
     switch (kCopyFormatType)
     {
-        case FormatID::R5G6B5_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR5G6B5_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R8G8B8A8_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR8G8B8A8_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R8G8B8A8_UNORM_SRGB: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR8G8B8A8_UNORM_SRGB(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R8G8B8A8_SNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR8G8B8A8_SNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::B8G8R8A8_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeB8G8R8A8_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::B8G8R8A8_UNORM_SRGB: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeB8G8R8A8_UNORM_SRGB(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R8G8B8_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR8G8B8_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R8G8B8_UNORM_SRGB: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR8G8B8_UNORM_SRGB(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R8G8B8_SNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR8G8B8_SNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::L8_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeL8_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::A8_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeA8_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::L8A8_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeL8A8_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R5G5B5A1_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR5G5B5A1_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R4G4B4A4_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR4G4B4A4_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R8_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR8_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R8_SNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR8_SNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R8G8_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR8G8_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R8G8_SNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR8G8_SNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R16_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR16_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::A16_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeA16_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::L16_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeL16_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::L16A16_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeL16A16_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R16G16_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR16G16_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R16G16B16A16_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR16G16B16A16_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R32_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR32_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::A32_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeA32_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::L32_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeL32_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::L32A32_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeL32A32_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R32G32_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR32G32_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R32G32B32A32_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR32G32B32A32_FLOAT(gIndices, options, bufferOffset, color, buffer); } break;
+        case FormatID::R5G6B5_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR5G6B5_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R8G8B8A8_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR8G8B8A8_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R8G8B8A8_UNORM_SRGB: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR8G8B8A8_UNORM_SRGB(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R8G8B8A8_SNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR8G8B8A8_SNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::B8G8R8A8_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeB8G8R8A8_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::B8G8R8A8_UNORM_SRGB: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeB8G8R8A8_UNORM_SRGB(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R8G8B8_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR8G8B8_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R8G8B8_UNORM_SRGB: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR8G8B8_UNORM_SRGB(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R8G8B8_SNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR8G8B8_SNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::L8_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeL8_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::A8_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeA8_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::L8A8_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeL8A8_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R5G5B5A1_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR5G5B5A1_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R4G4B4A4_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR4G4B4A4_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R8_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR8_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R8_SNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR8_SNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R8G8_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR8G8_UNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R8G8_SNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR8G8_SNORM(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R16_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR16_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R16_SNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR16_NORM<short>(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R16_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR16_NORM<ushort>(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::A16_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeA16_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::L16_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeL16_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::L16A16_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeL16A16_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R16G16_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR16G16_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R16G16_SNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR16G16_NORM<short>(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R16G16_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR16G16_NORM<ushort>(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R16G16B16A16_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR16G16B16A16_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R16G16B16A16_SNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR16G16B16A16_NORM<short>(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R16G16B16A16_UNORM: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR16G16B16A16_NORM<ushort>(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R32_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR32_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::A32_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeA32_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::L32_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeL32_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::L32A32_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeL32A32_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R32G32_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR32G32_FLOAT(gIndices, options, bufferOffset, color, buffer); } break; case FormatID::R32G32B32A32_FLOAT: { auto color = textureRead(gIndices, options, srcTexture2d, srcTexture2dArray, srcTexture3d, srcTextureCube, srcTexture2dMS); writeR32G32B32A32_FLOAT(gIndices, options, bufferOffset, color, buffer); } break;
     }
 
 
@@ -2958,7 +2993,7 @@ kernel void writeFromFloatTextureToBuffer(ushort2 gIndices [[thread_position_in_
 kernel void writeFromIntTextureToBuffer(ushort2 gIndices [[thread_position_in_grid]], constant WritePixelParams &options[[buffer(0)]], texture2d<int, access::read> srcTexture2d [[texture(0), function_constant(kCopyTextureType2D)]], texture2d_array<int, access::read> srcTexture2dArray [[texture(0), function_constant(kCopyTextureType2DArray)]], texture3d<int, access::read> srcTexture3d [[texture(0), function_constant(kCopyTextureType3D)]], texturecube<int, access::read> srcTextureCube [[texture(0), function_constant(kCopyTextureTypeCube)]], texture2d_ms<int, access::read> srcTexture2dMS [[texture(0), function_constant(kCopyTextureType2DMS)]], device uchar *buffer [[buffer(1)]])
 {
     if (gIndices.x >= options.copySize.x || gIndices.y >= options.copySize.y) { return; }
-# 1464 "./copy_buffer.metal"
+# 1506 "./copy_buffer.metal"
     uint bufferOffset = options.bufferStartOffset + (gIndices.y * options.bufferRowPitch + gIndices.x * options.pixelSize);
 
     switch (kCopyFormatType)
@@ -2972,7 +3007,7 @@ kernel void writeFromIntTextureToBuffer(ushort2 gIndices [[thread_position_in_gr
 kernel void writeFromUIntTextureToBuffer(ushort2 gIndices [[thread_position_in_grid]], constant WritePixelParams &options[[buffer(0)]], texture2d<uint, access::read> srcTexture2d [[texture(0), function_constant(kCopyTextureType2D)]], texture2d_array<uint, access::read> srcTexture2dArray [[texture(0), function_constant(kCopyTextureType2DArray)]], texture3d<uint, access::read> srcTexture3d [[texture(0), function_constant(kCopyTextureType3D)]], texturecube<uint, access::read> srcTextureCube [[texture(0), function_constant(kCopyTextureTypeCube)]], texture2d_ms<uint, access::read> srcTexture2dMS [[texture(0), function_constant(kCopyTextureType2DMS)]], device uchar *buffer [[buffer(1)]])
 {
     if (gIndices.x >= options.copySize.x || gIndices.y >= options.copySize.y) { return; }
-# 1489 "./copy_buffer.metal"
+# 1531 "./copy_buffer.metal"
     uint bufferOffset = options.bufferStartOffset + (gIndices.y * options.bufferRowPitch + gIndices.x * options.pixelSize);
 
     switch (kCopyFormatType)
@@ -3001,7 +3036,7 @@ struct CopyVertexParams
 
     uint vertexCount;
 };
-# 1539 "./copy_buffer.metal"
+# 1581 "./copy_buffer.metal"
 template <typename IntType>
 static inline void writeFloatVertex(constant CopyVertexParams &options,
                                     uint idx,
@@ -3036,9 +3071,9 @@ static inline void convertToFloatVertexFormat(uint index,
                                               constant uchar *srcBuffer,
                                               device uchar *dstBuffer)
 {
-# 1585 "./copy_buffer.metal"
+# 1627 "./copy_buffer.metal"
     uint bufferOffset = options.srcBufferStartOffset + options.srcStride * index;
-# 1594 "./copy_buffer.metal"
+# 1636 "./copy_buffer.metal"
     switch (kCopyFormatType)
     {
         case FormatID::R8_UNORM: { auto data = readR8_UNORM(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8_SNORM: { auto data = readR8_SNORM(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8_UINT: { auto data = readR8_UINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8_SINT: { auto data = readR8_SINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8_USCALED: { auto data = readR8_USCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8_SSCALED: { auto data = readR8_SSCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8G8_UNORM: { auto data = readR8G8_UNORM(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8G8_SNORM: { auto data = readR8G8_SNORM(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8G8_UINT: { auto data = readR8G8_UINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8G8_SINT: { auto data = readR8G8_SINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8G8_USCALED: { auto data = readR8G8_USCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8G8_SSCALED: { auto data = readR8G8_SSCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8G8B8_UNORM: { auto data = readR8G8B8_UNORM(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8G8B8_SNORM: { auto data = readR8G8B8_SNORM(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8G8B8_UINT: { auto data = readR8G8B8_UINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8G8B8_SINT: { auto data = readR8G8B8_SINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8G8B8_USCALED: { auto data = readR8G8B8_USCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8G8B8_SSCALED: { auto data = readR8G8B8_SSCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8G8B8A8_UNORM: { auto data = readR8G8B8A8_UNORM(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8G8B8A8_SNORM: { auto data = readR8G8B8A8_SNORM(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8G8B8A8_UINT: { auto data = readR8G8B8A8_UINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8G8B8A8_SINT: { auto data = readR8G8B8A8_SINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8G8B8A8_USCALED: { auto data = readR8G8B8A8_USCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R8G8B8A8_SSCALED: { auto data = readR8G8B8A8_SSCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16_UNORM: { auto data = readR16_NORM<ushort>(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16_SNORM: { auto data = readR16_NORM<short>(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16_UINT: { auto data = readR16_UINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16_SINT: { auto data = readR16_SINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16_USCALED: { auto data = readR16_USCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16_SSCALED: { auto data = readR16_SSCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16G16_UNORM: { auto data = readR16G16_NORM<ushort>(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16G16_SNORM: { auto data = readR16G16_NORM<short>(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16G16_UINT: { auto data = readR16G16_UINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16G16_SINT: { auto data = readR16G16_SINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16G16_USCALED: { auto data = readR16G16_USCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16G16_SSCALED: { auto data = readR16G16_SSCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16G16B16_UNORM: { auto data = readR16G16B16_NORM<ushort>(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16G16B16_SNORM: { auto data = readR16G16B16_NORM<short>(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16G16B16_UINT: { auto data = readR16G16B16_UINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16G16B16_SINT: { auto data = readR16G16B16_SINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16G16B16_USCALED: { auto data = readR16G16B16_USCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16G16B16_SSCALED: { auto data = readR16G16B16_SSCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16G16B16A16_UNORM: { auto data = readR16G16B16A16_NORM<ushort>(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16G16B16A16_SNORM: { auto data = readR16G16B16A16_NORM<short>(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16G16B16A16_UINT: { auto data = readR16G16B16A16_UINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16G16B16A16_SINT: { auto data = readR16G16B16A16_SINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16G16B16A16_USCALED: { auto data = readR16G16B16A16_USCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16G16B16A16_SSCALED: { auto data = readR16G16B16A16_SSCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32_UNORM: { auto data = readR32_NORM<uint>(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32_SNORM: { auto data = readR32_NORM<int>(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32_UINT: { auto data = readR32_UINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32_SINT: { auto data = readR32_SINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32_USCALED: { auto data = readR32_USCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32_SSCALED: { auto data = readR32_SSCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32_UNORM: { auto data = readR32G32_NORM<uint>(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32_SNORM: { auto data = readR32G32_NORM<int>(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32_UINT: { auto data = readR32G32_UINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32_SINT: { auto data = readR32G32_SINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32_USCALED: { auto data = readR32G32_USCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32_SSCALED: { auto data = readR32G32_SSCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32B32_UNORM: { auto data = readR32G32B32_NORM<uint>(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32B32_SNORM: { auto data = readR32G32B32_NORM<int>(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32B32_UINT: { auto data = readR32G32B32_UINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32B32_SINT: { auto data = readR32G32B32_SINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32B32_USCALED: { auto data = readR32G32B32_USCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32B32_SSCALED: { auto data = readR32G32B32_SSCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32B32A32_UNORM: { auto data = readR32G32B32A32_NORM<uint>(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32B32A32_SNORM: { auto data = readR32G32B32A32_NORM<int>(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32B32A32_UINT: { auto data = readR32G32B32A32_UINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32B32A32_SINT: { auto data = readR32G32B32A32_SINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32B32A32_USCALED: { auto data = readR32G32B32A32_USCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32B32A32_SSCALED: { auto data = readR32G32B32A32_SSCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16_FLOAT: { auto data = readR16_FLOAT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16G16_FLOAT: { auto data = readR16G16_FLOAT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16G16B16_FLOAT: { auto data = readR16G16B16_FLOAT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R16G16B16A16_FLOAT: { auto data = readR16G16B16A16_FLOAT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32_FLOAT: { auto data = readR32_FLOAT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32_FLOAT: { auto data = readR32G32_FLOAT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32B32_FLOAT: { auto data = readR32G32B32_FLOAT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32B32A32_FLOAT: { auto data = readR32G32B32A32_FLOAT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32_FIXED: { auto data = readR32_FIXED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32_FIXED: { auto data = readR32G32_FIXED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32B32_FIXED: { auto data = readR32G32B32_FIXED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R32G32B32A32_FIXED: { auto data = readR32G32B32A32_FIXED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R10G10B10A2_SINT: { auto data = readR10G10B10A2_SINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R10G10B10A2_UINT: { auto data = readR10G10B10A2_UINT(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R10G10B10A2_SSCALED: { auto data = readR10G10B10A2_SSCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break; case FormatID::R10G10B10A2_USCALED: { auto data = readR10G10B10A2_USCALED(bufferOffset, srcBuffer); writeFloatVertex(options, index, data, dstBuffer); } break;
@@ -3123,6 +3158,39 @@ vertex void expandVertexFormatComponentsVS(uint index [[vertex_id]],
                                            device uchar *dstBuffer [[buffer(2)]])
 {
     expandVertexFormatComponents(index, options, srcBuffer, dstBuffer);
+}
+
+
+kernel void linearizeBlocks(ushort2 position [[thread_position_in_grid]],
+                            constant uint2 *dimensions [[buffer(0)]],
+                            constant uint2 *srcBuffer [[buffer(1)]],
+                            device uint2 *dstBuffer [[buffer(2)]])
+{
+    if (any(uint2(position) >= *dimensions))
+    {
+        return;
+    }
+    uint2 t = uint2(position);
+    t = (t | (t << 8)) & 0x00FF00FF;
+    t = (t | (t << 4)) & 0x0F0F0F0F;
+    t = (t | (t << 2)) & 0x33333333;
+    t = (t | (t << 1)) & 0x55555555;
+    dstBuffer[position.y * (*dimensions).x + position.x] = srcBuffer[(t.x << 1) | t.y];
+}
+
+
+kernel void saturateDepth(uint2 position [[thread_position_in_grid]],
+                          constant uint3 *dimensions [[buffer(0)]],
+                          device float *srcBuffer [[buffer(1)]],
+                          device float *dstBuffer [[buffer(2)]])
+{
+    if (any(position >= (*dimensions).xy))
+    {
+        return;
+    }
+    const uint srcOffset = position.y * (*dimensions).z + position.x;
+    const uint dstOffset = position.y * (*dimensions).x + position.x;
+    dstBuffer[dstOffset] = saturate(srcBuffer[srcOffset]);
 }
 # 6 "temp_master_source.metal" 2
 # 1 "./visibility.metal" 1

@@ -1,7 +1,10 @@
 Name: RapidJSON
 URL: https://github.com/TenCent/rapidjson
+Version: N/A
+Revision: DEPS
 License: MIT
 License File: src/license.txt
+Shipped: no
 CPEPrefix: cpe:/a:tencent:rapidjson:1.1.0
 
 Description:

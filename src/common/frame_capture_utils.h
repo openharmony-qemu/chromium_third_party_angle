@@ -15,6 +15,50 @@
 
 namespace angle
 {
+namespace
+{
+template <typename ParamValueType>
+struct ParamValueTrait
+{
+    static_assert(sizeof(ParamValueType) == 0, "invalid ParamValueType");
+};
+
+template <>
+struct ParamValueTrait<gl::FramebufferID>
+{
+    static constexpr const char *name = "framebufferPacked";
+    static const ParamType typeID     = ParamType::TFramebufferID;
+};
+
+template <>
+struct ParamValueTrait<gl::BufferID>
+{
+    static constexpr const char *name = "bufferPacked";
+    static const ParamType typeID     = ParamType::TBufferID;
+};
+
+template <>
+struct ParamValueTrait<gl::RenderbufferID>
+{
+    static constexpr const char *name = "renderbufferPacked";
+    static const ParamType typeID     = ParamType::TRenderbufferID;
+};
+
+template <>
+struct ParamValueTrait<gl::TextureID>
+{
+    static constexpr const char *name = "texturePacked";
+    static const ParamType typeID     = ParamType::TTextureID;
+};
+
+template <>
+struct ParamValueTrait<gl::ShaderProgramID>
+{
+    static constexpr const char *name = "programPacked";
+    static const ParamType typeID     = ParamType::TShaderProgramID;
+};
+}  // namespace
+
 using ParamData = std::vector<std::vector<uint8_t>>;
 struct ParamCapture : angle::NonCopyable
 {
@@ -110,6 +154,8 @@ struct CallCapture
     std::string customFunctionName;
     ParamBuffer params;
     bool isActive = true;
+    gl::ContextID contextID;
+    bool isSyncPoint = false;
 };
 
 template <typename T>
@@ -200,7 +246,10 @@ template <>
 void WriteParamValueReplay<ParamType::TGLsizeiPointer>(std::ostream &os,
                                                        const CallCapture &call,
                                                        GLsizei *value);
-
+template <>
+void WriteParamValueReplay<ParamType::TGLuintPointer>(std::ostream &os,
+                                                      const CallCapture &call,
+                                                      GLuint *value);
 template <>
 void WriteParamValueReplay<ParamType::TGLuintConstPointer>(std::ostream &os,
                                                            const CallCapture &call,
@@ -343,7 +392,12 @@ void WriteParamValueReplay<ParamType::TEGLClientBuffer>(std::ostream &os,
 template <>
 void WriteParamValueReplay<ParamType::TEGLAttribPointer>(std::ostream &os,
                                                          const CallCapture &call,
-                                                         const EGLAttrib *value);
+                                                         EGLAttrib *value);
+
+template <>
+void WriteParamValueReplay<ParamType::TEGLAttribConstPointer>(std::ostream &os,
+                                                              const CallCapture &call,
+                                                              const EGLAttrib *value);
 
 template <>
 void WriteParamValueReplay<ParamType::TEGLintPointer>(std::ostream &os,
@@ -375,6 +429,16 @@ void WriteParamValueReplay<ParamType::TEGLTimeKHR>(std::ostream &os,
                                                    const CallCapture &call,
                                                    EGLTimeKHR value);
 
+template <>
+void WriteParamValueReplay<ParamType::TGLGETBLOBPROCANGLE>(std::ostream &os,
+                                                           const CallCapture &call,
+                                                           GLGETBLOBPROCANGLE value);
+
+template <>
+void WriteParamValueReplay<ParamType::TGLSETBLOBPROCANGLE>(std::ostream &os,
+                                                           const CallCapture &call,
+                                                           GLSETBLOBPROCANGLE value);
+
 // General fallback for any unspecific type.
 template <ParamType ParamT, typename T>
 void WriteParamValueReplay(std::ostream &os, const CallCapture &call, T value)
@@ -394,7 +458,8 @@ inline std::ostream &operator<<(std::ostream &os, const FmtPointerIndex &fmt)
     return os;
 }
 
-bool FindShaderProgramIDsInCall(const CallCapture &call, std::vector<gl::ShaderProgramID> &idsOut);
+template <typename ParamValueType>
+bool FindResourceIDsInCall(const CallCapture &call, std::vector<ParamValueType> &idsOut);
 }  // namespace angle
 
 #endif  // COMMON_FRAME_CAPTURE_UTILS_H_

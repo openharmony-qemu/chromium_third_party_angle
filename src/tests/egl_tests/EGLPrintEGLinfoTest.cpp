@@ -11,10 +11,10 @@
 
 #include "common/string_utils.h"
 #include "test_utils/ANGLETest.h"
-#include "test_utils/runner/TestSuite.h"
 
 #if defined(ANGLE_HAS_RAPIDJSON)
 #    include "common/serializer/JsonSerializer.h"
+#    include "test_utils/runner/TestSuite.h"
 #endif  // defined(ANGLE_HAS_RAPIDJSON)
 
 using namespace angle;
@@ -144,8 +144,11 @@ TEST_P(EGLPrintEGLinfoTest, PrintGLInfo)
 
     {
         std::vector<uint8_t> jsonData = json.getData();
-        SaveFileHelper saveFile(artifactPath);
-        saveFile.write(jsonData.data(), jsonData.size());
+
+        FILE *fp = fopen(artifactPath.c_str(), "wb");
+        ASSERT(fp);
+        fwrite(jsonData.data(), sizeof(uint8_t), jsonData.size(), fp);
+        fclose(fp);
     }
 #endif  // defined(ANGLE_HAS_RAPIDJSON)
 }
@@ -293,9 +296,6 @@ static void LogGles31Capabilities(std::ostream &stream)
 
 static void LogGles32Capabilities(std::ostream &stream)
 {
-    // Most of these capabilities are not implemented yet.
-    ANGLE_SKIP_TEST_IF(IsVulkan());
-
     QUERY_AND_LOG_CAPABILITY(GL_MAX_COMBINED_GEOMETRY_UNIFORM_COMPONENTS, stream);
     QUERY_AND_LOG_CAPABILITY(GL_MAX_COMBINED_TESS_CONTROL_UNIFORM_COMPONENTS, stream);
     QUERY_AND_LOG_CAPABILITY(GL_MAX_COMBINED_TESS_EVALUATION_UNIFORM_COMPONENTS, stream);
@@ -456,8 +456,6 @@ TEST_P(EGLPrintEGLinfoTest, PrintConfigInfo)
 
         EGLint conformant = GetAttrib(mDisplay, config, EGL_CONFORMANT);
         std::cout << " Conformant: ";
-        if (conformant & EGL_OPENGL_BIT)
-            std::cout << "OpenGL ";
         if (conformant & EGL_OPENGL_ES_BIT)
             std::cout << "ES1 ";
         if (conformant & EGL_OPENGL_ES2_BIT)
@@ -467,8 +465,7 @@ TEST_P(EGLPrintEGLinfoTest, PrintConfigInfo)
         std::cout << std::endl;
 
         // Ancilary buffers
-        std::cout << "\tAncilary "
-                  << "Depth:" << GetAttrib(mDisplay, config, EGL_DEPTH_SIZE)
+        std::cout << "\tAncilary " << "Depth:" << GetAttrib(mDisplay, config, EGL_DEPTH_SIZE)
                   << " Stencil:" << GetAttrib(mDisplay, config, EGL_STENCIL_SIZE)
                   << " SampleBuffs:" << GetAttrib(mDisplay, config, EGL_SAMPLE_BUFFERS)
                   << " Samples:" << GetAttrib(mDisplay, config, EGL_SAMPLES) << std::endl;
@@ -502,8 +499,6 @@ TEST_P(EGLPrintEGLinfoTest, PrintConfigInfo)
         // Renderable
         EGLint rendType = GetAttrib(mDisplay, config, EGL_RENDERABLE_TYPE);
         std::cout << "\tRender: ";
-        if (rendType & EGL_OPENGL_BIT)
-            std::cout << "OpenGL ";
         if (rendType & EGL_OPENGL_ES_BIT)
             std::cout << "ES1 ";
         if (rendType & EGL_OPENGL_ES2_BIT)
@@ -535,7 +530,8 @@ ANGLE_INSTANTIATE_TEST(EGLPrintEGLinfoTest,
                        ES2_VULKAN(),
                        ES3_VULKAN(),
                        ES32_VULKAN(),
-                       ES31_VULKAN_SWIFTSHADER());
+                       ES31_VULKAN_SWIFTSHADER(),
+                       ES32_EGL());
 
 // This test suite is not instantiated on some OSes.
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(EGLPrintEGLinfoTest);

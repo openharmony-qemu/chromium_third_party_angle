@@ -87,13 +87,13 @@ TEST_P(TimerQueriesTest, ProcAddresses)
 // Tests the time elapsed query
 TEST_P(TimerQueriesTest, TimeElapsed)
 {
-    // TODO(anglebug.com/5360): Failing on ARM-based Apple DTKs.
-    ANGLE_SKIP_TEST_IF(IsOSX() && IsARM64() && IsDesktopOpenGL());
+    // TODO(anglebug.com/40096747): Failing on ARM-based Apple DTKs.
+    ANGLE_SKIP_TEST_IF(IsMac() && IsARM64() && IsDesktopOpenGL());
 
     ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_disjoint_timer_query"));
 
-    // http://anglebug.com/5154
-    ANGLE_SKIP_TEST_IF(IsOSX() && IsOpenGL());
+    // http://anglebug.com/42263715
+    ANGLE_SKIP_TEST_IF(IsMac() && IsOpenGL());
 
     GLint queryTimeElapsedBits = 0;
     glGetQueryivEXT(GL_TIME_ELAPSED_EXT, GL_QUERY_COUNTER_BITS_EXT, &queryTimeElapsedBits);
@@ -177,7 +177,7 @@ TEST_P(TimerQueriesTest, TimeElapsed)
 TEST_P(TimerQueriesTest, TimeElapsedTextureTest)
 {
     // OSX drivers don't seem to properly time non-draw calls so we skip the test on Mac
-    ANGLE_SKIP_TEST_IF(IsOSX());
+    ANGLE_SKIP_TEST_IF(IsMac() && IsOpenGL());
 
     ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_disjoint_timer_query"));
 
@@ -279,11 +279,11 @@ TEST_P(TimerQueriesTest, TimeElapsedValidationTest)
 TEST_P(TimerQueriesTest, TimeElapsedMulticontextTest)
 {
     // TODO(jmadill): Figure out why this test is flaky on AMD/OpenGL.
-    // http://anglebug.com/1541
+    // http://anglebug.com/42260520
     ANGLE_SKIP_TEST_IF(IsAMD() && IsOpenGL());
 
-    // TODO(anglebug.com/5360): Failing on ARM-based Apple DTKs.
-    ANGLE_SKIP_TEST_IF(IsOSX() && IsARM64() && IsDesktopOpenGL());
+    // TODO(anglebug.com/40096747): Failing on ARM-based Apple DTKs.
+    ANGLE_SKIP_TEST_IF(IsMac() && IsARM64() && IsDesktopOpenGL());
 
     ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_disjoint_timer_query"));
 
@@ -417,7 +417,7 @@ TEST_P(TimerQueriesTest, TimeElapsedMulticontextTest)
     EXPECT_LT(result1, 1000000000ul);
     EXPECT_LT(result2, 1000000000ul);
 
-    // This check can never really be non-flaky. http://anglebug.com/5178
+    // This check can never really be non-flaky. http://anglebug.com/42263737
     // EXPECT_LT(result1, result2);
 }
 
@@ -535,7 +535,7 @@ class TimerQueriesTestES3 : public TimerQueriesTest
 TEST_P(TimerQueriesTestES3, TimestampGetInteger64)
 {
     ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_disjoint_timer_query"));
-    // http://anglebug.com/4092
+    // http://anglebug.com/40096654
     ANGLE_SKIP_TEST_IF(IsAndroid());
 
     GLint queryTimestampBits = 0;

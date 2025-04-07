@@ -31,12 +31,9 @@ config("angle_gl_backend_config") {
         "ANGLE_ENABLE_CGL",
       ]
     }
-    if (angle_enable_eagl) {
-      defines += [
-        "GLES_SILENCE_DEPRECATION",
-        "ANGLE_ENABLE_EAGL",
-      ]
-    }
+  }
+  if (angle_has_build && (is_linux || is_chromeos)) {
+    defines += [ "ANGLE_HAS_LIBDRM" ]
   }
   include_dirs = [ "../../../third_party/khronos" ]
 }
@@ -52,6 +49,10 @@ angle_source_set("angle_gl_backend") {
     "$angle_root:angle_image_util",
   ]
 
+  if (angle_has_build && (is_linux || is_chromeos)) {
+    deps += [ "//build/config/linux/libdrm" ]
+  }
+
   if (is_win) {
     deps += [ "$angle_root:angle_d3d_format_tables" ]
   }
@@ -63,8 +64,7 @@ angle_source_set("angle_gl_backend") {
       "Xext",
     ]
   }
-  if (is_android || is_linux || is_chromeos ||
-      is_ohos) {  # TODO(ohos): remove is_ohos
+  if (is_android || is_linux || is_chromeos || is_ohos) {
     deps += [ "$angle_root/src/common/linux:angle_dma_buf" ]
   }
   if (is_apple) {
@@ -72,9 +72,7 @@ angle_source_set("angle_gl_backend") {
       "IOSurface.framework",
       "QuartzCore.framework",
     ]
-    if (angle_enable_eagl) {
-      frameworks += [ "OpenGLES.framework" ]
-    } else if (angle_enable_cgl) {
+    if (angle_enable_cgl) {
       frameworks += [ "OpenGL.framework" ]
     }
     if (is_mac) {

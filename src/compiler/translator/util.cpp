@@ -217,7 +217,15 @@ float NumericLexFloat32OutOfRangeToInfinity(const std::string &str)
     {
         return std::numeric_limits<float>::infinity();
     }
-    else if (exponentLong < std::numeric_limits<float>::min_exponent10)
+    // In 32-bit float, min_exponent10 is -37 but min() is
+    // 1.1754943E-38. 10^-37 may be the "minimum negative integer such
+    // that 10 raised to that power is a normalized float", but being
+    // constrained to powers of ten it's above min() (which is 2^-126).
+    // Values below min() are flushed to zero near the end of this
+    // function anyway so (AFAICT) this comparison is only done to ensure
+    // that the exponent will not make the pow() call (below) overflow.
+    // Comparing against -38 (min_exponent10 - 1) will do the trick.
+    else if (exponentLong < std::numeric_limits<float>::min_exponent10 - 1)
     {
         return 0.0f;
     }
@@ -233,7 +241,7 @@ float NumericLexFloat32OutOfRangeToInfinity(const std::string &str)
     {
         return std::numeric_limits<float>::infinity();
     }
-    if (value < static_cast<double>(std::numeric_limits<float>::min()))
+    if (static_cast<float>(value) < std::numeric_limits<float>::min())
     {
         return 0.0f;
     }
@@ -281,6 +289,9 @@ GLenum GLVariableType(const TType &type)
             ASSERT(type.getSecondarySize() == 1);
 
             return kBoolGLType[type.getNominalSize() - 1];
+
+        case EbtYuvCscStandardEXT:
+            return GL_UNSIGNED_INT;
 
         case EbtSampler2D:
             return GL_SAMPLER_2D;
@@ -387,8 +398,8 @@ GLenum GLVariableType(const TType &type)
         case EbtPixelLocalANGLE:
         case EbtIPixelLocalANGLE:
         case EbtUPixelLocalANGLE:
-            // TODO(anglebug.com/7279): For now, we can expect PLS handles to be rewritten to images
-            // before anyone calls into here.
+            // TODO(anglebug.com/40096838): For now, we can expect PLS handles to be rewritten to
+            // images before anyone calls into here.
             [[fallthrough]];
         default:
             UNREACHABLE();
@@ -408,9 +419,6 @@ GLenum GLVariablePrecision(const TType &type)
                 return GL_MEDIUM_FLOAT;
             case EbpLow:
                 return GL_LOW_FLOAT;
-            case EbpUndefined:
-                // Desktop specs do not use precision
-                return GL_NONE;
             default:
                 UNREACHABLE();
         }
@@ -425,9 +433,6 @@ GLenum GLVariablePrecision(const TType &type)
                 return GL_MEDIUM_INT;
             case EbpLow:
                 return GL_LOW_INT;
-            case EbpUndefined:
-                // Desktop specs do not use precision
-                return GL_NONE;
             default:
                 UNREACHABLE();
         }
@@ -451,7 +456,7 @@ ImmutableString ArrayString(const TType &type)
         arrayString << "[";
         if (*arraySizeIter > 0)
         {
-            arrayString.appendDecimal(*arraySizeIter);
+            arrayString << *arraySizeIter;
         }
         arrayString << "]";
     }
@@ -745,6 +750,8 @@ bool IsBuiltinFragmentInputVariable(TQualifier qualifier)
         case EvqHelperInvocation:
         case EvqLastFragData:
         case EvqLastFragColor:
+        case EvqLastFragDepth:
+        case EvqLastFragStencil:
             return true;
         default:
             break;
@@ -767,6 +774,11 @@ bool IsFragmentOutput(TQualifier qualifier)
         default:
             return false;
     }
+}
+
+bool IsOutputNULL(ShShaderOutput output)
+{
+    return output == SH_NULL_OUTPUT;
 }
 
 bool IsOutputESSL(ShShaderOutput output)
@@ -801,20 +813,23 @@ bool IsOutputHLSL(ShShaderOutput output)
     {
         case SH_HLSL_3_0_OUTPUT:
         case SH_HLSL_4_1_OUTPUT:
-        case SH_HLSL_4_0_FL9_3_OUTPUT:
             return true;
         default:
             break;
     }
     return false;
 }
-bool IsOutputVulkan(ShShaderOutput output)
+bool IsOutputSPIRV(ShShaderOutput output)
 {
     return output == SH_SPIRV_VULKAN_OUTPUT;
 }
-bool IsOutputMetalDirect(ShShaderOutput output)
+bool IsOutputMSL(ShShaderOutput output)
 {
     return output == SH_MSL_METAL_OUTPUT;
+}
+bool IsOutputWGSL(ShShaderOutput output)
+{
+    return output == SH_WGSL_OUTPUT;
 }
 
 bool IsInShaderStorageBlock(TIntermTyped *node)
@@ -884,114 +899,6 @@ bool IsSpecWithFunctionBodyNewScope(ShShaderSpec shaderSpec, int shaderVersion)
     return (shaderVersion == 100 && !sh::IsWebGLBasedSpec(shaderSpec));
 }
 
-ImplicitTypeConversion GetConversion(TBasicType t1, TBasicType t2)
-{
-    if (t1 == t2)
-        return ImplicitTypeConversion::Same;
-
-    switch (t1)
-    {
-        case EbtInt:
-            switch (t2)
-            {
-                case EbtInt:
-                    UNREACHABLE();
-                    break;
-                case EbtUInt:
-                    return ImplicitTypeConversion::Invalid;
-                case EbtFloat:
-                    return ImplicitTypeConversion::Left;
-                default:
-                    return ImplicitTypeConversion::Invalid;
-            }
-            break;
-        case EbtUInt:
-            switch (t2)
-            {
-                case EbtInt:
-                    return ImplicitTypeConversion::Invalid;
-                case EbtUInt:
-                    UNREACHABLE();
-                    break;
-                case EbtFloat:
-                    return ImplicitTypeConversion::Left;
-                default:
-                    return ImplicitTypeConversion::Invalid;
-            }
-            break;
-        case EbtFloat:
-            switch (t2)
-            {
-                case EbtInt:
-                case EbtUInt:
-                    return ImplicitTypeConversion::Right;
-                case EbtFloat:
-                    UNREACHABLE();
-                    break;
-                default:
-                    return ImplicitTypeConversion::Invalid;
-            }
-            break;
-        default:
-            return ImplicitTypeConversion::Invalid;
-    }
-    return ImplicitTypeConversion::Invalid;
-}
-
-bool IsValidImplicitConversion(sh::ImplicitTypeConversion conversion, TOperator op)
-{
-    switch (conversion)
-    {
-        case sh::ImplicitTypeConversion::Same:
-            return true;
-        case sh::ImplicitTypeConversion::Left:
-            switch (op)
-            {
-                case EOpEqual:
-                case EOpNotEqual:
-                case EOpLessThan:
-                case EOpGreaterThan:
-                case EOpLessThanEqual:
-                case EOpGreaterThanEqual:
-                case EOpAdd:
-                case EOpSub:
-                case EOpMul:
-                case EOpDiv:
-                    return true;
-                default:
-                    break;
-            }
-            break;
-        case sh::ImplicitTypeConversion::Right:
-            switch (op)
-            {
-                case EOpAssign:
-                case EOpInitialize:
-                case EOpEqual:
-                case EOpNotEqual:
-                case EOpLessThan:
-                case EOpGreaterThan:
-                case EOpLessThanEqual:
-                case EOpGreaterThanEqual:
-                case EOpAdd:
-                case EOpSub:
-                case EOpMul:
-                case EOpDiv:
-                case EOpAddAssign:
-                case EOpSubAssign:
-                case EOpMulAssign:
-                case EOpDivAssign:
-                    return true;
-                default:
-                    break;
-            }
-            break;
-        case sh::ImplicitTypeConversion::Invalid:
-            break;
-    }
-    return false;
-}
-
 bool IsPrecisionApplicableToType(TBasicType type)
 {
     switch (type)
@@ -1000,7 +907,7 @@ bool IsPrecisionApplicableToType(TBasicType type)
         case EbtUInt:
         case EbtFloat:
             // TODO: find all types where precision is applicable; for example samplers.
-            // http://anglebug.com/6132
+            // http://anglebug.com/42264661
             return true;
         default:
             return false;
@@ -1010,8 +917,9 @@ bool IsPrecisionApplicableToType(TBasicType type)
 bool IsRedeclarableBuiltIn(const ImmutableString &name)
 {
     return name == "gl_ClipDistance" || name == "gl_CullDistance" || name == "gl_FragDepth" ||
-           name == "gl_LastFragData" || name == "gl_LastFragColorARM" || name == "gl_PerVertex" ||
-           name == "gl_Position" || name == "gl_PointSize";
+           name == "gl_LastFragData" || name == "gl_LastFragColorARM" ||
+           name == "gl_LastFragDepthARM" || name == "gl_LastFragStencilARM" ||
+           name == "gl_PerVertex" || name == "gl_Position" || name == "gl_PointSize";
 }
 
 size_t FindFieldIndex(const TFieldList &fieldList, const char *fieldName)
@@ -1025,6 +933,27 @@ size_t FindFieldIndex(const TFieldList &fieldList, const char *fieldName)
     }
     UNREACHABLE();
     return 0;
+}
+
+Declaration ViewDeclaration(TIntermDeclaration &declNode, uint32_t index)
+{
+    ASSERT(declNode.getChildCount() > index);
+    TIntermNode *childNode = declNode.getChildNode(index);
+    ASSERT(childNode);
+    TIntermSymbol *symbolNode;
+    if ((symbolNode = childNode->getAsSymbolNode()))
+    {
+        return {*symbolNode, nullptr};
+    }
+    else
+    {
+        TIntermBinary *initNode = childNode->getAsBinaryNode();
+        ASSERT(initNode);
+        ASSERT(initNode->getOp() == TOperator::EOpInitialize);
+        symbolNode = initNode->getLeft()->getAsSymbolNode();
+        ASSERT(symbolNode);
+        return {*symbolNode, initNode->getRight()};
+    }
 }
 
 }  // namespace sh

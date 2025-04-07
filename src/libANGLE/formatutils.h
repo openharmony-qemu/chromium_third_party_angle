@@ -15,6 +15,7 @@
 
 #include "angle_gl.h"
 #include "common/android_util.h"
+#include "common/hash_containers.h"
 #include "libANGLE/Caps.h"
 #include "libANGLE/Config.h"
 #include "libANGLE/Error.h"
@@ -66,11 +67,15 @@ ANGLE_INLINE GLenum GetNonLinearFormat(const GLenum format)
         case GL_RGBA8:
             return GL_SRGB8_ALPHA8;
         case GL_RGB8:
-        case GL_BGRX8_ANGLEX:
-        case GL_RGBX8_ANGLE:
             return GL_SRGB8;
+        case GL_BGRX8_ANGLEX:
+            return GL_BGRX8_SRGB_ANGLEX;
+        case GL_RGBX8_ANGLE:
+            return GL_RGBX8_SRGB_ANGLEX;
         case GL_RGBA16F:
             return GL_RGBA16F;
+        case GL_RGB10_A2_EXT:
+            return GL_RGB10_A2_EXT;
         default:
             return GL_NONE;
     }
@@ -83,6 +88,7 @@ ANGLE_INLINE bool ColorspaceFormatOverride(const EGLenum colorspace, GLenum *ren
     {
         case EGL_GL_COLORSPACE_LINEAR:                 // linear colorspace no translation needed
         case EGL_GL_COLORSPACE_SCRGB_LINEAR_EXT:       // linear colorspace no translation needed
+        case EGL_GL_COLORSPACE_BT2020_LINEAR_EXT:      // linear colorspace no translation needed
         case EGL_GL_COLORSPACE_DISPLAY_P3_LINEAR_EXT:  // linear colorspace no translation needed
         case EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT:  // App, not the HW, will specify the
                                                             // transfer function
@@ -90,6 +96,8 @@ ANGLE_INLINE bool ColorspaceFormatOverride(const EGLenum colorspace, GLenum *ren
             // No translation
             return true;
         case EGL_GL_COLORSPACE_SRGB_KHR:
+        case EGL_GL_COLORSPACE_BT2020_PQ_EXT:
+        case EGL_GL_COLORSPACE_BT2020_HLG_EXT:
         case EGL_GL_COLORSPACE_DISPLAY_P3_EXT:
         {
             GLenum nonLinearFormat = GetNonLinearFormat(*rendertargetformat);
@@ -161,6 +169,12 @@ struct InternalFormat
                                          GLuint *resultOut) const;
 
     [[nodiscard]] bool computePalettedImageRowPitch(GLsizei width, GLuint *resultOut) const;
+
+    [[nodiscard]] bool computeCompressedImageRowPitch(GLsizei width, GLuint *resultOut) const;
+
+    [[nodiscard]] bool computeCompressedImageDepthPitch(GLsizei height,
+                                                        GLuint rowPitch,
+                                                        GLuint *resultOut) const;
 
     [[nodiscard]] bool computeCompressedImageSize(const Extents &size, GLuint *resultOut) const;
 
@@ -495,7 +509,6 @@ ANGLE_INLINE bool IsBGRAFormat(const GLenum internalFormat)
         case GL_BGR5_A1_ANGLEX:
         case GL_BGRA8_SRGB_ANGLEX:
         case GL_BGRX8_ANGLEX:
-        case GL_RGBX8_ANGLE:
         case GL_BGR565_ANGLEX:
         case GL_BGR10_A2_ANGLEX:
             return true;
@@ -513,11 +526,6 @@ bool ValidES3InternalFormat(GLenum internalFormat);
 bool ValidES3Format(GLenum format);
 bool ValidES3Type(GLenum type);
 bool ValidES3FormatCombination(GLenum format, GLenum type, GLenum internalFormat);
-
-// Implemented in format_map_desktop.cpp
-bool ValidDesktopFormat(GLenum format);
-bool ValidDesktopType(GLenum type);
-bool ValidDesktopFormatCombination(GLenum format, GLenum type, GLenum internalFormat);
 
 // Implemented in es3_copy_conversion_table_autogen.cpp
 bool ValidES3CopyConversion(GLenum textureFormat, GLenum framebufferFormat);

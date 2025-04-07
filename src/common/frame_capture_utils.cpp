@@ -158,6 +158,8 @@ CallCapture &CallCapture::operator=(CallCapture &&other)
     std::swap(customFunctionName, other.customFunctionName);
     std::swap(params, other.params);
     std::swap(isActive, other.isActive);
+    std::swap(contextID, other.contextID);
+    std::swap(isSyncPoint, other.isSyncPoint);
     return *this;
 }
 
@@ -279,6 +281,21 @@ void WriteParamValueReplay<ParamType::TGLsizeiPointer>(std::ostream &os,
     else
     {
         os << "(GLsizei *)" << static_cast<int>(reinterpret_cast<intptr_t>(value));
+    }
+}
+
+template <>
+void WriteParamValueReplay<ParamType::TGLuintPointer>(std::ostream &os,
+                                                      const CallCapture &call,
+                                                      GLuint *value)
+{
+    if (value == 0)
+    {
+        os << kNullPointerString;
+    }
+    else
+    {
+        os << "(GLuint *)" << static_cast<int>(reinterpret_cast<uintptr_t>(value));
     }
 }
 
@@ -435,11 +452,11 @@ void WriteParamValueReplay<ParamType::TUniformLocation>(std::ostream &os,
     os << "gUniformLocations[";
 
     // Find the program from the call parameters.
-    std::vector<gl::ShaderProgramID> programIDs;
-    if (FindShaderProgramIDsInCall(call, programIDs))
+    std::vector<gl::ShaderProgramID> shaderProgramIDs;
+    if (FindResourceIDsInCall<gl::ShaderProgramID>(call, shaderProgramIDs))
     {
-        ASSERT(programIDs.size() == 1);
-        os << programIDs[0].value;
+        ASSERT(shaderProgramIDs.size() == 1);
+        os << shaderProgramIDs[0].value;
     }
     else
     {
@@ -524,7 +541,7 @@ void WriteParamValueReplay<ParamType::Tegl_DisplayPointer>(std::ostream &os,
                                                            const CallCapture &call,
                                                            egl::Display *value)
 {
-    os << "EGL_NO_DISPLAY";
+    os << "gEGLDisplay";
 }
 
 template <>
@@ -554,7 +571,22 @@ void WriteParamValueReplay<ParamType::Tegl_SyncID>(std::ostream &os,
 template <>
 void WriteParamValueReplay<ParamType::TEGLAttribPointer>(std::ostream &os,
                                                          const CallCapture &call,
-                                                         const EGLAttrib *value)
+                                                         EGLAttrib *value)
+{
+    if (value == 0)
+    {
+        os << kNullPointerString;
+    }
+    else
+    {
+        os << "(EGLAttrib *)" << static_cast<int>(reinterpret_cast<uintptr_t>(value));
+    }
+}
+
+template <>
+void WriteParamValueReplay<ParamType::TEGLAttribConstPointer>(std::ostream &os,
+                                                              const CallCapture &call,
+                                                              const EGLAttrib *value)
 {
     if (value == 0)
     {
@@ -612,17 +644,43 @@ void WriteParamValueReplay<ParamType::TEGLTimeKHR>(std::ostream &os,
     os << value << "ul";
 }
 
-bool FindShaderProgramIDsInCall(const CallCapture &call, std::vector<gl::ShaderProgramID> &idsOut)
+template <>
+void WriteParamValueReplay<ParamType::TGLGETBLOBPROCANGLE>(std::ostream &os,
+                                                           const CallCapture &call,
+                                                           GLGETBLOBPROCANGLE value)
 {
+    // It's not necessary to implement correct capture for these types.
+    os << "0";
+}
+
+template <>
+void WriteParamValueReplay<ParamType::TGLSETBLOBPROCANGLE>(std::ostream &os,
+                                                           const CallCapture &call,
+                                                           GLSETBLOBPROCANGLE value)
+{
+    // It's not necessary to implement correct capture for these types.
+    os << "0";
+}
+
+template <typename ParamValueType>
+bool FindResourceIDsInCall(const CallCapture &call, std::vector<ParamValueType> &idsOut)
+{
+    const ParamType paramType = ParamValueTrait<ParamValueType>::typeID;
     for (const ParamCapture &param : call.params.getParamCaptures())
     {
-        // Only checking for programs right now, but could be expanded to all ResourceTypes
-        if (param.type == ParamType::TShaderProgramID)
+        if (param.type == paramType)
         {
-            idsOut.push_back(param.value.ShaderProgramIDVal);
+            const ParamValueType id = AccessParamValue<ParamValueType>(paramType, param.value);
+            idsOut.push_back(id);
         }
     }
 
     return !idsOut.empty();
 }
+
+// Explicit instantiation
+template bool FindResourceIDsInCall<gl::TextureID>(const CallCapture &call,
+                                                   std::vector<gl::TextureID> &idsOut);
+template bool FindResourceIDsInCall<gl::ShaderProgramID>(const CallCapture &call,
+                                                         std::vector<gl::ShaderProgramID> &idsOut);
 }  // namespace angle

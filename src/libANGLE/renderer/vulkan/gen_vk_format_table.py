@@ -38,7 +38,7 @@ namespace rx
 namespace vk
 {{
 
-void Format::initialize(RendererVk *renderer,
+void Format::initialize(Renderer *renderer,
                         const angle::Format &angleFormat)
 {{
     switch (angleFormat.id)
@@ -86,6 +86,10 @@ break;
 """
 
 image_basic_template = """mActualSampleOnlyImageFormatID = {image};
+mImageInitializerFunction = {image_initializer};"""
+
+image_external_template = """mActualSampleOnlyImageFormatID = {image};
+mActualRenderableImageFormatID = {image};
 mImageInitializerFunction = {image_initializer};"""
 
 image_struct_template = "{{{image}, {image_initializer}}}"
@@ -177,6 +181,7 @@ def gen_format_case(angle, internal_format, vk_json_data):
         fallbacks += compressed
 
         if format in vk_map:
+            assert format not in fallbacks
             fallbacks = [format] + fallbacks
 
         return (fallbacks, len(fallbacks) - len(compressed))
@@ -198,7 +203,10 @@ def gen_format_case(angle, internal_format, vk_json_data):
 
     images, images_compressed_offset = get_formats(angle, "image")
     if len(images) == 1:
-        args.update(image_template=image_basic_template)
+        if 'EXTERNAL' in angle:
+            args.update(image_template=image_external_template)
+        else:
+            args.update(image_template=image_basic_template)
         args.update(image_args(images[0]))
     elif len(images) > 1:
         args.update(
@@ -224,6 +232,10 @@ def get_format_id_case(format_id, vk_format):
 
 
 def get_vk_format_case(format_id, vk_format):
+    # don't generate the reverse mapping for the external format slots because they _all_ map
+    # to VK_FORMAT_UNDEFINED and so clash with NONE
+    if 'EXTERNAL' in format_id:
+        return ''
     return """\
         case %s:
             return angle::FormatID::%s;

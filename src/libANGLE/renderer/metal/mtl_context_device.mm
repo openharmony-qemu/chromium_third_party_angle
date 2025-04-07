@@ -106,20 +106,6 @@ AutoObjCPtr<id<MTLRenderPipelineState>> ContextDevice::newRenderPipelineStateWit
     return adoptObjCObj([get() newRenderPipelineStateWithDescriptor:descriptor error:error]);
 }
 
-AutoObjCPtr<id<MTLLibrary>> ContextDevice::newLibraryWithSource(
-    NSString *source,
-    MTLCompileOptions *options,
-    __autoreleasing NSError **error) const
-{
-    return adoptObjCObj([get() newLibraryWithSource:source options:options error:error]);
-}
-
-AutoObjCPtr<id<MTLLibrary>> ContextDevice::newLibraryWithData(dispatch_data_t data,
-                                                              __autoreleasing NSError **error) const
-{
-    return adoptObjCObj([get() newLibraryWithData:data error:error]);
-}
-
 AutoObjCPtr<id<MTLDepthStencilState>> ContextDevice::newDepthStencilStateWithDescriptor(
     MTLDepthStencilDescriptor *descriptor) const
 {
@@ -131,11 +117,22 @@ AutoObjCPtr<id<MTLSharedEvent>> ContextDevice::newSharedEvent() const
     return adoptObjCObj([get() newSharedEvent]);
 }
 
+AutoObjCPtr<id<MTLEvent>> ContextDevice::newEvent() const
+{
+    return adoptObjCObj([get() newEvent]);
+}
+
 void ContextDevice::setOwnerWithIdentity(id<MTLResource> resource) const
 {
 #if ANGLE_USE_METAL_OWNERSHIP_IDENTITY
     mtl::setOwnerWithIdentity(resource, mOwnershipIdentity);
 #endif
 }
+
+bool ContextDevice::hasUnifiedMemory() const
+{
+    return [get() hasUnifiedMemory];
+}
+
 }  // namespace mtl
 }  // namespace rx

@@ -112,20 +112,6 @@ class TUnorderedMap : public std::unordered_map<K, D, H, CMP, pool_allocator<std
     {}
 };
 
-template <class K, class D, class CMP = std::less<K>>
-class TMap : public std::map<K, D, CMP, pool_allocator<std::pair<const K, D>>>
-{
-  public:
-    POOL_ALLOCATOR_NEW_DELETE
-    typedef pool_allocator<std::pair<const K, D>> tAllocator;
-
-    TMap() : std::map<K, D, CMP, tAllocator>() {}
-    // use correct two-stage name lookup supported in gcc 3.4 and above
-    TMap(const tAllocator &a)
-        : std::map<K, D, CMP, tAllocator>(std::map<K, D, CMP, tAllocator>::key_compare(), a)
-    {}
-};
-
 template <class K, class H = std::hash<K>, class CMP = std::equal_to<K>>
 class TUnorderedSet : public std::unordered_set<K, H, CMP, pool_allocator<K>>
 {
@@ -139,6 +125,20 @@ class TUnorderedSet : public std::unordered_set<K, H, CMP, pool_allocator<K>>
         : std::unordered_set<K, H, CMP, tAllocator>(
               std::unordered_set<K, H, CMP, tAllocator>::key_compare(),
               a)
+    {}
+};
+
+template <class K, class D, class CMP = std::less<K>>
+class TMap : public std::map<K, D, CMP, pool_allocator<std::pair<const K, D>>>
+{
+  public:
+    POOL_ALLOCATOR_NEW_DELETE
+    typedef pool_allocator<std::pair<const K, D>> tAllocator;
+
+    TMap() : std::map<K, D, CMP, tAllocator>() {}
+    // use correct two-stage name lookup supported in gcc 3.4 and above
+    TMap(const tAllocator &a)
+        : std::map<K, D, CMP, tAllocator>(std::map<K, D, CMP, tAllocator>::key_compare(), a)
     {}
 };
 

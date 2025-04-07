@@ -18,11 +18,11 @@
 #import "gpu_info_util/SystemInfo_internal.h"
 #import "libANGLE/Display.h"
 #import "libANGLE/Error.h"
+#import "libANGLE/renderer/gl/RendererGL.h"
 #import "libANGLE/renderer/gl/cgl/ContextCGL.h"
 #import "libANGLE/renderer/gl/cgl/DeviceCGL.h"
 #import "libANGLE/renderer/gl/cgl/IOSurfaceSurfaceCGL.h"
 #import "libANGLE/renderer/gl/cgl/PbufferSurfaceCGL.h"
-#import "libANGLE/renderer/gl/cgl/RendererCGL.h"
 #import "libANGLE/renderer/gl/cgl/WindowSurfaceCGL.h"
 #import "platform/PlatformMethods.h"
 
@@ -50,39 +50,36 @@ using IORegistryGPUID = uint64_t;
 static std::optional<GLint> GetVirtualScreenByRegistryID(CGLPixelFormatObj pixelFormatObj,
                                                          IORegistryGPUID gpuID)
 {
-    if (@available(macOS 10.13, *))
-    {
-        // When a process does not have access to the WindowServer (as with Chromium's GPU process
-        // and WebKit's WebProcess), there is no way for OpenGL to tell which GPU is connected to a
-        // display. On 10.13+, find the virtual screen that corresponds to the preferred GPU by its
-        // registryID. CGLSetVirtualScreen can then be used to tell OpenGL which GPU it should be
-        // using.
+    // When a process does not have access to the WindowServer (as with Chromium's GPU process
+    // and WebKit's WebProcess), there is no way for OpenGL to tell which GPU is connected to a
+    // display. On 10.13+, find the virtual screen that corresponds to the preferred GPU by its
+    // registryID. CGLSetVirtualScreen can then be used to tell OpenGL which GPU it should be
+    // using.
 
-        GLint virtualScreenCount = 0;
-        CGLError error = CGLDescribePixelFormat(pixelFormatObj, 0, kCGLPFAVirtualScreenCount,
-                                                &virtualScreenCount);
+    GLint virtualScreenCount = 0;
+    CGLError error =
+        CGLDescribePixelFormat(pixelFormatObj, 0, kCGLPFAVirtualScreenCount, &virtualScreenCount);
+    if (error != kCGLNoError)
+    {
+        NOTREACHED();
+        return std::nullopt;
+    }
+
+    for (GLint virtualScreen = 0; virtualScreen < virtualScreenCount; ++virtualScreen)
+    {
+        GLint displayMask = 0;
+        error =
+            CGLDescribePixelFormat(pixelFormatObj, virtualScreen, kCGLPFADisplayMask, &displayMask);
         if (error != kCGLNoError)
         {
             NOTREACHED();
             return std::nullopt;
         }
 
-        for (GLint virtualScreen = 0; virtualScreen < virtualScreenCount; ++virtualScreen)
+        auto virtualScreenGPUID = angle::GetGpuIDFromOpenGLDisplayMask(displayMask);
+        if (virtualScreenGPUID == gpuID)
         {
-            GLint displayMask = 0;
-            error = CGLDescribePixelFormat(pixelFormatObj, virtualScreen, kCGLPFADisplayMask,
-                                           &displayMask);
-            if (error != kCGLNoError)
-            {
-                NOTREACHED();
-                return std::nullopt;
-            }
-
-            auto virtualScreenGPUID = angle::GetGpuIDFromOpenGLDisplayMask(displayMask);
-            if (virtualScreenGPUID == gpuID)
-            {
-                return virtualScreen;
-            }
+            return virtualScreen;
         }
     }
     return std::nullopt;
@@ -90,30 +87,27 @@ static std::optional<GLint> GetVirtualScreenByRegistryID(CGLPixelFormatObj pixel
 
 static std::optional<GLint> GetFirstAcceleratedVirtualScreen(CGLPixelFormatObj pixelFormatObj)
 {
-    if (@available(macOS 10.13, *))
+    GLint virtualScreenCount = 0;
+    CGLError error =
+        CGLDescribePixelFormat(pixelFormatObj, 0, kCGLPFAVirtualScreenCount, &virtualScreenCount);
+    if (error != kCGLNoError)
     {
-        GLint virtualScreenCount = 0;
-        CGLError error = CGLDescribePixelFormat(pixelFormatObj, 0, kCGLPFAVirtualScreenCount,
-                                                &virtualScreenCount);
+        NOTREACHED();
+        return std::nullopt;
+    }
+    for (GLint virtualScreen = 0; virtualScreen < virtualScreenCount; ++virtualScreen)
+    {
+        GLint isAccelerated = 0;
+        error = CGLDescribePixelFormat(pixelFormatObj, virtualScreen, kCGLPFAAccelerated,
+                                       &isAccelerated);
         if (error != kCGLNoError)
         {
             NOTREACHED();
             return std::nullopt;
         }
-        for (GLint virtualScreen = 0; virtualScreen < virtualScreenCount; ++virtualScreen)
+        if (isAccelerated)
         {
-            GLint isAccelerated = 0;
-            error = CGLDescribePixelFormat(pixelFormatObj, virtualScreen, kCGLPFAAccelerated,
-                                           &isAccelerated);
-            if (error != kCGLNoError)
-            {
-                NOTREACHED();
-                return std::nullopt;
-            }
-            if (isAccelerated)
-            {
-                return virtualScreen;
-            }
+            return virtualScreen;
         }
     }
     return std::nullopt;
@@ -248,7 +242,7 @@ egl::Error DisplayCGL::initialize(egl::Display *display)
     std::unique_ptr<FunctionsGL> functionsGL(new FunctionsGLCGL(handle));
     functionsGL->initialize(display->getAttributeMap());
 
-    mRenderer.reset(new RendererCGL(std::move(functionsGL), display->getAttributeMap(), this));
+    mRenderer.reset(new RendererGL(std::move(functionsGL), display->getAttributeMap(), this));
 
     const gl::Version &maxVersion = mRenderer->getMaxSupportedESVersion();
     if (maxVersion < gl::Version(2, 0))
@@ -535,9 +529,9 @@ egl::Error DisplayCGL::waitNative(const gl::Context *context, EGLint engine)
 
 egl::Error DisplayCGL::waitUntilWorkScheduled()
 {
-    for (auto context : mState.contextSet)
+    for (auto context : mState.contextMap)
     {
-        context->flush();
+        context.second->flush();
     }
     return egl::NoError();
 }
@@ -552,57 +546,6 @@ egl::Error DisplayCGL::makeCurrentSurfaceless(gl::Context *context)
     // We have nothing to do as mContext is always current, and that CGL is surfaceless by
     // default.
     return egl::NoError();
-}
-
-class WorkerContextCGL final : public WorkerContext
-{
-  public:
-    WorkerContextCGL(CGLContextObj context);
-    ~WorkerContextCGL() override;
-
-    bool makeCurrent() override;
-    void unmakeCurrent() override;
-
-  private:
-    CGLContextObj mContext;
-};
-
-WorkerContextCGL::WorkerContextCGL(CGLContextObj context) : mContext(context) {}
-
-WorkerContextCGL::~WorkerContextCGL()
-{
-    CGLSetCurrentContext(nullptr);
-    CGLReleaseContext(mContext);
-    mContext = nullptr;
-}
-
-bool WorkerContextCGL::makeCurrent()
-{
-    CGLError error = CGLSetCurrentContext(mContext);
-    if (error != kCGLNoError)
-    {
-        ERR() << "Unable to make gl context current.\n";
-        return false;
-    }
-    return true;
-}
-
-void WorkerContextCGL::unmakeCurrent()
-{
-    CGLSetCurrentContext(nullptr);
-}
-
-WorkerContext *DisplayCGL::createWorkerContext(std::string *infoLog)
-{
-    CGLContextObj context = nullptr;
-    CGLCreateContext(mPixelFormat, mContext, &context);
-    if (context == nullptr)
-    {
-        *infoLog += "Could not create the CGL context.";
-        return nullptr;
-    }
-
-    return new WorkerContextCGL(context);
 }
 
 void DisplayCGL::initializeFrontendFeatures(angle::FrontendFeatures *features) const

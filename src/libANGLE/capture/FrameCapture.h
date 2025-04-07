@@ -11,9 +11,11 @@
 #define LIBANGLE_FRAME_CAPTURE_H_
 
 #include "common/PackedEnums.h"
+#include "common/SimpleMutex.h"
 #include "common/frame_capture_utils.h"
 #include "common/system_utils.h"
 #include "libANGLE/Context.h"
+#include "libANGLE/ShareGroup.h"
 #include "libANGLE/Thread.h"
 #include "libANGLE/angletypes.h"
 #include "libANGLE/entry_points_utils.h"
@@ -364,6 +366,11 @@ using CallVector = std::vector<std::vector<CallCapture> *>;
 // A map from API entry point to calls
 using CallResetMap = std::map<angle::EntryPoint, std::vector<CallCapture>>;
 
+using TextureBinding  = std::pair<size_t, gl::TextureType>;
+using TextureResetMap = std::map<TextureBinding, gl::TextureID>;
+
+using BufferBindingPair = std::pair<gl::BufferBinding, gl::BufferID>;
+
 // StateResetHelper provides a simple way to track whether an entry point has been called during the
 // trace, along with the reset calls to get it back to starting state.  This is useful for things
 // that are one dimensional, like context bindings or context state.
@@ -381,12 +388,52 @@ class StateResetHelper final : angle::NonCopyable
 
     void setDefaultResetCalls(const gl::Context *context, angle::EntryPoint);
 
+    const std::set<TextureBinding> &getDirtyTextureBindings() const
+    {
+        return mDirtyTextureBindings;
+    }
+    void setTextureBindingDirty(size_t unit, gl::TextureType target)
+    {
+        mDirtyTextureBindings.emplace(unit, target);
+    }
+
+    TextureResetMap &getResetTextureBindings() { return mResetTextureBindings; }
+
+    void setResetActiveTexture(size_t textureID) { mResetActiveTexture = textureID; }
+    size_t getResetActiveTexture() { return mResetActiveTexture; }
+
+    const std::set<gl::BufferBinding> &getDirtyBufferBindings() const
+    {
+        return mDirtyBufferBindings;
+    }
+    void setBufferBindingDirty(gl::BufferBinding binding) { mDirtyBufferBindings.insert(binding); }
+
+    const std::set<BufferBindingPair> &getStartingBufferBindings() const
+    {
+        return mStartingBufferBindings;
+    }
+    void setStartingBufferBinding(gl::BufferBinding binding, gl::BufferID bufferID)
+    {
+        mStartingBufferBindings.insert({binding, bufferID});
+    }
+
   private:
     // Dirty state per entry point
     std::set<angle::EntryPoint> mDirtyEntryPoints;
 
     // Reset calls per API entry point
     CallResetMap mResetCalls;
+
+    // Dirty state per texture binding
+    std::set<TextureBinding> mDirtyTextureBindings;
+
+    // Texture bindings and active texture to restore
+    TextureResetMap mResetTextureBindings;
+    size_t mResetActiveTexture = 0;
+
+    // Starting and dirty buffer bindings
+    std::set<BufferBindingPair> mStartingBufferBindings;
+    std::set<gl::BufferBinding> mDirtyBufferBindings;
 };
 
 class FrameCapture final : angle::NonCopyable
@@ -532,7 +579,7 @@ class CoherentBufferTracker final : angle::NonCopyable
     PageFaultHandlerRangeType handleWrite(uintptr_t address);
 
   public:
-    std::mutex mMutex;
+    angle::SimpleMutex mMutex;
     HashMap<GLuint, std::shared_ptr<CoherentBuffer>> mBuffers;
 
   private:
@@ -573,6 +620,7 @@ class FrameCaptureShared final : angle::NonCopyable
                             bool coherent);
 
     void trackTextureUpdate(const gl::Context *context, const CallCapture &call);
+    void trackImageUpdate(const gl::Context *context, const CallCapture &call);
     void trackDefaultUniformUpdate(const gl::Context *context, const CallCapture &call);
     void trackVertexArrayUpdate(const gl::Context *context, const CallCapture &call);
 
@@ -683,6 +731,17 @@ class FrameCaptureShared final : angle::NonCopyable
     void *maybeGetShadowMemoryPointer(gl::Buffer *buffer, GLsizeiptr length, GLbitfield access);
     void determineMemoryProtectionSupport(gl::Context *context);
 
+    angle::SimpleMutex &getFrameCaptureMutex() { return mFrameCaptureMutex; }
+
+    void setDeferredLinkProgram(gl::ShaderProgramID programID)
+    {
+        mDeferredLinkPrograms.emplace(programID);
+    }
+    bool isDeferredLinkProgram(gl::ShaderProgramID programID)
+    {
+        return (mDeferredLinkPrograms.find(programID) != mDeferredLinkPrograms.end());
+    }
+
   private:
     void writeJSON(const gl::Context *context);
     void writeCppReplayIndexFiles(const gl::Context *context, bool writeResetContextCall);
@@ -732,7 +791,6 @@ class FrameCaptureShared final : angle::NonCopyable
     void scanSetupCalls(std::vector<CallCapture> &setupCalls);
 
     std::vector<CallCapture> mFrameCalls;
-    gl::ContextID mLastContextId;
 
     // We save one large buffer of binary data for the whole CPP replay.
     // This simplifies a lot of file management.
@@ -758,9 +816,9 @@ class FrameCaptureShared final : angle::NonCopyable
     BufferDataMap mBufferDataMap;
     bool mValidateSerializedState = false;
     std::string mValidationExpression;
-    bool mTrimEnabled = true;
     PackedEnumMap<ResourceIDType, uint32_t> mMaxAccessedResourceIDs;
     CoherentBufferTracker mCoherentBufferTracker;
+    angle::SimpleMutex mFrameCaptureMutex;
 
     ResourceTracker mResourceTracker;
     ReplayWriter mReplayWriter;
@@ -776,6 +834,9 @@ class FrameCaptureShared final : angle::NonCopyable
     // Cache most recently compiled and linked sources.
     ShaderSourceMap mCachedShaderSource;
     ProgramSourceMap mCachedProgramSources;
+
+    // Set of programs which were created but not linked before capture was started
+    std::set<gl::ShaderProgramID> mDeferredLinkPrograms;
 
     gl::ContextID mWindowSurfaceContextID;
 
@@ -796,6 +857,12 @@ void CaptureGLCallToFrameCapture(CaptureFuncT captureFunc,
                                  ArgsT... captureParams)
 {
     FrameCaptureShared *frameCaptureShared = context->getShareGroup()->getFrameCaptureShared();
+
+    // EGL calls are protected by the global context mutex but only a subset of GL calls
+    // are so protected. Ensure FrameCaptureShared access thread safety by using a
+    // frame-capture only mutex.
+    std::lock_guard<angle::SimpleMutex> lock(frameCaptureShared->getFrameCaptureMutex());
+
     if (!frameCaptureShared->isCapturing())
     {
         return;
@@ -803,6 +870,16 @@ void CaptureGLCallToFrameCapture(CaptureFuncT captureFunc,
 
     CallCapture call = captureFunc(context->getState(), isCallValid, captureParams...);
     frameCaptureShared->captureCall(context, std::move(call), isCallValid);
+}
+
+template <typename FirstT, typename... OthersT>
+egl::Display *GetEGLDisplayArg(FirstT display, OthersT... others)
+{
+    if constexpr (std::is_same<egl::Display *, FirstT>::value)
+    {
+        return display;
+    }
+    return nullptr;
 }
 
 template <typename CaptureFuncT, typename... ArgsT>
@@ -814,8 +891,23 @@ void CaptureEGLCallToFrameCapture(CaptureFuncT captureFunc,
     gl::Context *context = thread->getContext();
     if (!context)
     {
-        return;
+        // Get a valid context from the display argument if no context is associated with this
+        // thread
+        egl::Display *display = GetEGLDisplayArg(captureParams...);
+        if (display)
+        {
+            for (const auto &contextIter : display->getState().contextMap)
+            {
+                context = contextIter.second;
+                break;
+            }
+        }
+        if (!context)
+        {
+            return;
+        }
     }
+    std::lock_guard<egl::ContextMutex> lock(context->getContextMutex());
 
     angle::FrameCaptureShared *frameCaptureShared =
         context->getShareGroup()->getFrameCaptureShared();

@@ -26,9 +26,18 @@ class MemoryBuffer final : NonCopyable
     MemoryBuffer(MemoryBuffer &&other);
     MemoryBuffer &operator=(MemoryBuffer &&other);
 
+    // On success, size will be equal to capacity.
     [[nodiscard]] bool resize(size_t size);
+    // Sets size bound by capacity.
+    void setSize(size_t size)
+    {
+        ASSERT(size <= mCapacity);
+        mSize = size;
+    }
+    void setSizeToCapacity() { mSize = mCapacity; }
     void clear() { (void)resize(0); }
     size_t size() const { return mSize; }
+    size_t capacity() const { return mCapacity; }
     bool empty() const { return mSize == 0; }
 
     const uint8_t *data() const { return mData; }
@@ -52,17 +61,18 @@ class MemoryBuffer final : NonCopyable
     void fill(uint8_t datum);
 
   private:
-    size_t mSize   = 0;
-    uint8_t *mData = nullptr;
+    size_t mSize     = 0;
+    size_t mCapacity = 0;
+    uint8_t *mData   = nullptr;
 };
 
 class ScratchBuffer final : NonCopyable
 {
   public:
+    ScratchBuffer();
     // If we request a scratch buffer requesting a smaller size this many times, release and
     // recreate the scratch buffer. This ensures we don't have a degenerate case where we are stuck
     // hogging memory.
-    ScratchBuffer();
     ScratchBuffer(uint32_t lifetime);
     ~ScratchBuffer();
 

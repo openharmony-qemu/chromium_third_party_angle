@@ -142,11 +142,6 @@ gl::Version DisplayNULL::getMaxSupportedESVersion() const
     return gl::Version(3, 2);
 }
 
-Optional<gl::Version> DisplayNULL::getMaxSupportedDesktopVersion() const
-{
-    return Optional<gl::Version>::Invalid();
-}
-
 gl::Version DisplayNULL::getMaxConformantESVersion() const
 {
     return getMaxSupportedESVersion();
@@ -205,9 +200,9 @@ StreamProducerImpl *DisplayNULL::createStreamProducerD3DTexture(
     return nullptr;
 }
 
-ShareGroupImpl *DisplayNULL::createShareGroup()
+ShareGroupImpl *DisplayNULL::createShareGroup(const egl::ShareGroupState &state)
 {
-    return new ShareGroupNULL();
+    return new ShareGroupNULL(state);
 }
 
 void DisplayNULL::generateExtensions(egl::DisplayExtensions *outExtensions) const

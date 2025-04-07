@@ -9,6 +9,7 @@
 #include "TestSuite.h"
 
 #include "common/debug.h"
+#include "common/hash_containers.h"
 #include "common/platform.h"
 #include "common/string_utils.h"
 #include "common/system_utils.h"
@@ -52,6 +53,9 @@ constexpr char kArtifactsFakeTestName[] = "TestArtifactsFakeTest";
 
 constexpr char kTSanOptionsEnvVar[]  = "TSAN_OPTIONS";
 constexpr char kUBSanOptionsEnvVar[] = "UBSAN_OPTIONS";
+
+[[maybe_unused]] constexpr char kVkLoaderDisableDLLUnloadingEnvVar[] =
+    "VK_LOADER_DISABLE_DYNAMIC_LIBRARY_UNLOADING";
 
 // Note: we use a fairly high test timeout to allow for the first test in a batch to be slow.
 // Ideally we could use a separate timeout for the slow first test.
@@ -765,7 +769,7 @@ void ListTests(const std::map<TestIdentifier, TestResult> &resultsMap)
 
 // Prints the names of the tests matching the user-specified filter flag.
 // This matches the output from googletest/src/gtest.cc but is much much faster for large filters.
-// See http://anglebug.com/5164
+// See http://anglebug.com/42263725
 void GTestListTests(const std::map<TestIdentifier, TestResult> &resultsMap)
 {
     std::map<std::string, std::vector<std::string>> suites;
@@ -989,7 +993,7 @@ TestSuite::TestSuite(int *argc, char **argv, std::function<void()> registerTests
 #endif
 
 #if defined(ANGLE_PLATFORM_WINDOWS)
-    testing::GTEST_FLAG(catch_exceptions) = false;
+    GTEST_FLAG_SET(catch_exceptions, false);
 #endif
 
     if (*argc <= 0)
@@ -1032,7 +1036,7 @@ TestSuite::TestSuite(int *argc, char **argv, std::function<void()> registerTests
 #if defined(ANGLE_PLATFORM_FUCHSIA)
     if (mBotMode)
     {
-        printf("Note: Bot mode is not available on Fuchsia. See http://anglebug.com/7312\n");
+        printf("Note: Bot mode is not available on Fuchsia. See http://anglebug.com/42265786\n");
         mBotMode = false;
     }
 #endif
@@ -1051,6 +1055,14 @@ TestSuite::TestSuite(int *argc, char **argv, std::function<void()> registerTests
         mCrashCallback = [this]() { onCrashOrTimeout(TestResultType::Crash); };
         InitCrashHandler(&mCrashCallback);
     }
+
+#if defined(ANGLE_PLATFORM_WINDOWS) || defined(ANGLE_PLATFORM_LINUX)
+    if (IsASan())
+    {
+        // Set before `registerTestsCallback()` call
+        SetEnvironmentVar(kVkLoaderDisableDLLUnloadingEnvVar, "1");
+    }
+#endif
 
     registerTestsCallback();
 
@@ -1948,7 +1960,7 @@ bool TestSuite::logAnyUnusedTestExpectations()
     }
     if (anyUnused)
     {
-        std::cerr << "Failed to validate test expectations." << unusedMsgStream.str() << std::endl;
+        std::cerr << "Found unused test expectations:" << unusedMsgStream.str() << std::endl;
         return true;
     }
     return false;

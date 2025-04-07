@@ -474,6 +474,8 @@ ANGLE_UTIL_EXPORT PFNGLMULTIDRAWARRAYSINSTANCEDBASEINSTANCEANGLEPROC
     l_glMultiDrawArraysInstancedBaseInstanceANGLE;
 ANGLE_UTIL_EXPORT PFNGLMULTIDRAWELEMENTSINSTANCEDBASEVERTEXBASEINSTANCEANGLEPROC
     l_glMultiDrawElementsInstancedBaseVertexBaseInstanceANGLE;
+ANGLE_UTIL_EXPORT PFNGLBLOBCACHECALLBACKSANGLEPROC l_glBlobCacheCallbacksANGLE;
+ANGLE_UTIL_EXPORT PFNGLGETPOINTERVANGLEPROC l_glGetPointervANGLE;
 ANGLE_UTIL_EXPORT PFNGLCOPYSUBTEXTURE3DANGLEPROC l_glCopySubTexture3DANGLE;
 ANGLE_UTIL_EXPORT PFNGLCOPYTEXTURE3DANGLEPROC l_glCopyTexture3DANGLE;
 ANGLE_UTIL_EXPORT PFNGLBLITFRAMEBUFFERANGLEPROC l_glBlitFramebufferANGLE;
@@ -499,6 +501,7 @@ ANGLE_UTIL_EXPORT PFNGLMULTIDRAWARRAYSANGLEPROC l_glMultiDrawArraysANGLE;
 ANGLE_UTIL_EXPORT PFNGLMULTIDRAWARRAYSINSTANCEDANGLEPROC l_glMultiDrawArraysInstancedANGLE;
 ANGLE_UTIL_EXPORT PFNGLMULTIDRAWELEMENTSANGLEPROC l_glMultiDrawElementsANGLE;
 ANGLE_UTIL_EXPORT PFNGLMULTIDRAWELEMENTSINSTANCEDANGLEPROC l_glMultiDrawElementsInstancedANGLE;
+ANGLE_UTIL_EXPORT PFNGLPOLYGONMODEANGLEPROC l_glPolygonModeANGLE;
 ANGLE_UTIL_EXPORT PFNGLPROVOKINGVERTEXANGLEPROC l_glProvokingVertexANGLE;
 ANGLE_UTIL_EXPORT PFNGLDISABLEEXTENSIONANGLEPROC l_glDisableExtensionANGLE;
 ANGLE_UTIL_EXPORT PFNGLREQUESTEXTENSIONANGLEPROC l_glRequestExtensionANGLE;
@@ -628,6 +631,8 @@ ANGLE_UTIL_EXPORT PFNGLGETFRAGDATAINDEXEXTPROC l_glGetFragDataIndexEXT;
 ANGLE_UTIL_EXPORT PFNGLGETPROGRAMRESOURCELOCATIONINDEXEXTPROC
     l_glGetProgramResourceLocationIndexEXT;
 ANGLE_UTIL_EXPORT PFNGLBUFFERSTORAGEEXTPROC l_glBufferStorageEXT;
+ANGLE_UTIL_EXPORT PFNGLCLEARTEXIMAGEEXTPROC l_glClearTexImageEXT;
+ANGLE_UTIL_EXPORT PFNGLCLEARTEXSUBIMAGEEXTPROC l_glClearTexSubImageEXT;
 ANGLE_UTIL_EXPORT PFNGLCLIPCONTROLEXTPROC l_glClipControlEXT;
 ANGLE_UTIL_EXPORT PFNGLCOPYIMAGESUBDATAEXTPROC l_glCopyImageSubDataEXT;
 ANGLE_UTIL_EXPORT PFNGLGETOBJECTLABELEXTPROC l_glGetObjectLabelEXT;
@@ -774,6 +779,11 @@ ANGLE_UTIL_EXPORT PFNGLOBJECTPTRLABELKHRPROC l_glObjectPtrLabelKHR;
 ANGLE_UTIL_EXPORT PFNGLPOPDEBUGGROUPKHRPROC l_glPopDebugGroupKHR;
 ANGLE_UTIL_EXPORT PFNGLPUSHDEBUGGROUPKHRPROC l_glPushDebugGroupKHR;
 ANGLE_UTIL_EXPORT PFNGLMAXSHADERCOMPILERTHREADSKHRPROC l_glMaxShaderCompilerThreadsKHR;
+ANGLE_UTIL_EXPORT PFNGLGETGRAPHICSRESETSTATUSKHRPROC l_glGetGraphicsResetStatusKHR;
+ANGLE_UTIL_EXPORT PFNGLGETNUNIFORMFVKHRPROC l_glGetnUniformfvKHR;
+ANGLE_UTIL_EXPORT PFNGLGETNUNIFORMIVKHRPROC l_glGetnUniformivKHR;
+ANGLE_UTIL_EXPORT PFNGLGETNUNIFORMUIVKHRPROC l_glGetnUniformuivKHR;
+ANGLE_UTIL_EXPORT PFNGLREADNPIXELSKHRPROC l_glReadnPixelsKHR;
 ANGLE_UTIL_EXPORT PFNGLFRAMEBUFFERPARAMETERIMESAPROC l_glFramebufferParameteriMESA;
 ANGLE_UTIL_EXPORT PFNGLGETFRAMEBUFFERPARAMETERIVMESAPROC l_glGetFramebufferParameterivMESA;
 ANGLE_UTIL_EXPORT PFNGLDELETEFENCESNVPROC l_glDeleteFencesNV;
@@ -784,6 +794,7 @@ ANGLE_UTIL_EXPORT PFNGLISFENCENVPROC l_glIsFenceNV;
 ANGLE_UTIL_EXPORT PFNGLSETFENCENVPROC l_glSetFenceNV;
 ANGLE_UTIL_EXPORT PFNGLTESTFENCENVPROC l_glTestFenceNV;
 ANGLE_UTIL_EXPORT PFNGLBLITFRAMEBUFFERNVPROC l_glBlitFramebufferNV;
+ANGLE_UTIL_EXPORT PFNGLPOLYGONMODENVPROC l_glPolygonModeNV;
 ANGLE_UTIL_EXPORT PFNGLEGLIMAGETARGETRENDERBUFFERSTORAGEOESPROC
     l_glEGLImageTargetRenderbufferStorageOES;
 ANGLE_UTIL_EXPORT PFNGLEGLIMAGETARGETTEXTURE2DOESPROC l_glEGLImageTargetTexture2DOES;
@@ -808,6 +819,7 @@ ANGLE_UTIL_EXPORT PFNGLMAPBUFFEROESPROC l_glMapBufferOES;
 ANGLE_UTIL_EXPORT PFNGLUNMAPBUFFEROESPROC l_glUnmapBufferOES;
 ANGLE_UTIL_EXPORT PFNGLPRIMITIVEBOUNDINGBOXOESPROC l_glPrimitiveBoundingBoxOES;
 ANGLE_UTIL_EXPORT PFNGLMINSAMPLESHADINGOESPROC l_glMinSampleShadingOES;
+ANGLE_UTIL_EXPORT PFNGLPATCHPARAMETERIOESPROC l_glPatchParameteriOES;
 ANGLE_UTIL_EXPORT PFNGLCOMPRESSEDTEXIMAGE3DOESPROC l_glCompressedTexImage3DOES;
 ANGLE_UTIL_EXPORT PFNGLCOMPRESSEDTEXSUBIMAGE3DOESPROC l_glCompressedTexSubImage3DOES;
 ANGLE_UTIL_EXPORT PFNGLCOPYTEXSUBIMAGE3DOESPROC l_glCopyTexSubImage3DOES;
@@ -830,7 +842,13 @@ ANGLE_UTIL_EXPORT PFNGLDELETEVERTEXARRAYSOESPROC l_glDeleteVertexArraysOES;
 ANGLE_UTIL_EXPORT PFNGLGENVERTEXARRAYSOESPROC l_glGenVertexArraysOES;
 ANGLE_UTIL_EXPORT PFNGLISVERTEXARRAYOESPROC l_glIsVertexArrayOES;
 ANGLE_UTIL_EXPORT PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVRPROC l_glFramebufferTextureMultiviewOVR;
+ANGLE_UTIL_EXPORT PFNGLFRAMEBUFFERFOVEATIONCONFIGQCOMPROC l_glFramebufferFoveationConfigQCOM;
+ANGLE_UTIL_EXPORT PFNGLFRAMEBUFFERFOVEATIONPARAMETERSQCOMPROC
+    l_glFramebufferFoveationParametersQCOM;
 ANGLE_UTIL_EXPORT PFNGLSHADINGRATEQCOMPROC l_glShadingRateQCOM;
+ANGLE_UTIL_EXPORT PFNGLTEXTUREFOVEATIONPARAMETERSQCOMPROC l_glTextureFoveationParametersQCOM;
+ANGLE_UTIL_EXPORT PFNGLENDTILINGQCOMPROC l_glEndTilingQCOM;
+ANGLE_UTIL_EXPORT PFNGLSTARTTILINGQCOMPROC l_glStartTilingQCOM;
 ANGLE_UTIL_EXPORT PFNGLDRAWTEXFOESPROC l_glDrawTexfOES;
 ANGLE_UTIL_EXPORT PFNGLDRAWTEXFVOESPROC l_glDrawTexfvOES;
 ANGLE_UTIL_EXPORT PFNGLDRAWTEXIOESPROC l_glDrawTexiOES;
@@ -1539,6 +1557,10 @@ void LoadUtilGLES(LoadProc loadProc)
     l_glMultiDrawElementsInstancedBaseVertexBaseInstanceANGLE =
         reinterpret_cast<PFNGLMULTIDRAWELEMENTSINSTANCEDBASEVERTEXBASEINSTANCEANGLEPROC>(
             loadProc("glMultiDrawElementsInstancedBaseVertexBaseInstanceANGLE"));
+    l_glBlobCacheCallbacksANGLE =
+        reinterpret_cast<PFNGLBLOBCACHECALLBACKSANGLEPROC>(loadProc("glBlobCacheCallbacksANGLE"));
+    l_glGetPointervANGLE =
+        reinterpret_cast<PFNGLGETPOINTERVANGLEPROC>(loadProc("glGetPointervANGLE"));
     l_glCopySubTexture3DANGLE =
         reinterpret_cast<PFNGLCOPYSUBTEXTURE3DANGLEPROC>(loadProc("glCopySubTexture3DANGLE"));
     l_glCopyTexture3DANGLE =
@@ -1586,6 +1608,8 @@ void LoadUtilGLES(LoadProc loadProc)
     l_glMultiDrawElementsInstancedANGLE =
         reinterpret_cast<PFNGLMULTIDRAWELEMENTSINSTANCEDANGLEPROC>(
             loadProc("glMultiDrawElementsInstancedANGLE"));
+    l_glPolygonModeANGLE =
+        reinterpret_cast<PFNGLPOLYGONMODEANGLEPROC>(loadProc("glPolygonModeANGLE"));
     l_glProvokingVertexANGLE =
         reinterpret_cast<PFNGLPROVOKINGVERTEXANGLEPROC>(loadProc("glProvokingVertexANGLE"));
     l_glDisableExtensionANGLE =
@@ -1835,6 +1859,10 @@ void LoadUtilGLES(LoadProc loadProc)
             loadProc("glGetProgramResourceLocationIndexEXT"));
     l_glBufferStorageEXT =
         reinterpret_cast<PFNGLBUFFERSTORAGEEXTPROC>(loadProc("glBufferStorageEXT"));
+    l_glClearTexImageEXT =
+        reinterpret_cast<PFNGLCLEARTEXIMAGEEXTPROC>(loadProc("glClearTexImageEXT"));
+    l_glClearTexSubImageEXT =
+        reinterpret_cast<PFNGLCLEARTEXSUBIMAGEEXTPROC>(loadProc("glClearTexSubImageEXT"));
     l_glClipControlEXT = reinterpret_cast<PFNGLCLIPCONTROLEXTPROC>(loadProc("glClipControlEXT"));
     l_glCopyImageSubDataEXT =
         reinterpret_cast<PFNGLCOPYIMAGESUBDATAEXTPROC>(loadProc("glCopyImageSubDataEXT"));
@@ -2103,6 +2131,15 @@ void LoadUtilGLES(LoadProc loadProc)
         reinterpret_cast<PFNGLPUSHDEBUGGROUPKHRPROC>(loadProc("glPushDebugGroupKHR"));
     l_glMaxShaderCompilerThreadsKHR = reinterpret_cast<PFNGLMAXSHADERCOMPILERTHREADSKHRPROC>(
         loadProc("glMaxShaderCompilerThreadsKHR"));
+    l_glGetGraphicsResetStatusKHR = reinterpret_cast<PFNGLGETGRAPHICSRESETSTATUSKHRPROC>(
+        loadProc("glGetGraphicsResetStatusKHR"));
+    l_glGetnUniformfvKHR =
+        reinterpret_cast<PFNGLGETNUNIFORMFVKHRPROC>(loadProc("glGetnUniformfvKHR"));
+    l_glGetnUniformivKHR =
+        reinterpret_cast<PFNGLGETNUNIFORMIVKHRPROC>(loadProc("glGetnUniformivKHR"));
+    l_glGetnUniformuivKHR =
+        reinterpret_cast<PFNGLGETNUNIFORMUIVKHRPROC>(loadProc("glGetnUniformuivKHR"));
+    l_glReadnPixelsKHR = reinterpret_cast<PFNGLREADNPIXELSKHRPROC>(loadProc("glReadnPixelsKHR"));
     l_glFramebufferParameteriMESA = reinterpret_cast<PFNGLFRAMEBUFFERPARAMETERIMESAPROC>(
         loadProc("glFramebufferParameteriMESA"));
     l_glGetFramebufferParameterivMESA = reinterpret_cast<PFNGLGETFRAMEBUFFERPARAMETERIVMESAPROC>(
@@ -2116,6 +2153,7 @@ void LoadUtilGLES(LoadProc loadProc)
     l_glTestFenceNV    = reinterpret_cast<PFNGLTESTFENCENVPROC>(loadProc("glTestFenceNV"));
     l_glBlitFramebufferNV =
         reinterpret_cast<PFNGLBLITFRAMEBUFFERNVPROC>(loadProc("glBlitFramebufferNV"));
+    l_glPolygonModeNV = reinterpret_cast<PFNGLPOLYGONMODENVPROC>(loadProc("glPolygonModeNV"));
     l_glEGLImageTargetRenderbufferStorageOES =
         reinterpret_cast<PFNGLEGLIMAGETARGETRENDERBUFFERSTORAGEOESPROC>(
             loadProc("glEGLImageTargetRenderbufferStorageOES"));
@@ -2155,6 +2193,8 @@ void LoadUtilGLES(LoadProc loadProc)
         reinterpret_cast<PFNGLPRIMITIVEBOUNDINGBOXOESPROC>(loadProc("glPrimitiveBoundingBoxOES"));
     l_glMinSampleShadingOES =
         reinterpret_cast<PFNGLMINSAMPLESHADINGOESPROC>(loadProc("glMinSampleShadingOES"));
+    l_glPatchParameteriOES =
+        reinterpret_cast<PFNGLPATCHPARAMETERIOESPROC>(loadProc("glPatchParameteriOES"));
     l_glCompressedTexImage3DOES =
         reinterpret_cast<PFNGLCOMPRESSEDTEXIMAGE3DOESPROC>(loadProc("glCompressedTexImage3DOES"));
     l_glCompressedTexSubImage3DOES = reinterpret_cast<PFNGLCOMPRESSEDTEXSUBIMAGE3DOESPROC>(
@@ -2197,7 +2237,16 @@ void LoadUtilGLES(LoadProc loadProc)
         reinterpret_cast<PFNGLISVERTEXARRAYOESPROC>(loadProc("glIsVertexArrayOES"));
     l_glFramebufferTextureMultiviewOVR = reinterpret_cast<PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVRPROC>(
         loadProc("glFramebufferTextureMultiviewOVR"));
+    l_glFramebufferFoveationConfigQCOM = reinterpret_cast<PFNGLFRAMEBUFFERFOVEATIONCONFIGQCOMPROC>(
+        loadProc("glFramebufferFoveationConfigQCOM"));
+    l_glFramebufferFoveationParametersQCOM =
+        reinterpret_cast<PFNGLFRAMEBUFFERFOVEATIONPARAMETERSQCOMPROC>(
+            loadProc("glFramebufferFoveationParametersQCOM"));
     l_glShadingRateQCOM = reinterpret_cast<PFNGLSHADINGRATEQCOMPROC>(loadProc("glShadingRateQCOM"));
+    l_glTextureFoveationParametersQCOM = reinterpret_cast<PFNGLTEXTUREFOVEATIONPARAMETERSQCOMPROC>(
+        loadProc("glTextureFoveationParametersQCOM"));
+    l_glEndTilingQCOM   = reinterpret_cast<PFNGLENDTILINGQCOMPROC>(loadProc("glEndTilingQCOM"));
+    l_glStartTilingQCOM = reinterpret_cast<PFNGLSTARTTILINGQCOMPROC>(loadProc("glStartTilingQCOM"));
     l_glDrawTexfOES     = reinterpret_cast<PFNGLDRAWTEXFOESPROC>(loadProc("glDrawTexfOES"));
     l_glDrawTexfvOES    = reinterpret_cast<PFNGLDRAWTEXFVOESPROC>(loadProc("glDrawTexfvOES"));
     l_glDrawTexiOES     = reinterpret_cast<PFNGLDRAWTEXIOESPROC>(loadProc("glDrawTexiOES"));

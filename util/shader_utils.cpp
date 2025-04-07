@@ -430,14 +430,16 @@ std::vector<angle::PerfMonitorTriplet> GetPerfMonitorTriplets()
 
     std::vector<angle::PerfMonitorTriplet> perfResults(resultSize /
                                                        sizeof(angle::PerfMonitorTriplet));
+    GLint bytesWritten = 0;
     glGetPerfMonitorCounterDataAMD(
         0, GL_PERFMON_RESULT_AMD, static_cast<GLsizei>(perfResults.size() * sizeof(perfResults[0])),
-        &perfResults.data()->group, nullptr);
+        &perfResults.data()->group, &bytesWritten);
 
     if (glGetError() != GL_NO_ERROR)
     {
         return {};
     }
+    ASSERT(static_cast<GLuint>(bytesWritten) == resultSize);
 
     return perfResults;
 }
@@ -563,6 +565,18 @@ void main()
 })";
 }
 
+const char *Texture2DArray()
+{
+    return R"(#version 300 es
+out vec2 v_texCoord;
+in vec4 a_position;
+void main()
+{
+    gl_Position = vec4(a_position.xy, 0.0, 1.0);
+    v_texCoord = (a_position.xy * 0.5) + 0.5;
+})";
+}
+
 }  // namespace vs
 
 namespace fs
@@ -657,6 +671,20 @@ varying vec2 v_texCoord;
 void main()
 {
     gl_FragColor = texture2D(u_tex2D, v_texCoord);
+})";
+}
+
+const char *Texture2DArray()
+{
+    return R"(#version 300 es
+precision highp float;
+uniform highp sampler2DArray tex2DArray;
+uniform int slice;
+in vec2 v_texCoord;
+out vec4 fragColor;
+void main()
+{
+    fragColor = texture(tex2DArray, vec3(v_texCoord, float(slice)));
 })";
 }
 

@@ -61,7 +61,7 @@ if (angle_has_build) {
     angle_use_x11 = ozone_platform_x11 && !is_ggp && (is_linux || is_chromeos)
     angle_use_wayland =
         ozone_platform_wayland && !is_ggp && is_linux && !is_castos
-    angle_use_vulkan_display = (is_linux || is_chromeos || is_ohos) && !is_ggp
+    angle_use_vulkan_display = (is_linux || is_chromeos) && !is_ggp
   }
 } else {
   declare_args() {
@@ -82,7 +82,7 @@ if (angle_has_build) {
   }
 
   declare_args() {
-    angle_use_vulkan_display = (is_linux || is_chromeos || is_ohos) && !is_ggp
+    angle_use_vulkan_display = (is_linux || is_chromeos) && !is_ggp
   }
 }
 

@@ -112,7 +112,7 @@ if (is_android && angle_enable_unwind_backtrace_support) {
   libangle_common_sources += [ "src/common/backtrace_utils_noop.cpp" ]
 }
 
-if (is_linux || is_chromeos || is_android || is_fuchsia) {
+if (is_linux || is_chromeos || is_android || is_fuchsia || is_ohos) {
   libangle_common_sources += [
     "src/common/system_utils_linux.cpp",
     "src/common/system_utils_posix.cpp",

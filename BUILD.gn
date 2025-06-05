@@ -678,7 +678,7 @@ angle_static_library("angle_gpu_info_util") {
     libs += [ "dxgi.lib" ]
   }
 
-  if (is_linux || is_chromeos) {
+  if (is_linux || is_chromeos || is_ohos) {
     sources += libangle_gpu_info_util_linux_sources
 
     if (angle_use_x11 && angle_has_build) {

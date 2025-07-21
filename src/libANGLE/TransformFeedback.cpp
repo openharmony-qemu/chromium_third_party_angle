@@ -324,6 +324,18 @@ bool TransformFeedback::buffersBoundForOtherUseInWebGL() const
     return false;
 }
 
+bool TransformFeedback::isBufferBound(BufferID bufferID) const
+{
+    for (const auto &buffer : mState.mIndexedBuffers)
+    {
+        if (buffer.id() == bufferID)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 rx::TransformFeedbackImpl *TransformFeedback::getImplementation() const
 {
     return mImplementation;

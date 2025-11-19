@@ -1,0 +1,11 @@
+[
+    {
+        "Name": "angle",
+        "License":"BSD-3-Clause",
+        "License File": "LICENSE",
+        "Version Number": "ce13a00a2b049a1ef5e0e70a3d333ce70838ef7b",
+        "Owner": "liujixin@huawei.com",
+        "Upstream URL": "https://chromium.googlesource.com/angle/angle.git@ce13a00a2b049a1ef5e0e70a3d333ce70838ef7b",
+        "Description": "第三方软件angle底层的图形渲染引擎的一部分"
+    }
+]

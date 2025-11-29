@@ -189,6 +189,8 @@ void LogMemoryHeapStats(vk::Renderer *renderer, vk::MemoryLogSeverity severity)
 }
 }  // namespace
 
+namespace vk
+{
 MemoryAllocationTracker::MemoryAllocationTracker(vk::Renderer *renderer)
     : mRenderer(renderer), mMemoryAllocationID(0)
 {}
@@ -503,8 +505,6 @@ void MemoryAllocationTracker::resetPendingMemoryAlloc()
     mPendingMemoryTypeIndex      = kInvalidMemoryTypeIndex;
 }
 
-namespace vk
-{
 MemoryReport::MemoryReport()
     : mCurrentTotalAllocatedMemory(0),
       mMaxTotalAllocatedMemory(0),

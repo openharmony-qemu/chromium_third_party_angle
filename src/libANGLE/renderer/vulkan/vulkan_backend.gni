@@ -161,7 +161,7 @@ vulkan_backend_dma_buf_sources = [
   "linux/headless/WindowSurfaceVkHeadless.h",
 ]
 
-if (is_linux || is_chromeos) {
+if (is_linux || is_chromeos || is_ohos) {
   vulkan_backend_sources += vulkan_backend_dma_buf_sources
 }
 

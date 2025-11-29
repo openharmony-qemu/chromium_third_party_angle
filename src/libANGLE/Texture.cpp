@@ -128,9 +128,11 @@ TextureState::TextureState(TextureType type)
       mMaxLevel(kInitialMaxLevel),
       mDepthStencilTextureMode(GL_DEPTH_COMPONENT),
       mIsInternalIncompleteTexture(false),
+      mIsExternalMemoryTexture(false),
       mHasBeenBoundAsImage(false),
       mHasBeenBoundAsAttachment(false),
       mHasBeenBoundToMSRTTFramebuffer(false),
+      mHasBeenBoundAsSourceOfEglImage(false),
       mImmutableFormat(false),
       mImmutableLevels(0),
       mUsage(GL_NONE),
@@ -143,7 +145,8 @@ TextureState::TextureState(TextureType type)
       mInitState(InitState::Initialized),
       mCachedSamplerFormat(SamplerFormat::InvalidEnum),
       mCachedSamplerCompareMode(GL_NONE),
-      mCachedSamplerFormatValid(false)
+      mCachedSamplerFormatValid(false),
+      mCompressionFixedRate(GL_SURFACE_COMPRESSION_FIXED_RATE_NONE_EXT)
 {}
 
 TextureState::~TextureState() {}
@@ -176,7 +179,14 @@ GLuint TextureState::getEffectiveMaxLevel() const
         clampedMaxLevel        = std::min(clampedMaxLevel, mImmutableLevels - 1);
         return clampedMaxLevel;
     }
-    return mMaxLevel;
+    if (IsMipmapSupported(mType) && IsMipmapFiltered(mSamplerState.getMinFilter()))
+    {
+        return mMaxLevel;
+    }
+    else
+    {
+        return std::max(mMaxLevel, mBaseLevel);
+    }
 }
 
 GLuint TextureState::getMipmapMaxLevel() const
@@ -369,7 +379,7 @@ bool TextureState::computeSamplerCompleteness(const SamplerState &samplerState,
         // extension, due to some underspecification problems, we must allow linear filtering
         // for legacy compatibility with WebGL 1.0.
         // See http://crbug.com/649200
-        if (state.getClientMajorVersion() >= 3 && info->sized)
+        if (state.getClientVersion() >= ES_3_0 && info->sized)
         {
             return false;
         }
@@ -414,10 +424,6 @@ bool TextureState::computeSamplerCompletenessForCopyImage(const SamplerState &sa
         return mBuffer.get() != nullptr;
     }
 
-    if (!mImmutableFormat && mBaseLevel > mMaxLevel)
-    {
-        return false;
-    }
     const ImageDesc &baseImageDesc = getImageDesc(getBaseImageTarget(), getEffectiveBaseLevel());
     if (baseImageDesc.size.width == 0 || baseImageDesc.size.height == 0 ||
         baseImageDesc.size.depth == 0)
@@ -433,7 +439,7 @@ bool TextureState::computeSamplerCompletenessForCopyImage(const SamplerState &sa
         return false;
     }
 
-    bool npotSupport = state.getExtensions().textureNpotOES || state.getClientMajorVersion() >= 3;
+    bool npotSupport = state.getExtensions().textureNpotOES || state.getClientVersion() >= ES_3_0;
     if (!npotSupport)
     {
         if ((samplerState.getWrapS() != GL_CLAMP_TO_EDGE &&
@@ -500,7 +506,12 @@ bool TextureState::computeSamplerCompletenessForCopyImage(const SamplerState &sa
 
 bool TextureState::computeMipmapCompleteness() const
 {
-    const GLuint maxLevel = getMipmapMaxLevel();
+    const GLuint maxLevel  = getMipmapMaxLevel();
+    const GLuint baseLevel = getEffectiveBaseLevel();
+    if (baseLevel > maxLevel)
+    {
+        return false;
+    }
 
     for (GLuint level = getEffectiveBaseLevel(); level <= maxLevel; level++)
     {
@@ -594,7 +605,7 @@ GLuint TextureState::getEnabledLevelCount() const
 {
     GLuint levelCount      = 0;
     const GLuint baseLevel = getEffectiveBaseLevel();
-    const GLuint maxLevel  = getMipmapMaxLevel();
+    GLuint maxLevel        = getMipmapMaxLevel();
 
     // The mip chain will have either one or more sequential levels, or max levels,
     // but not a sparse one.
@@ -1816,6 +1827,7 @@ angle::Result Texture::setStorageExternalMemory(Context *context,
                                                  memoryObject, offset, createFlags, usageFlags,
                                                  imageCreateInfoPNext));
 
+    mState.mIsExternalMemoryTexture = true;
     mState.mImmutableFormat = true;
     mState.mImmutableLevels = static_cast<GLuint>(levels);
     mState.clearImageDescs();
@@ -1834,11 +1846,66 @@ angle::Result Texture::setStorageExternalMemory(Context *context,
     return angle::Result::Continue;
 }
 
-angle::Result Texture::generateMipmap(Context *context)
+angle::Result Texture::setStorageAttribs(Context *context,
+                                         TextureType type,
+                                         GLsizei levels,
+                                         GLenum internalFormat,
+                                         const Extents &size,
+                                         const GLint *attribList)
 {
+    ASSERT(type == mState.mType);
+
     // Release from previous calls to eglBindTexImage, to avoid calling the Impl after
     ANGLE_TRY(releaseTexImageInternal(context));
 
+    egl::RefCountObjectReleaser<egl::Image> releaseImage;
+    ANGLE_TRY(orphanImages(context, &releaseImage));
+
+    mState.mImmutableFormat = true;
+    mState.mImmutableLevels = static_cast<GLuint>(levels);
+    mState.clearImageDescs();
+    InitState initState = DetermineInitState(context, nullptr, nullptr);
+    mState.setImageDescChain(0, static_cast<GLuint>(levels - 1), size, Format(internalFormat),
+                             initState);
+
+    if (nullptr != attribList && GL_SURFACE_COMPRESSION_EXT == *attribList)
+    {
+        attribList++;
+        if (nullptr != attribList && GL_NONE != *attribList)
+        {
+            mState.mCompressionFixedRate = *attribList;
+        }
+    }
+
+    ANGLE_TRY(mTexture->setStorageAttribs(context, type, levels, internalFormat, size, attribList));
+
+    // Changing the texture to immutable can trigger a change in the base and max levels:
+    // GLES 3.0.4 section 3.8.10 pg 158:
+    // "For immutable-format textures, levelbase is clamped to the range[0;levels],levelmax is then
+    // clamped to the range[levelbase;levels].
+    mDirtyBits.set(DIRTY_BIT_BASE_LEVEL);
+    mDirtyBits.set(DIRTY_BIT_MAX_LEVEL);
+
+    signalDirtyStorage(initState);
+
+    return angle::Result::Continue;
+}
+
+GLint Texture::getImageCompressionRate(const Context *context) const
+{
+    return mTexture->getImageCompressionRate(context);
+}
+
+GLint Texture::getFormatSupportedCompressionRates(const Context *context,
+                                                  GLenum internalformat,
+                                                  GLsizei bufSize,
+                                                  GLint *rates) const
+{
+    return mTexture->getFormatSupportedCompressionRates(context, internalformat, bufSize, rates);
+}
+
+angle::Result Texture::generateMipmap(Context *context)
+{
     // EGL_KHR_gl_image states that images are only orphaned when generating mipmaps if the texture
     // is not mip complete.
     egl::RefCountObjectReleaser<egl::Image> releaseImage;
@@ -1890,6 +1957,10 @@ angle::Result Texture::generateMipmap(Context *context)
     // to have faces of the same size and format so any faces can be picked.
     mState.setImageDescChain(baseLevel, maxLevel, baseImageInfo.size, baseImageInfo.format,
                              InitState::Initialized);
+
+    // Disconnect the texture from the surface
+    releaseTexImageInternalNoRedefinition(context);
+    mBoundSurface = nullptr;
 
     signalDirtyStorage(InitState::Initialized);
 
@@ -2024,7 +2095,7 @@ angle::Result Texture::releaseImageFromStream(const Context *context)
     return angle::Result::Continue;
 }
 
-angle::Result Texture::releaseTexImageInternal(Context *context)
+void Texture::releaseTexImageInternalNoRedefinition(Context *context)
 {
     if (mBoundSurface)
     {
@@ -2036,8 +2107,16 @@ angle::Result Texture::releaseTexImageInternal(Context *context)
             context->handleError(GL_INVALID_OPERATION, "Error releasing tex image from texture",
                                  __FILE__, ANGLE_FUNCTION, __LINE__);
         }
+    }
+}
 
-        // Then, call the same method as from the surface
+angle::Result Texture::releaseTexImageInternal(Context *context)
+{
+    releaseTexImageInternalNoRedefinition(context);
+
+    // Then, call the same method as from the surface
+    if (mBoundSurface)
+    {
         ANGLE_TRY(releaseTexImageFromSurface(context));
     }
     return angle::Result::Continue;
@@ -2178,7 +2257,7 @@ bool Texture::isRenderable(const Context *context,
             ->getNativeTextureCaps()
             .get(getAttachmentFormat(binding, imageIndex).info->sizedInternalFormat)
             .textureAttachment &&
-        !mState.renderabilityValidation() && context->getClientMajorVersion() < 3)
+        !mState.renderabilityValidation() && context->getClientVersion() < ES_3_0)
     {
         return true;
     }
@@ -2465,6 +2544,18 @@ void Texture::setInitState(InitState initState)
     mState.mInitState = initState;
 }
 
+bool Texture::isEGLImageSource(const ImageIndex &index) const
+{
+    for (const egl::Image *sourceImage : getSiblingSourcesOf())
+    {
+        if (sourceImage->getSourceImageIndex() == index)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool Texture::doesSubImageNeedInit(const Context *context,
                                    const ImageIndex &imageIndex,
                                    const Box &area) const
@@ -2664,6 +2755,11 @@ void Texture::onBindAsImageTexture()
         mDirtyBits.set(DIRTY_BIT_BOUND_AS_IMAGE);
         mState.mHasBeenBoundAsImage = true;
     }
+}
+
+void Texture::onBindAsEglImageSource()
+{
+    mState.mHasBeenBoundAsSourceOfEglImage = true;
 }
 
 }  // namespace gl

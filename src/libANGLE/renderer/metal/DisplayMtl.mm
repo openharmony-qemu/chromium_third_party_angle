@@ -113,7 +113,7 @@ egl::Error DisplayMtl::initialize(egl::Display *display)
     if (result != angle::Result::Continue)
     {
         terminate();
-        return egl::EglNotInitialized();
+        return egl::Error(EGL_NOT_INITIALIZED);
     }
     return egl::NoError();
 }
@@ -149,12 +149,12 @@ angle::Result DisplayMtl::initializeImpl(egl::Display *display)
             return angle::Result::Stop;
         }
 
-        mCmdQueue.set([[mMetalDevice newCommandQueue] ANGLE_MTL_AUTORELEASE]);
+        mCmdQueue = angle::adoptObjCPtr([mMetalDevice newCommandQueue]);
 
         ANGLE_TRY(mFormatTable.initialize(this));
         ANGLE_TRY(initializeShaderLibrary());
 
-        mUtils = std::make_unique<mtl::RenderUtils>(this);
+        mUtils = std::make_unique<mtl::RenderUtils>();
 
         return angle::Result::Continue;
     }
@@ -227,11 +227,11 @@ DeviceImpl *DisplayMtl::createDevice()
     return new DeviceMtl();
 }
 
-mtl::AutoObjCPtr<id<MTLDevice>> DisplayMtl::getMetalDeviceMatchingAttribute(
+angle::ObjCPtr<id<MTLDevice>> DisplayMtl::getMetalDeviceMatchingAttribute(
     const egl::AttributeMap &attribs)
 {
 #if TARGET_OS_OSX || TARGET_OS_MACCATALYST
-    auto deviceList = mtl::adoptObjCObj(MTLCopyAllDevices());
+    auto deviceList = angle::adoptObjCPtr(MTLCopyAllDevices());
 
     EGLAttrib high = attribs.get(EGL_PLATFORM_ANGLE_DEVICE_ID_HIGH_ANGLE, 0);
     EGLAttrib low  = attribs.get(EGL_PLATFORM_ANGLE_DEVICE_ID_LOW_ANGLE, 0);
@@ -249,12 +249,9 @@ mtl::AutoObjCPtr<id<MTLDevice>> DisplayMtl::getMetalDeviceMatchingAttribute(
         }
     }
 
-    auto externalGPUs =
-        mtl::adoptObjCObj<NSMutableArray<id<MTLDevice>>>([[NSMutableArray alloc] init]);
-    auto integratedGPUs =
-        mtl::adoptObjCObj<NSMutableArray<id<MTLDevice>>>([[NSMutableArray alloc] init]);
-    auto discreteGPUs =
-        mtl::adoptObjCObj<NSMutableArray<id<MTLDevice>>>([[NSMutableArray alloc] init]);
+    auto externalGPUs   = angle::adoptObjCPtr([[NSMutableArray alloc] init]);
+    auto integratedGPUs = angle::adoptObjCPtr([[NSMutableArray alloc] init]);
+    auto discreteGPUs   = angle::adoptObjCPtr([[NSMutableArray alloc] init]);
     for (id<MTLDevice> device in deviceList.get())
     {
         if (device.removable)
@@ -309,7 +306,7 @@ mtl::AutoObjCPtr<id<MTLDevice>> DisplayMtl::getMetalDeviceMatchingAttribute(
 #endif
     // If we can't find anything, or are on a platform that doesn't support power options, create a
     // default device.
-    return mtl::adoptObjCObj(MTLCreateSystemDefaultDevice());
+    return angle::adoptObjCPtr(MTLCreateSystemDefaultDevice());
 }
 
 egl::Error DisplayMtl::waitClient(const gl::Context *context)
@@ -319,7 +316,7 @@ egl::Error DisplayMtl::waitClient(const gl::Context *context)
 
     if (result != angle::Result::Continue)
     {
-        return egl::EglBadAccess();
+        return egl::Error(EGL_BAD_ACCESS);
     }
     return egl::NoError();
 }
@@ -646,12 +643,12 @@ egl::Error DisplayMtl::validateClientBuffer(const egl::Config *configuration,
         case EGL_IOSURFACE_ANGLE:
             if (!IOSurfaceSurfaceMtl::ValidateAttributes(clientBuffer, attribs))
             {
-                return egl::EglBadAttribute();
+                return egl::Error(EGL_BAD_ATTRIBUTE);
             }
             break;
         default:
             UNREACHABLE();
-            return egl::EglBadAttribute();
+            return egl::Error(EGL_BAD_ATTRIBUTE);
     }
     return egl::NoError();
 }
@@ -667,7 +664,7 @@ egl::Error DisplayMtl::validateImageClientBuffer(const gl::Context *context,
             return TextureImageSiblingMtl::ValidateClientBuffer(this, clientBuffer, attribs);
         default:
             UNREACHABLE();
-            return egl::EglBadAttribute();
+            return egl::Error(EGL_BAD_ATTRIBUTE);
     }
 }
 
@@ -716,9 +713,13 @@ void DisplayMtl::ensureCapsInitialized() const
     // https://developer.apple.com/metal/Metal-Feature-Set-Tables.pdf
     mNativeCaps.maxElementIndex  = std::numeric_limits<GLuint>::max() - 1;
     mNativeCaps.max3DTextureSize = 2048;
-#if TARGET_OS_OSX || TARGET_OS_MACCATALYST || TARGET_OS_SIMULATOR
+#if TARGET_OS_OSX || TARGET_OS_MACCATALYST
     mNativeCaps.max2DTextureSize = 16384;
     // On macOS exclude [[position]] from maxVaryingVectors.
+    mNativeCaps.maxVaryingVectors         = 31 - 1;
+    mNativeCaps.maxVertexOutputComponents = mNativeCaps.maxFragmentInputComponents = 124 - 4;
+#elif TARGET_OS_SIMULATOR
+    mNativeCaps.max2DTextureSize          = 8192;
     mNativeCaps.maxVaryingVectors         = 31 - 1;
     mNativeCaps.maxVertexOutputComponents = mNativeCaps.maxFragmentInputComponents = 124 - 4;
 #else
@@ -796,10 +797,10 @@ void DisplayMtl::ensureCapsInitialized() const
 
     // MSAA
     mNativeCaps.maxSamples             = mFormatTable.getMaxSamples();
-    mNativeCaps.maxSampleMaskWords     = 0;
+    mNativeCaps.maxSampleMaskWords     = 1;
     mNativeCaps.maxColorTextureSamples = mNativeCaps.maxSamples;
     mNativeCaps.maxDepthTextureSamples = mNativeCaps.maxSamples;
-    mNativeCaps.maxIntegerSamples      = 1;
+    mNativeCaps.maxIntegerSamples      = mNativeCaps.maxSamples;
 
     mNativeCaps.maxVertexAttributes           = mtl::kMaxVertexAttribs;
     mNativeCaps.maxVertexAttribBindings       = mtl::kMaxVertexAttribs;
@@ -992,6 +993,11 @@ void DisplayMtl::initializeExtensions() const
 
     mNativeExtensions.textureShadowLodEXT = true;
 
+    if ([mMetalDevice areProgrammableSamplePositionsSupported])
+    {
+        mNativeExtensions.textureMultisampleANGLE = true;
+    }
+
     mNativeExtensions.sampleVariablesOES = true;
 
     if ([mMetalDevice supportsPullModelInterpolation])
@@ -1045,9 +1051,6 @@ void DisplayMtl::initializeExtensions() const
 
         // GL_OES_EGL_sync
         mNativeExtensions.EGLSyncOES = true;
-
-        // GL_ARB_sync
-        mNativeExtensions.syncARB = true;
     }
 
     // GL_KHR_parallel_shader_compile
@@ -1057,6 +1060,9 @@ void DisplayMtl::initializeExtensions() const
     mNativeExtensions.baseVertexBaseInstanceANGLE = mFeatures.hasBaseVertexInstancedDraw.enabled;
     mNativeExtensions.baseVertexBaseInstanceShaderBuiltinANGLE =
         mFeatures.hasBaseVertexInstancedDraw.enabled;
+
+    mNativeExtensions.drawElementsBaseVertexEXT = mFeatures.hasBaseVertexInstancedDraw.enabled;
+    mNativeExtensions.drawElementsBaseVertexOES = mFeatures.hasBaseVertexInstancedDraw.enabled;
 
     // Metal uses the opposite provoking vertex as GLES so emulation is required to use the GLES
     // behaviour. Allow users to change the provoking vertex for improved performance.
@@ -1120,8 +1126,6 @@ void DisplayMtl::initializeExtensions() const
                           gl::IMPLEMENTATION_MAX_PIXEL_LOCAL_STORAGE_PLANES);
             mNativeCaps.maxPixelLocalStoragePlanes =
                 gl::IMPLEMENTATION_MAX_PIXEL_LOCAL_STORAGE_PLANES;
-            mNativeCaps.maxColorAttachmentsWithActivePixelLocalStorage =
-                gl::IMPLEMENTATION_MAX_DRAW_BUFFERS;
             mNativeCaps.maxCombinedDrawBuffersAndPixelLocalStoragePlanes =
                 gl::IMPLEMENTATION_MAX_PIXEL_LOCAL_STORAGE_PLANES +
                 gl::IMPLEMENTATION_MAX_DRAW_BUFFERS;
@@ -1321,13 +1325,15 @@ void DisplayMtl::initializeFeatures()
 
 angle::Result DisplayMtl::initializeShaderLibrary()
 {
-    mtl::AutoObjCPtr<NSError *> err = nil;
+    angle::ObjCPtr<NSError> err;
 #if ANGLE_METAL_XCODE_BUILDS_SHADERS || ANGLE_METAL_HAS_PREBUILT_INTERNAL_SHADERS
-    mDefaultShaders = mtl::CreateShaderLibraryFromBinary(getMetalDevice(), gDefaultMetallib,
-                                                         std::size(gDefaultMetallib), &err);
+    mDefaultShaders = mtl::CreateShaderLibraryFromStaticBinary(getMetalDevice(), gDefaultMetallib,
+                                                               std::size(gDefaultMetallib), &err);
 #else
-    mDefaultShaders = mtl::CreateShaderLibrary(getMetalDevice(), gDefaultMetallibSrc,
-                                               std::size(gDefaultMetallibSrc), &err);
+    const bool disableFastMath = false;
+    const bool usesInvariance  = true;
+    mDefaultShaders            = mtl::CreateShaderLibrary(getMetalDevice(), gDefaultMetallibSrc, {},
+                                                          disableFastMath, usesInvariance, &err);
 #endif
 
     if (err)
@@ -1456,13 +1462,13 @@ bool DisplayMtl::isSimulator() const
     return TARGET_OS_SIMULATOR;
 }
 
-mtl::AutoObjCObj<MTLSharedEventListener> DisplayMtl::getOrCreateSharedEventListener()
+angle::ObjCPtr<MTLSharedEventListener> DisplayMtl::getOrCreateSharedEventListener()
 {
     if (!mSharedEventListener)
     {
         ANGLE_MTL_OBJC_SCOPE
         {
-            mSharedEventListener = [[[MTLSharedEventListener alloc] init] ANGLE_MTL_AUTORELEASE];
+            mSharedEventListener = angle::adoptObjCPtr([[MTLSharedEventListener alloc] init]);
             ASSERT(mSharedEventListener);  // Failure here most probably means a sandbox issue.
         }
     }

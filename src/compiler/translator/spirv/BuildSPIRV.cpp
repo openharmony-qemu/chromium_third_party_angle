@@ -98,7 +98,7 @@ TLayoutBlockStorage GetBlockStorage(const TType &type)
 
 ShaderVariable ToShaderVariable(const TFieldListCollection *block,
                                 GLenum type,
-                                const TSpan<const unsigned int> arraySizes,
+                                const angle::Span<const unsigned int> arraySizes,
                                 bool isRowMajor)
 {
     ShaderVariable var;
@@ -999,14 +999,24 @@ SpirvTypeData SPIRVBuilder::declareType(const SpirvType &type, const TSymbol *bl
     {
         // Declaring a sampler.  First, declare the non-sampled image and then a combined
         // image-sampler.
+        //
+        // For sampler buffers, combined image-sampler shouldn't be created.  While this is allowed
+        // for SPIR-V before 1.6, it was never intended to be correct.
 
         SpirvType imageType          = type;
         imageType.isSamplerBaseImage = true;
 
         const spirv::IdRef nonSampledId = getSpirvTypeData(imageType, nullptr).id;
 
-        typeId = getNewId({});
-        spirv::WriteTypeSampledImage(&mSpirvTypeAndConstantDecls, typeId, nonSampledId);
+        if (IsSamplerBuffer(type.type))
+        {
+            typeId = nonSampledId;
+        }
+        else
+        {
+            typeId = getNewId({});
+            spirv::WriteTypeSampledImage(&mSpirvTypeAndConstantDecls, typeId, nonSampledId);
+        }
     }
     else if (IsImage(type.type) || IsSubpassInputType(type.type) || type.isSamplerBaseImage)
     {
@@ -1147,7 +1157,6 @@ void SPIRVBuilder::getImageTypeParameters(TBasicType type,
             break;
         case EbtSampler2DMS:
         case EbtImage2DMS:
-        case EbtSubpassInputMS:
             isMultisampled = true;
             break;
         case EbtSampler2DMSArray:
@@ -1176,7 +1185,6 @@ void SPIRVBuilder::getImageTypeParameters(TBasicType type,
             break;
         case EbtISampler2DMS:
         case EbtIImage2DMS:
-        case EbtISubpassInputMS:
             sampledType    = EbtInt;
             isMultisampled = true;
             break;
@@ -1200,7 +1208,6 @@ void SPIRVBuilder::getImageTypeParameters(TBasicType type,
             break;
         case EbtUSampler2DMS:
         case EbtUImage2DMS:
-        case EbtUSubpassInputMS:
             sampledType    = EbtUInt;
             isMultisampled = true;
             break;
@@ -1337,7 +1344,6 @@ void SPIRVBuilder::getImageTypeParameters(TBasicType type,
     //
     //     Dim          Sampled         Storage            Storage Array
     //     --------------------------------------------------------------
-    //     1D           Sampled1D       Image1D
     //     2D           Shader                             ImageMSArray
     //     3D
     //     Cube         Shader                             ImageCubeArray
@@ -1350,9 +1356,6 @@ void SPIRVBuilder::getImageTypeParameters(TBasicType type,
     //
     switch (*dimOut)
     {
-        case spv::Dim1D:
-            addCapability(isSampledImage ? spv::CapabilitySampled1D : spv::CapabilityImage1D);
-            break;
         case spv::Dim2D:
             if (!isSampledImage && isArrayed && isMultisampled)
             {

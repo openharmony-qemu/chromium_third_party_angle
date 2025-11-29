@@ -189,8 +189,6 @@ void LogMemoryHeapStats(vk::Renderer *renderer, vk::MemoryLogSeverity severity)
 }
 }  // namespace
 
-namespace vk
-{
 MemoryAllocationTracker::MemoryAllocationTracker(vk::Renderer *renderer)
     : mRenderer(renderer), mMemoryAllocationID(0)
 {}
@@ -438,6 +436,16 @@ void MemoryAllocationTracker::compareExpectedFlagsWithAllocatedFlags(
     }
 }
 
+void MemoryAllocationTracker::onExceedingMaxMemoryAllocationSize(VkDeviceSize size)
+{
+    VkDeviceSize maxAllocationSize = mRenderer->getMaxMemoryAllocationSize();
+    ASSERT(size > maxAllocationSize);
+
+    WARN() << "Attempted allocation size (" << size
+           << ") is greater than the maximum allocation size allowed (" << maxAllocationSize
+           << ").";
+}
+
 VkDeviceSize MemoryAllocationTracker::getPendingMemoryAllocationSize() const
 {
     if (!kTrackMemoryAllocationSizes)
@@ -495,6 +503,8 @@ void MemoryAllocationTracker::resetPendingMemoryAlloc()
     mPendingMemoryTypeIndex      = kInvalidMemoryTypeIndex;
 }
 
+namespace vk
+{
 MemoryReport::MemoryReport()
     : mCurrentTotalAllocatedMemory(0),
       mMaxTotalAllocatedMemory(0),

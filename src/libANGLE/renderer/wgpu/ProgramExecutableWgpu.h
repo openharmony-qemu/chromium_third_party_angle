@@ -14,13 +14,13 @@
 #include "libANGLE/renderer/renderer_utils.h"
 #include "libANGLE/renderer/wgpu/wgpu_pipeline_state.h"
 
-#include <dawn/webgpu_cpp.h>
+#include <webgpu/webgpu.h>
 
 namespace rx
 {
 struct TranslatedWGPUShaderModule
 {
-    wgpu::ShaderModule module;
+    webgpu::ShaderModuleHandle module;
 };
 
 class ProgramExecutableWgpu : public ProgramExecutableImpl
@@ -31,12 +31,22 @@ class ProgramExecutableWgpu : public ProgramExecutableImpl
 
     void destroy(const gl::Context *context) override;
 
+    angle::Result updateUniformsAndGetBindGroup(ContextWgpu *context,
+                                                webgpu::BindGroupHandle *outBindGroup);
+    angle::Result getSamplerAndTextureBindGroup(ContextWgpu *contextWgpu,
+                                                webgpu::BindGroupHandle *outBindGroup);
+
     angle::Result resizeUniformBlockMemory(const gl::ShaderMap<size_t> &requiredBufferSize);
 
     std::shared_ptr<BufferAndLayout> &getSharedDefaultUniformBlock(gl::ShaderType shaderType)
     {
         return mDefaultUniformBlocks[shaderType];
     }
+
+    void markDefaultUniformsDirty();
+    bool checkDirtyUniforms() { return mDefaultUniformBlocksDirty.any(); }
+    void markSamplerBindingsDirty() { mSamplerBindingsDirty = true; }
+    bool hasDirtySamplerBindings() { return mSamplerBindingsDirty; }
 
     void setUniform1fv(GLint location, GLsizei count, const GLfloat *v) override;
     void setUniform2fv(GLint location, GLsizei count, const GLfloat *v) override;
@@ -95,16 +105,42 @@ class ProgramExecutableWgpu : public ProgramExecutableImpl
 
     angle::Result getRenderPipeline(ContextWgpu *context,
                                     const webgpu::RenderPipelineDesc &desc,
-                                    wgpu::RenderPipeline *pipelineOut);
+                                    webgpu::RenderPipelineHandle *pipelineOut);
 
   private:
+    angle::CheckedNumeric<size_t> getDefaultUniformAlignedSize(ContextWgpu *context,
+                                                               gl::ShaderType shaderType) const;
+    angle::CheckedNumeric<size_t> calcUniformUpdateRequiredSpace(
+        ContextWgpu *context,
+        gl::ShaderMap<uint64_t> *uniformOffsets) const;
+    // The layout of the resource bind groups (numbering for buffers, textures, samplers) can be
+    // determined once the program is linked, and should be passed in pipeline creation. Fills in
+    // `mPipelineLayout` and `mDefaultBindGroupLayout` if they haven't been already.
+    void genBindingLayoutIfNecessary(ContextWgpu *context);
+
     gl::ShaderMap<TranslatedWGPUShaderModule> mShaderModules;
     webgpu::PipelineCache mPipelineCache;
+    // Holds the binding layout of resources (buffers, textures, samplers) required by the linked
+    // shaders.
+    webgpu::PipelineLayoutHandle mPipelineLayout;
+    // Holds the binding group layout for the default bind group.
+    webgpu::BindGroupLayoutHandle mDefaultBindGroupLayout;
+    // Holds the most recent BindGroup. Note there may be others in the command buffer.
+    webgpu::BindGroupHandle mDefaultBindGroup;
 
     // Holds layout info for basic GL uniforms, which needs to be laid out in a buffer for WGSL
     // similarly to a UBO.
     DefaultUniformBlockMap mDefaultUniformBlocks;
     gl::ShaderBitSet mDefaultUniformBlocksDirty;
+
+    // Tracks when a sampler binding has been changed with glUniform1i(). Starts true to ensure the
+    // bind group is created the first time around.
+    bool mSamplerBindingsDirty = true;
+    // Holds the binding group layout for the samplers and textures.
+    webgpu::BindGroupLayoutHandle mSamplersAndTexturesBindGroupLayout;
+    // Holds the most recent samplers and textures BindGroup. Note there may be others in the
+    // command buffer.
+    webgpu::BindGroupHandle mSamplersAndTexturesBindGroup;
 };
 
 }  // namespace rx

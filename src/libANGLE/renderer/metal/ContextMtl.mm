@@ -125,20 +125,6 @@ bool IsTransformFeedbackOnly(const gl::State &glState)
     return glState.isTransformFeedbackActiveUnpaused() && glState.isRasterizerDiscardEnabled();
 }
 
-std::string ConvertMarkerToString(GLsizei length, const char *marker)
-{
-    std::string cppString;
-    if (length == 0)
-    {
-        cppString = marker;
-    }
-    else
-    {
-        cppString.assign(marker, length);
-    }
-    return cppString;
-}
-
 // This class constructs line loop's last segment buffer inside begin() method
 // and perform the draw of the line loop's last segment inside destructor
 class LineLoopLastSegmentHelper
@@ -273,12 +259,12 @@ angle::Result ContextMtl::flush(const gl::Context *context)
     // needed. This is typically required if two MTLDevices are
     // operating on the same IOSurface.
     flushCommandBuffer(mtl::NoWait);
-    return angle::Result::Continue;
+    return checkCommandBufferError();
 }
 angle::Result ContextMtl::finish(const gl::Context *context)
 {
     ANGLE_TRY(finishCommandBuffer());
-    return angle::Result::Continue;
+    return checkCommandBufferError();
 }
 
 ANGLE_INLINE angle::Result ContextMtl::resyncDrawFramebufferIfNeeded(const gl::Context *context)
@@ -884,8 +870,8 @@ angle::Result ContextMtl::drawElementsBaseVertex(const gl::Context *context,
                                                  const void *indices,
                                                  GLint baseVertex)
 {
-    UNIMPLEMENTED();
-    return angle::Result::Stop;
+    ANGLE_TRY(resyncDrawFramebufferIfNeeded(context));
+    return drawElementsImpl(context, mode, count, type, indices, 0, baseVertex, 0);
 }
 
 angle::Result ContextMtl::drawElementsInstanced(const gl::Context *context,
@@ -955,9 +941,8 @@ angle::Result ContextMtl::drawRangeElementsBaseVertex(const gl::Context *context
                                                       const void *indices,
                                                       GLint baseVertex)
 {
-    // NOTE(hqle): ES 3.2
-    UNIMPLEMENTED();
-    return angle::Result::Stop;
+    ANGLE_TRY(resyncDrawFramebufferIfNeeded(context));
+    return drawElementsImpl(context, mode, count, type, indices, 0, baseVertex, 0);
 }
 
 angle::Result ContextMtl::drawArraysIndirect(const gl::Context *context,
@@ -1077,19 +1062,20 @@ gl::GraphicsResetStatus ContextMtl::getResetStatus()
 // EXT_debug_marker
 angle::Result ContextMtl::insertEventMarker(GLsizei length, const char *marker)
 {
-    return angle::Result::Continue;
+    mCmdBuffer.insertDebugSignpost(std::string(marker, length));
+    return checkCommandBufferError();
 }
 
 angle::Result ContextMtl::pushGroupMarker(GLsizei length, const char *marker)
 {
-    mCmdBuffer.pushDebugGroup(ConvertMarkerToString(length, marker));
-    return angle::Result::Continue;
+    mCmdBuffer.pushDebugGroup(std::string(marker, length));
+    return checkCommandBufferError();
 }
 
 angle::Result ContextMtl::popGroupMarker()
 {
     mCmdBuffer.popDebugGroup();
-    return angle::Result::Continue;
+    return checkCommandBufferError();
 }
 
 // KHR_debug
@@ -1098,12 +1084,12 @@ angle::Result ContextMtl::pushDebugGroup(const gl::Context *context,
                                          GLuint id,
                                          const std::string &message)
 {
-    return angle::Result::Continue;
+    return checkCommandBufferError();
 }
 
 angle::Result ContextMtl::popDebugGroup(const gl::Context *context)
 {
-    return angle::Result::Continue;
+    return checkCommandBufferError();
 }
 
 void ContextMtl::updateIncompatibleAttachments(const gl::State &glState)
@@ -1205,13 +1191,9 @@ angle::Result ContextMtl::syncState(const gl::Context *context,
                 break;
             case gl::state::DIRTY_BIT_SAMPLE_COVERAGE_ENABLED:
             case gl::state::DIRTY_BIT_SAMPLE_COVERAGE:
-                invalidateDriverUniforms();
-                break;
             case gl::state::DIRTY_BIT_SAMPLE_MASK_ENABLED:
-                // NOTE(hqle): 3.1 MSAA support
-                break;
             case gl::state::DIRTY_BIT_SAMPLE_MASK:
-                // NOTE(hqle): 3.1 MSAA support
+                invalidateDriverUniforms();
                 break;
             case gl::state::DIRTY_BIT_DEPTH_TEST_ENABLED:
                 mDepthStencilDesc.updateDepthTestEnabled(glState.getDepthStencilState());
@@ -1443,7 +1425,7 @@ angle::Result ContextMtl::onMakeCurrent(const gl::Context *context)
         GetImplAs<QueryMtl>(query)->onContextMakeCurrent(context);
     }
     mBufferManager.incrementNumContextSwitches();
-    return angle::Result::Continue;
+    return checkCommandBufferError();
 }
 angle::Result ContextMtl::onUnMakeCurrent(const gl::Context *context)
 {
@@ -1458,7 +1440,7 @@ angle::Result ContextMtl::onUnMakeCurrent(const gl::Context *context)
     {
         GetImplAs<QueryMtl>(query)->onContextUnMakeCurrent(context);
     }
-    return angle::Result::Continue;
+    return checkCommandBufferError();
 }
 
 // Native capabilities, unmodified by gl::Context.
@@ -1607,7 +1589,7 @@ angle::Result ContextMtl::memoryBarrier(const gl::Context *context, GLbitfield b
 {
     if (barriers == 0)
     {
-        return angle::Result::Continue;
+        return checkCommandBufferError();
     }
     if (context->getClientVersion() >= gl::Version{3, 1})
     {
@@ -1656,7 +1638,7 @@ angle::Result ContextMtl::memoryBarrier(const gl::Context *context, GLbitfield b
         stages |= MTLRenderStageFragment;
     }
     mRenderEncoder.memoryBarrier(scope, stages, stages);
-    return angle::Result::Continue;
+    return checkCommandBufferError();
 }
 
 angle::Result ContextMtl::memoryBarrierByRegion(const gl::Context *context, GLbitfield barriers)
@@ -1674,20 +1656,6 @@ void ContextMtl::handleError(GLenum glErrorCode,
                              unsigned int line)
 {
     mErrors->handleError(glErrorCode, message, file, function, line);
-}
-
-void ContextMtl::handleError(NSError *nserror,
-                             const char *message,
-                             const char *file,
-                             const char *function,
-                             unsigned int line)
-{
-    if (!nserror)
-    {
-        return;
-    }
-
-    mErrors->handleError(GL_INVALID_OPERATION, message, file, function, line);
 }
 
 void ContextMtl::invalidateState(const gl::Context *context)
@@ -1905,7 +1873,7 @@ void ContextMtl::present(const gl::Context *context, id<CAMetalDrawable> present
 angle::Result ContextMtl::finishCommandBuffer()
 {
     flushCommandBuffer(mtl::WaitUntilFinished);
-    return angle::Result::Continue;
+    return checkCommandBufferError();
 }
 
 bool ContextMtl::hasStartedRenderPass(const mtl::RenderPassDesc &desc)
@@ -1961,7 +1929,8 @@ mtl::RenderCommandEncoder *ContextMtl::getRenderPassCommandEncoder(const mtl::Re
             std::stringstream errorStream;
             errorStream << "This set of render targets requires " << renderTargetSize
                         << " bytes of pixel storage. This device supports " << maxSize << " bytes.";
-            ANGLE_MTL_HANDLE_ERROR(this, errorStream.str().c_str(), GL_INVALID_OPERATION);
+            handleError(GL_INVALID_OPERATION, errorStream.str().c_str(), __FILE__, ANGLE_FUNCTION,
+                        __LINE__);
             return nullptr;
         }
     }
@@ -1974,13 +1943,22 @@ mtl::RenderCommandEncoder *ContextMtl::getTextureRenderCommandEncoder(
     const mtl::TextureRef &textureTarget,
     const mtl::ImageNativeIndex &index)
 {
+    return getTextureRenderCommandEncoder(textureTarget, index.getNativeLevel(),
+                                          index.hasLayer() ? index.getLayerIndex() : 0);
+}
+
+mtl::RenderCommandEncoder *ContextMtl::getTextureRenderCommandEncoder(
+    const mtl::TextureRef &textureTarget,
+    mtl::MipmapNativeLevel level,
+    uint32_t layer)
+{
     ASSERT(textureTarget && textureTarget->valid());
 
     mtl::RenderPassDesc rpDesc;
 
     rpDesc.colorAttachments[0].texture      = textureTarget;
-    rpDesc.colorAttachments[0].level        = index.getNativeLevel();
-    rpDesc.colorAttachments[0].sliceOrDepth = index.hasLayer() ? index.getLayerIndex() : 0;
+    rpDesc.colorAttachments[0].level        = level;
+    rpDesc.colorAttachments[0].sliceOrDepth = layer;
     rpDesc.numColorAttachments              = 1;
     rpDesc.rasterSampleCount                = textureTarget->samples();
 
@@ -2403,6 +2381,12 @@ void ContextMtl::serverWaitEvent(id<MTLEvent> event, uint64_t value)
     mCmdBuffer.serverWaitEvent(event, value);
 }
 
+void ContextMtl::markResourceWrittenByCommandBuffer(const mtl::ResourceRef &resource)
+{
+    ensureCommandBufferReady();
+    mCmdBuffer.setWriteDependency(resource, /*isRenderCommand=*/false);
+}
+
 void ContextMtl::updateProgramExecutable(const gl::Context *context)
 {
     // Need to rebind textures
@@ -2509,7 +2493,7 @@ angle::Result ContextMtl::setupDraw(const gl::Context *context,
 
         if (*isNoOp)
         {
-            return angle::Result::Continue;
+            return checkCommandBufferError();
         }
         // Setup with flushed state should either produce a working encoder or fail with an error
         // result.
@@ -2679,7 +2663,7 @@ angle::Result ContextMtl::setupDrawImpl(const gl::Context *context,
                                          uniformBuffersDirty));
     }
 
-    return angle::Result::Continue;
+    return checkCommandBufferError();
 }
 
 void ContextMtl::filterOutXFBOnlyDirtyBits(const gl::Context *context)
@@ -2839,6 +2823,12 @@ angle::Result ContextMtl::handleDirtyDriverUniforms(const gl::Context *context,
         mDriverUniforms.coverageMask = 0xFFFFFFFFu;
     }
 
+    // Sample mask
+    if (mState.isSampleMaskEnabled())
+    {
+        mDriverUniforms.coverageMask &= mState.getSampleMaskWord(0);
+    }
+
     ANGLE_TRY(
         fillDriverXFBUniforms(drawCallFirstVertex, verticesPerInstance, /** skippedInstances */ 0));
 
@@ -2965,6 +2955,13 @@ angle::Result ContextMtl::checkIfPipelineChanged(const gl::Context *context,
 
     *isPipelineDescChanged = rppChange;
 
+    return angle::Result::Continue;
+}
+
+angle::Result ContextMtl::checkCommandBufferError()
+{
+    ANGLE_CHECK_GL_ALLOC(
+        this, mCmdBuffer.cmdQueue().popCmdBufferError() != MTLCommandBufferErrorOutOfMemory);
     return angle::Result::Continue;
 }
 

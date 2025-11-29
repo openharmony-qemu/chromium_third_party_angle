@@ -118,7 +118,7 @@ if (angle_use_x11) {
   ]
 }
 
-if (is_android || is_linux || is_chromeos || is_ohos) {
+if (is_android || is_linux || is_chromeos) {
   gl_backend_sources += [
     "egl/ContextEGL.cpp",
     "egl/ContextEGL.h",

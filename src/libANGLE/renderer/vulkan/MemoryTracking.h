@@ -137,8 +137,7 @@ struct hash<rx::vk::MemoryAllocInfoMapKey>
 
 namespace rx
 {
-namespace vk
-{
+
 // Memory tracker for allocations and deallocations, which is used in vk::Renderer.
 class MemoryAllocationTracker : angle::NonCopyable
 {
@@ -174,6 +173,9 @@ class MemoryAllocationTracker : angle::NonCopyable
                                                 VkMemoryPropertyFlags preferredFlags,
                                                 VkMemoryPropertyFlags allocatedFlags,
                                                 void *handle);
+
+    // Issue warning in case of exceeding maximum allowed allocation size.
+    void onExceedingMaxMemoryAllocationSize(VkDeviceSize size);
 
     // Pending memory allocation information is used for logging in case of an unsuccessful
     // allocation. It is cleared in onMemoryAlloc().
@@ -222,7 +224,6 @@ class MemoryAllocationTracker : angle::NonCopyable
     using MemoryAllocInfoMap = angle::HashMap<vk::MemoryAllocInfoMapKey, vk::MemoryAllocationInfo>;
     std::unordered_map<angle::BacktraceInfo, MemoryAllocInfoMap> mMemoryAllocationRecord;
 };
-}  // namespace vk
 }  // namespace rx
 
 #endif  // LIBANGLE_RENDERER_VULKAN_MEMORYTRACKING_H_

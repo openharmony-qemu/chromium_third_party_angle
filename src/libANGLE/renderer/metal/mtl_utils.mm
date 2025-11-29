@@ -23,7 +23,6 @@
 #include "libANGLE/renderer/metal/DisplayMtl.h"
 #include "libANGLE/renderer/metal/RenderTargetMtl.h"
 #include "libANGLE/renderer/metal/mtl_render_utils.h"
-#include "libANGLE/renderer/metal/process.h"
 #include "platform/PlatformMethods.h"
 
 // Compiler can turn on programmatical frame capture in release build by defining
@@ -188,7 +187,7 @@ void StartFrameCapture(id<MTLDevice> metalDevice, id<MTLCommandQueue> metalCmdQu
         return;
     }
 
-    auto captureDescriptor                = mtl::adoptObjCObj([[MTLCaptureDescriptor alloc] init]);
+    auto captureDescriptor = angle::adoptObjCPtr([[MTLCaptureDescriptor alloc] init]);
     captureDescriptor.get().captureObject = metalDevice;
     const std::string filePath            = GetMetalCaptureFile();
     NSString *frameCapturePath            = nil;
@@ -874,53 +873,35 @@ static MTLLanguageVersion GetUserSetOrHighestMSLVersion(const MTLLanguageVersion
     return currentVersion;
 }
 
-AutoObjCPtr<id<MTLLibrary>> CreateShaderLibrary(
+angle::ObjCPtr<id<MTLLibrary>> CreateShaderLibrary(
     id<MTLDevice> metalDevice,
-    const std::string &source,
+    std::string_view source,
     const std::map<std::string, std::string> &substitutionMacros,
     bool disableFastMath,
     bool usesInvariance,
-    AutoObjCPtr<NSError *> *error)
+    angle::ObjCPtr<NSError> *errorOut)
 {
-    return CreateShaderLibrary(metalDevice, source.c_str(), source.size(), substitutionMacros,
-                               disableFastMath, usesInvariance, error);
-}
-
-AutoObjCPtr<id<MTLLibrary>> CreateShaderLibrary(id<MTLDevice> metalDevice,
-                                                const std::string &source,
-                                                AutoObjCPtr<NSError *> *error)
-{
-    // Use fast math, but conservatively assume the shader uses invariance.
-    return CreateShaderLibrary(metalDevice, source.c_str(), source.size(), {}, false, true, error);
-}
-
-AutoObjCPtr<id<MTLLibrary>> CreateShaderLibrary(
-    id<MTLDevice> metalDevice,
-    const char *source,
-    size_t sourceLen,
-    const std::map<std::string, std::string> &substitutionMacros,
-    bool disableFastMath,
-    bool usesInvariance,
-    AutoObjCPtr<NSError *> *errorOut)
-{
+    angle::ObjCPtr<id<MTLLibrary>> result;
     ANGLE_MTL_OBJC_SCOPE
     {
         NSError *nsError = nil;
-        auto nsSource    = [[NSString alloc] initWithBytesNoCopy:const_cast<char *>(source)
-                                                       length:sourceLen
-                                                     encoding:NSUTF8StringEncoding
-                                                 freeWhenDone:NO];
-        auto options     = [[[MTLCompileOptions alloc] init] ANGLE_MTL_AUTORELEASE];
+        angle::ObjCPtr nsSource = angle::adoptObjCPtr([[NSString alloc]
+            initWithBytesNoCopy:const_cast<char *>(source.data())
+                         length:source.length()
+                       encoding:NSUTF8StringEncoding
+                   freeWhenDone:NO]);
+        angle::ObjCPtr options  = angle::adoptObjCPtr([[MTLCompileOptions alloc] init]);
 
         // Mark all positions in VS with attribute invariant as non-optimizable
-        options.preserveInvariance = usesInvariance;
+        options.get().preserveInvariance = usesInvariance;
 
         if (disableFastMath)
         {
-            options.fastMathEnabled = false;
+            options.get().fastMathEnabled = false;
         }
 
-        options.languageVersion = GetUserSetOrHighestMSLVersion(options.languageVersion);
+        options.get().languageVersion =
+            GetUserSetOrHighestMSLVersion(options.get().languageVersion);
 
         if (!substitutionMacros.empty())
         {
@@ -929,153 +910,65 @@ AutoObjCPtr<id<MTLLibrary>> CreateShaderLibrary(
             {
                 [macroDict setObject:@(macro.second.c_str()) forKey:@(macro.first.c_str())];
             }
-            options.preprocessorMacros = macroDict;
+            options.get().preprocessorMacros = macroDict;
         }
 
         auto *platform   = ANGLEPlatformCurrent();
         double startTime = platform->currentTime(platform);
 
-        auto library = [metalDevice newLibraryWithSource:nsSource options:options error:&nsError];
-        if (angle::GetEnvironmentVar(kANGLEPrintMSLEnv)[0] == '1')
+        result = angle::adoptObjCPtr([metalDevice newLibraryWithSource:nsSource.get()
+                                                               options:options.get()
+                                                                 error:&nsError]);
+        if (angle::GetBoolEnvironmentVar(kANGLEPrintMSLEnv))
         {
-            NSLog(@"%@\n", nsSource);
+            NSLog(@"%@\n", nsSource.get());
         }
-        [nsSource ANGLE_MTL_AUTORELEASE];
         *errorOut = std::move(nsError);
 
-        double endTime = platform->currentTime(platform);
-        int us         = static_cast<int>((endTime - startTime) * 1000'000.0);
+        int us = static_cast<int>((platform->currentTime(platform) - startTime) * 1e6);
         ANGLE_HISTOGRAM_COUNTS("GPU.ANGLE.MetalShaderCompilationTimeUs", us);
-
-        return library;
     }
+    return result;
 }
 
-std::string CompileShaderLibraryToFile(const std::string &source,
-                                       const std::map<std::string, std::string> &macros,
-                                       bool disableFastMath,
-                                       bool usesInvariance)
+angle::ObjCPtr<id<MTLLibrary>> CreateShaderLibraryFromBinary(id<MTLDevice> metalDevice,
+                                                             const uint8_t *data,
+                                                             size_t length,
+                                                             angle::ObjCPtr<NSError> *errorOut)
 {
-    auto tmpDir = angle::GetTempDirectory();
-    if (!tmpDir.valid())
-    {
-        FATAL() << "angle::GetTempDirectory() failed";
-    }
-    // NOTE: metal/metallib seem to require extensions, otherwise they interpret the files
-    // differently.
-    auto metalFileName =
-        angle::CreateTemporaryFileInDirectoryWithExtension(tmpDir.value(), ".metal");
-    auto airFileName = angle::CreateTemporaryFileInDirectoryWithExtension(tmpDir.value(), ".air");
-    auto metallibFileName =
-        angle::CreateTemporaryFileInDirectoryWithExtension(tmpDir.value(), ".metallib");
-    if (!metalFileName.valid() || !airFileName.valid() || !metallibFileName.valid())
-    {
-        FATAL() << "Unable to generate temporary files for compiling metal";
-    }
-    // Save the source.
-    {
-        FILE *fp = fopen(metalFileName.value().c_str(), "wb");
-        ASSERT(fp);
-        fwrite(source.c_str(), sizeof(char), metalFileName.value().length(), fp);
-        fclose(fp);
-    }
-
-    // metal -> air
-    std::vector<std::string> metalToAirArgv{"/usr/bin/xcrun",
-                                            "/usr/bin/xcrun",
-                                            "-sdk",
-                                            "macosx",
-                                            "metal",
-                                            "-std=macos-metal2.0",
-                                            "-mmacosx-version-min=10.13",
-                                            "-c",
-                                            metalFileName.value(),
-                                            "-o",
-                                            airFileName.value()};
-    // Macros are passed using `-D key=value`.
-    for (const auto &macro : macros)
-    {
-        metalToAirArgv.push_back("-D");
-        // TODO: not sure if this needs to escape strings or what (for example, might
-        // a space cause problems)?
-        metalToAirArgv.push_back(macro.first + "=" + macro.second);
-    }
-    // TODO: is this right, not sure if MTLCompileOptions.fastMathEnabled is same as -ffast-math.
-    if (!disableFastMath)
-    {
-        metalToAirArgv.push_back("-ffast-math");
-    }
-    if (usesInvariance)
-    {
-        metalToAirArgv.push_back("-fpreserve-invariance");
-    }
-    Process metalToAirProcess(metalToAirArgv);
-    int exitCode = -1;
-    if (!metalToAirProcess.DidLaunch() || !metalToAirProcess.WaitForExit(exitCode) || exitCode != 0)
-    {
-        FATAL() << "Generating air file failed";
-    }
-
-    // air -> metallib
-    const std::vector<std::string> airToMetallibArgv{
-        "xcrun",    "/usr/bin/xcrun",    "-sdk", "macosx",
-        "metallib", airFileName.value(), "-o",   metallibFileName.value()};
-    Process air_to_metallib_process(airToMetallibArgv);
-    if (!air_to_metallib_process.DidLaunch() || !air_to_metallib_process.WaitForExit(exitCode) ||
-        exitCode != 0)
-    {
-        FATAL() << "Ggenerating metallib file failed";
-    }
-    return metallibFileName.value();
-}
-
-AutoObjCPtr<id<MTLLibrary>> CreateShaderLibrary(id<MTLDevice> metalDevice,
-                                                const char *source,
-                                                size_t sourceLen,
-                                                AutoObjCPtr<NSError *> *errorOut)
-{
-    ANGLE_MTL_OBJC_SCOPE
-    {
-        auto nsSource = [[NSString alloc] initWithBytesNoCopy:const_cast<char *>(source)
-                                                       length:sourceLen
-                                                     encoding:NSUTF8StringEncoding
-                                                 freeWhenDone:NO];
-        auto options  = [[[MTLCompileOptions alloc] init] ANGLE_MTL_AUTORELEASE];
-
-        NSError *nsError = nil;
-        auto library = [metalDevice newLibraryWithSource:nsSource options:options error:&nsError];
-
-        [nsSource ANGLE_MTL_AUTORELEASE];
-
-        *errorOut = std::move(nsError);
-
-        return [library ANGLE_MTL_AUTORELEASE];
-    }
-}
-
-AutoObjCPtr<id<MTLLibrary>> CreateShaderLibraryFromBinary(id<MTLDevice> metalDevice,
-                                                          const uint8_t *binarySource,
-                                                          size_t binarySourceLen,
-                                                          AutoObjCPtr<NSError *> *errorOut)
-{
+    angle::ObjCPtr<id<MTLLibrary>> result;
     ANGLE_MTL_OBJC_SCOPE
     {
         NSError *nsError = nil;
-        auto shaderSourceData =
-            dispatch_data_create(binarySource, binarySourceLen, dispatch_get_main_queue(),
-                                 ^{
-                                 });
-
-        auto library = [metalDevice newLibraryWithData:shaderSourceData error:&nsError];
-
-        dispatch_release(shaderSourceData);
-
+        angle::ObjCPtr binaryData = angle::adoptObjCPtr(
+            dispatch_data_create(data, length, nullptr, DISPATCH_DATA_DESTRUCTOR_DEFAULT));
+        result    = angle::adoptObjCPtr([metalDevice newLibraryWithData:binaryData.get()
+                                                               error:&nsError]);
         *errorOut = std::move(nsError);
-
-        return [library ANGLE_MTL_AUTORELEASE];
     }
+    return result;
 }
 
+angle::ObjCPtr<id<MTLLibrary>> CreateShaderLibraryFromStaticBinary(
+    id<MTLDevice> metalDevice,
+    const uint8_t *data,
+    size_t length,
+    angle::ObjCPtr<NSError> *errorOut)
+{
+    angle::ObjCPtr<id<MTLLibrary>> result;
+    ANGLE_MTL_OBJC_SCOPE
+    {
+        NSError *nsError = nil;
+        dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0);
+        angle::ObjCPtr binaryData = angle::adoptObjCPtr(dispatch_data_create(data, length, queue,
+                                                                             ^{
+                                                                             }));
+        result    = angle::adoptObjCPtr([metalDevice newLibraryWithData:binaryData.get()
+                                                               error:&nsError]);
+        *errorOut = std::move(nsError);
+    }
+    return result;
+}
 MTLTextureType GetTextureType(gl::TextureType glType)
 {
     switch (glType)
@@ -1640,6 +1533,13 @@ NSUInteger ComputeTotalSizeUsedForMTLRenderPipelineDescriptor(
     return currentRenderTargetSize;
 }
 
+gl::Rectangle MTLRegionToGLRect(const MTLRegion &mtlRegion)
+{
+    return gl::Rectangle(static_cast<int>(mtlRegion.origin.x), static_cast<int>(mtlRegion.origin.y),
+                         static_cast<int>(mtlRegion.size.width),
+                         static_cast<int>(mtlRegion.size.height));
+}
+
 gl::Box MTLRegionToGLBox(const MTLRegion &mtlRegion)
 {
     return gl::Box(static_cast<int>(mtlRegion.origin.x), static_cast<int>(mtlRegion.origin.y),
@@ -1676,60 +1576,34 @@ angle::Result GetTriangleFanIndicesCount(ContextMtl *context,
     size_t numTris = vetexCount - 2;
     ANGLE_TRY(TriangleFanBoundCheck(context, numTris));
     size_t numIndices = numTris * 3;
-    ANGLE_CHECK(context, numIndices <= std::numeric_limits<uint32_t>::max(),
-                "Failed to create a scratch index buffer for GL_TRIANGLE_FAN, "
-                "too many indices required.",
-                GL_OUT_OF_MEMORY);
-
+    ANGLE_CHECK_GL_MATH(context, numIndices <= std::numeric_limits<uint32_t>::max());
     *numElemsOut = static_cast<uint32_t>(numIndices);
     return angle::Result::Continue;
 }
 
-angle::Result CreateMslShader(mtl::Context *context,
+angle::Result CreateMslShader(ContextMtl *context,
                               id<MTLLibrary> shaderLib,
                               NSString *shaderName,
                               MTLFunctionConstantValues *funcConstants,
-                              id<MTLFunction> *shaderOut)
+                              angle::ObjCPtr<id<MTLFunction>> *shaderOut)
 {
-    NSError *nsErr = nil;
-
-    id<MTLFunction> mtlShader;
-    if (funcConstants)
+    ANGLE_MTL_OBJC_SCOPE
     {
-        mtlShader = [shaderLib newFunctionWithName:shaderName
-                                    constantValues:funcConstants
-                                             error:&nsErr];
+        NSError *err = nil;
+        if (funcConstants)
+        {
+            *shaderOut = angle::adoptObjCPtr([shaderLib newFunctionWithName:shaderName
+                                                             constantValues:funcConstants
+                                                                      error:&err]);
+        }
+        else
+        {
+            *shaderOut = angle::adoptObjCPtr([shaderLib newFunctionWithName:shaderName]);
+        }
+        ANGLE_MTL_CHECK(context, *shaderOut, err);
+        return angle::Result::Continue;
     }
-    else
-    {
-        mtlShader = [shaderLib newFunctionWithName:shaderName];
-    }
-
-    [mtlShader ANGLE_MTL_AUTORELEASE];
-    if (nsErr && !mtlShader)
-    {
-        std::ostringstream ss;
-        ss << "Internal error compiling Metal shader:\n"
-           << nsErr.localizedDescription.UTF8String << "\n";
-
-        ERR() << ss.str();
-
-        ANGLE_MTL_CHECK(context, false, GL_INVALID_OPERATION);
-    }
-    *shaderOut = mtlShader;
-    return angle::Result::Continue;
 }
 
-angle::Result CreateMslShader(Context *context,
-                              id<MTLLibrary> shaderLib,
-                              NSString *shaderName,
-                              MTLFunctionConstantValues *funcConstants,
-                              AutoObjCPtr<id<MTLFunction>> *shaderOut)
-{
-    id<MTLFunction> outFunction;
-    ANGLE_TRY(CreateMslShader(context, shaderLib, shaderName, funcConstants, &outFunction));
-    shaderOut->retainAssign(outFunction);
-    return angle::Result::Continue;
-}
 }  // namespace mtl
 }  // namespace rx

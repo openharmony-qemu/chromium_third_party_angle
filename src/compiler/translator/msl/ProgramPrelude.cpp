@@ -7,9 +7,9 @@
 #include <cctype>
 
 #include "compiler/translator/InfoSink.h"
+#include "compiler/translator/Name.h"
 #include "compiler/translator/Symbol.h"
 #include "compiler/translator/msl/AstHelpers.h"
-#include "compiler/translator/msl/Name.h"
 #include "compiler/translator/msl/ProgramPrelude.h"
 #include "compiler/translator/tree_util/IntermTraverse.h"
 #include "compiler/translator/util.h"
@@ -127,8 +127,6 @@ class ProgramPrelude : public TIntermTraverser
     void addScalarMatrix();
     void subMatrixScalar();
     void subScalarMatrix();
-    void divMatrixScalar();
-    void divMatrixScalarAssign();
     void divScalarMatrix();
     void componentWiseDivide();
     void componentWiseDivideAssign();
@@ -162,6 +160,7 @@ class ProgramPrelude : public TIntermTraverser
     void texelFetch_2D();
     void texelFetch_3D();
     void texelFetch_2DArray();
+    void texelFetch_2DMS();
     void texelFetchOffset_2D();
     void texelFetchOffset_3D();
     void texelFetchOffset_2DArray();
@@ -270,6 +269,7 @@ class ProgramPrelude : public TIntermTraverser
     void textureSize_3D();
     void textureSize_2DArray();
     void textureSize_2DArrayShadow();
+    void textureSize_2DMS();
     void imageLoad();
     void imageStore();
     void memoryBarrierImage();
@@ -597,32 +597,6 @@ ANGLE_ALWAYS_INLINE metal::matrix<T, Cols, Rows> operator-(T x, metal::matrix<T,
     return m;
 }
 )")
-
-PROGRAM_PRELUDE_DECLARE(divMatrixScalarAssign,
-                        R"(
-template <typename T, int Cols, int Rows>
-ANGLE_ALWAYS_INLINE thread metal::matrix<T, Cols, Rows> &operator/=(thread metal::matrix<T, Cols, Rows> &m, T x)
-{
-    for (size_t col = 0; col < Cols; ++col)
-    {
-        m[col] /= x;
-    }
-    return m;
-}
-)")
-
-PROGRAM_PRELUDE_DECLARE(divMatrixScalar,
-                        R"(
-#if __METAL_VERSION__ <= 220
-template <typename T, int Cols, int Rows>
-ANGLE_ALWAYS_INLINE metal::matrix<T, Cols, Rows> operator/(metal::matrix<T, Cols, Rows> m, T x)
-{
-    m /= x;
-    return m;
-}
-#endif
-)",
-                        divMatrixScalarAssign())
 
 PROGRAM_PRELUDE_DECLARE(divScalarMatrix,
                         R"(
@@ -1207,6 +1181,19 @@ ANGLE_ALWAYS_INLINE auto ANGLE_texelFetch(
     int const level)
 {
     return env.texture->read(uint2(coord.xy), uint32_t(coord.z), uint32_t(level));
+}
+)",
+                        textureEnv())
+
+PROGRAM_PRELUDE_DECLARE(texelFetch_2DMS,
+                        R"(
+template <typename T>
+ANGLE_ALWAYS_INLINE auto ANGLE_texelFetch(
+    thread ANGLE_TextureEnv<metal::texture2d_ms<T>> &env,
+    metal::int2 const coord,
+    int const sample)
+{
+    return env.texture->read(uint2(coord), uint32_t(sample));
 }
 )",
                         textureEnv())
@@ -2685,6 +2672,17 @@ ANGLE_ALWAYS_INLINE auto ANGLE_textureSize(
 )",
                         textureEnv())
 
+PROGRAM_PRELUDE_DECLARE(textureSize_2DMS,
+                        R"(
+template <typename T>
+ANGLE_ALWAYS_INLINE auto ANGLE_textureSize(
+    thread ANGLE_TextureEnv<metal::texture2d_ms<T>> &env)
+{
+    return int2(env.texture->get_width(), env.texture->get_height());
+}
+)",
+                        textureEnv())
+
 PROGRAM_PRELUDE_DECLARE(imageLoad, R"(
 template <typename T, metal::access Access>
 ANGLE_ALWAYS_INLINE auto ANGLE_imageLoad(
@@ -2846,6 +2844,10 @@ ProgramPrelude::FuncToEmitter ProgramPrelude::BuildFuncToEmitter()
             case EbtISampler2DArray:
             case EbtUSampler2DArray:
                 return pp.texelFetch_2DArray();
+            case EbtSampler2DMS:
+            case EbtISampler2DMS:
+            case EbtUSampler2DMS:
+                return pp.texelFetch_2DMS();
             default:
                 UNREACHABLE();
         }
@@ -3225,6 +3227,10 @@ ProgramPrelude::FuncToEmitter ProgramPrelude::BuildFuncToEmitter()
                 return pp.textureSize_2DArray();
             case EbtSampler2DArrayShadow:
                 return pp.textureSize_2DArrayShadow();
+            case EbtSampler2DMS:
+            case EbtISampler2DMS:
+            case EbtUSampler2DMS:
+                return pp.textureSize_2DMS();
             default:
                 // Same wrapper for 2D, 2D Shadow, Cube, and Cube Shadow
                 return pp.textureSize_2D();
@@ -3452,34 +3458,23 @@ void ProgramPrelude::visitOperator(TOperator op,
             break;
 
         case TOperator::EOpDiv:
-            if (argType0->isMatrix())
+            if (argType1->isMatrix())
             {
-                if (argType1->isMatrix())
+                if (argType0->isMatrix())
                 {
                     componentWiseDivide();
                 }
-                else if (argType1->isScalar())
+                else if (argType0->isScalar())
                 {
-                    divMatrixScalar();
+                    divScalarMatrix();
                 }
-            }
-            if (argType0->isScalar() && argType1->isMatrix())
-            {
-                divScalarMatrix();
             }
             break;
 
         case TOperator::EOpDivAssign:
-            if (argType0->isMatrix())
+            if (argType0->isMatrix() && argType1->isMatrix())
             {
-                if (argType1->isMatrix())
-                {
-                    componentWiseDivideAssign();
-                }
-                else if (argType1->isScalar())
-                {
-                    divMatrixScalarAssign();
-                }
+                componentWiseDivideAssign();
             }
             break;
 

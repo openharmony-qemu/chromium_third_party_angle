@@ -3788,6 +3788,26 @@ void GL_APIENTRY glGetQueryObjectui64vRobustANGLE(GLuint id,
     return GL_GetQueryObjectui64vRobustANGLE(id, pname, bufSize, length, params);
 }
 
+void GL_APIENTRY glGetFramebufferPixelLocalStorageParameterfvRobustANGLE(GLint plane,
+                                                                         GLenum pname,
+                                                                         GLsizei bufSize,
+                                                                         GLsizei *length,
+                                                                         GLfloat *params)
+{
+    return GL_GetFramebufferPixelLocalStorageParameterfvRobustANGLE(plane, pname, bufSize, length,
+                                                                    params);
+}
+
+void GL_APIENTRY glGetFramebufferPixelLocalStorageParameterivRobustANGLE(GLint plane,
+                                                                         GLenum pname,
+                                                                         GLsizei bufSize,
+                                                                         GLsizei *length,
+                                                                         GLint *params)
+{
+    return GL_GetFramebufferPixelLocalStorageParameterivRobustANGLE(plane, pname, bufSize, length,
+                                                                    params);
+}
+
 // GL_ANGLE_robust_fragment_shader_output
 
 // GL_ANGLE_robust_resource_initialization
@@ -3870,25 +3890,6 @@ void GL_APIENTRY glGetFramebufferPixelLocalStorageParameterivANGLE(GLint plane,
     return GL_GetFramebufferPixelLocalStorageParameterivANGLE(plane, pname, params);
 }
 
-void GL_APIENTRY glGetFramebufferPixelLocalStorageParameterfvRobustANGLE(GLint plane,
-                                                                         GLenum pname,
-                                                                         GLsizei bufSize,
-                                                                         GLsizei *length,
-                                                                         GLfloat *params)
-{
-    return GL_GetFramebufferPixelLocalStorageParameterfvRobustANGLE(plane, pname, bufSize, length,
-                                                                    params);
-}
-
-void GL_APIENTRY glGetFramebufferPixelLocalStorageParameterivRobustANGLE(GLint plane,
-                                                                         GLenum pname,
-                                                                         GLsizei bufSize,
-                                                                         GLsizei *length,
-                                                                         GLint *params)
-{
-    return GL_GetFramebufferPixelLocalStorageParameterivRobustANGLE(plane, pname, bufSize, length,
-                                                                    params);
-}
 
 // GL_ANGLE_stencil_texturing
 
@@ -3965,7 +3966,7 @@ void GL_APIENTRY glReleaseTexturesANGLE(GLuint numTextures, const GLuint *textur
 
 // GL_APPLE_clip_distance
 
-// GL_ARB_sync
+// GL_ARM_rgba8
 
 // GL_ARM_shader_framebuffer_fetch
 
@@ -4042,12 +4043,8 @@ void GL_APIENTRY glEGLImageTargetTexStorageEXT(GLenum target,
     return GL_EGLImageTargetTexStorageEXT(target, image, attrib_list);
 }
 
-void GL_APIENTRY glEGLImageTargetTextureStorageEXT(GLuint texture,
-                                                   GLeglImageOES image,
-                                                   const GLint *attrib_list)
-{
-    return GL_EGLImageTargetTextureStorageEXT(texture, image, attrib_list);
-}
+
+// GL_EXT_EGL_image_storage_compression
 
 // GL_EXT_YUV_target
 
@@ -4369,39 +4366,7 @@ void GL_APIENTRY glMultiDrawElementsBaseVertexEXT(GLenum mode,
     return GL_MultiDrawElementsBaseVertexEXT(mode, count, type, indices, drawcount, basevertex);
 }
 
-// GL_EXT_external_buffer
-void GL_APIENTRY glBufferStorageExternalEXT(GLenum target,
-                                            GLintptr offset,
-                                            GLsizeiptr size,
-                                            GLeglClientBufferEXT clientBuffer,
-                                            GLbitfield flags)
-{
-    return GL_BufferStorageExternalEXT(target, offset, size, clientBuffer, flags);
-}
-
-void GL_APIENTRY glNamedBufferStorageExternalEXT(GLuint buffer,
-                                                 GLintptr offset,
-                                                 GLsizeiptr size,
-                                                 GLeglClientBufferEXT clientBuffer,
-                                                 GLbitfield flags)
-{
-    return GL_NamedBufferStorageExternalEXT(buffer, offset, size, clientBuffer, flags);
-}
-
-// GL_EXT_float_blend
-
-// GL_EXT_geometry_shader
-void GL_APIENTRY glFramebufferTextureEXT(GLenum target,
-                                         GLenum attachment,
-                                         GLuint texture,
-                                         GLint level)
-{
-    return GL_FramebufferTextureEXT(target, attachment, texture, level);
-}
-
-// GL_EXT_gpu_shader5
-
-// GL_EXT_instanced_arrays
+// GL_EXT_draw_instanced
 void GL_APIENTRY glDrawArraysInstancedEXT(GLenum mode,
                                           GLint start,
                                           GLsizei count,
@@ -4419,6 +4384,31 @@ void GL_APIENTRY glDrawElementsInstancedEXT(GLenum mode,
     return GL_DrawElementsInstancedEXT(mode, count, type, indices, primcount);
 }
 
+// GL_EXT_external_buffer
+void GL_APIENTRY glBufferStorageExternalEXT(GLenum target,
+                                            GLintptr offset,
+                                            GLsizeiptr size,
+                                            GLeglClientBufferEXT clientBuffer,
+                                            GLbitfield flags)
+{
+    return GL_BufferStorageExternalEXT(target, offset, size, clientBuffer, flags);
+}
+
+
+// GL_EXT_float_blend
+
+// GL_EXT_geometry_shader
+void GL_APIENTRY glFramebufferTextureEXT(GLenum target,
+                                         GLenum attachment,
+                                         GLuint texture,
+                                         GLint level)
+{
+    return GL_FramebufferTextureEXT(target, attachment, texture, level);
+}
+
+// GL_EXT_gpu_shader5
+
+// GL_EXT_instanced_arrays
 void GL_APIENTRY glVertexAttribDivisorEXT(GLuint index, GLuint divisor)
 {
     return GL_VertexAttribDivisorEXT(index, divisor);
@@ -4539,6 +4529,24 @@ void GL_APIENTRY glTexStorageMem3DMultisampleEXT(GLenum target,
 void GL_APIENTRY glImportMemoryFdEXT(GLuint memory, GLuint64 size, GLenum handleType, GLint fd)
 {
     return GL_ImportMemoryFdEXT(memory, size, handleType, fd);
+}
+
+// GL_EXT_multi_draw_arrays
+void GL_APIENTRY glMultiDrawArraysEXT(GLenum mode,
+                                      const GLint *first,
+                                      const GLsizei *count,
+                                      GLsizei primcount)
+{
+    return GL_MultiDrawArraysEXT(mode, first, count, primcount);
+}
+
+void GL_APIENTRY glMultiDrawElementsEXT(GLenum mode,
+                                        const GLsizei *count,
+                                        GLenum type,
+                                        const void *const *indices,
+                                        GLsizei primcount)
+{
+    return GL_MultiDrawElementsEXT(mode, count, type, indices, primcount);
 }
 
 // GL_EXT_multi_draw_indirect
@@ -5126,14 +5134,6 @@ void GL_APIENTRY glTexBufferRangeEXT(GLenum target,
 // GL_EXT_texture_shadow_lod
 
 // GL_EXT_texture_storage
-void GL_APIENTRY glTexStorage1DEXT(GLenum target,
-                                   GLsizei levels,
-                                   GLenum internalformat,
-                                   GLsizei width)
-{
-    return GL_TexStorage1DEXT(target, levels, internalformat, width);
-}
-
 void GL_APIENTRY glTexStorage2DEXT(GLenum target,
                                    GLsizei levels,
                                    GLenum internalformat,
@@ -5151,6 +5151,29 @@ void GL_APIENTRY glTexStorage3DEXT(GLenum target,
                                    GLsizei depth)
 {
     return GL_TexStorage3DEXT(target, levels, internalformat, width, height, depth);
+}
+
+// GL_EXT_texture_storage_compression
+void GL_APIENTRY glTexStorageAttribs2DEXT(GLenum target,
+                                          GLsizei levels,
+                                          GLenum internalformat,
+                                          GLsizei width,
+                                          GLsizei height,
+                                          const GLint *attrib_list)
+{
+    return GL_TexStorageAttribs2DEXT(target, levels, internalformat, width, height, attrib_list);
+}
+
+void GL_APIENTRY glTexStorageAttribs3DEXT(GLenum target,
+                                          GLsizei levels,
+                                          GLenum internalformat,
+                                          GLsizei width,
+                                          GLsizei height,
+                                          GLsizei depth,
+                                          const GLint *attrib_list)
+{
+    return GL_TexStorageAttribs3DEXT(target, levels, internalformat, width, height, depth,
+                                     attrib_list);
 }
 
 // GL_EXT_texture_type_2_10_10_10_REV
@@ -5403,6 +5426,12 @@ void GL_APIENTRY glEGLImageTargetTexture2DOES(GLenum target, GLeglImageOES image
 // GL_OES_EGL_image_external
 
 // GL_OES_EGL_image_external_essl3
+
+// GL_OES_blend_subtract
+void GL_APIENTRY glBlendEquationOES(GLenum mode)
+{
+    return GL_BlendEquationOES(mode);
+}
 
 // GL_OES_compressed_ETC1_RGB8_texture
 
@@ -5742,6 +5771,8 @@ GLbitfield GL_APIENTRY glQueryMatrixxOES(GLfixed *mantissa, GLint *exponent)
     return GL_QueryMatrixxOES(mantissa, exponent);
 }
 
+// GL_OES_required_internalformat
+
 // GL_OES_rgb8_rgba8
 
 // GL_OES_sample_shading
@@ -5966,6 +5997,8 @@ void GL_APIENTRY glTexGenxvOES(GLenum coord, GLenum pname, const GLfixed *params
 // GL_OES_texture_half_float
 
 // GL_OES_texture_half_float_linear
+
+// GL_OES_texture_mirrored_repeat
 
 // GL_OES_texture_npot
 

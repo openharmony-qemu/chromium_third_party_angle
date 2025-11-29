@@ -147,9 +147,11 @@ class TextureState final : private angle::NonCopyable
     bool renderabilityValidation() const { return mRenderabilityValidation; }
     GLenum getDepthStencilTextureMode() const { return mDepthStencilTextureMode; }
 
+    bool isExternalMemoryTexture() const { return mIsExternalMemoryTexture; }
     bool hasBeenBoundAsImage() const { return mHasBeenBoundAsImage; }
     bool hasBeenBoundAsAttachment() const { return mHasBeenBoundAsAttachment; }
     bool hasBeenBoundToMSRTTFramebuffer() const { return mHasBeenBoundToMSRTTFramebuffer; }
+    bool hasBeenBoundAsSourceOfEglImage() const { return mHasBeenBoundAsSourceOfEglImage; }
 
     gl::SrgbOverride getSRGBOverride() const { return mSrgbOverride; }
 
@@ -193,6 +195,8 @@ class TextureState final : private angle::NonCopyable
     bool isInternalIncompleteTexture() const { return mIsInternalIncompleteTexture; }
 
     const FoveationState &getFoveationState() const { return mFoveationState; }
+
+    GLenum getSurfaceCompressionFixedRate() const { return mCompressionFixedRate; }
 
   private:
     // Texture needs access to the ImageDesc functions.
@@ -242,9 +246,14 @@ class TextureState final : private angle::NonCopyable
     // overhead of tail-call checks to draw calls.
     bool mIsInternalIncompleteTexture;
 
+    // Whether this is an external memory texture created via EXT_external_objects or
+    // ANGLE_external_objects_flags.
+    bool mIsExternalMemoryTexture;
+
     bool mHasBeenBoundAsImage;
     bool mHasBeenBoundAsAttachment;
     bool mHasBeenBoundToMSRTTFramebuffer;
+    bool mHasBeenBoundAsSourceOfEglImage;
 
     bool mImmutableFormat;
     GLuint mImmutableLevels;
@@ -281,6 +290,9 @@ class TextureState final : private angle::NonCopyable
 
     // GL_QCOM_texture_foveated
     FoveationState mFoveationState;
+
+    // GL_EXT_texture_storage_compression
+    GLenum mCompressionFixedRate;
 };
 
 bool operator==(const TextureState &a, const TextureState &b);
@@ -437,6 +449,12 @@ class Texture final : public RefCountObject<TextureID>,
                        float foveaArea);
     const FocalPoint &getFocalPoint(uint32_t layer, uint32_t focalPoint) const;
 
+    GLint getImageCompressionRate(const Context *context) const;
+    GLint getFormatSupportedCompressionRates(const Context *context,
+                                             GLenum internalformat,
+                                             GLsizei bufSize,
+                                             GLint *rates) const;
+
     angle::Result setImage(Context *context,
                            const PixelUnpackState &unpackState,
                            Buffer *unpackBuffer,
@@ -575,6 +593,13 @@ class Texture final : public RefCountObject<TextureID>,
                                            egl::Image *image,
                                            const GLint *attrib_list);
 
+    angle::Result setStorageAttribs(Context *context,
+                                    TextureType type,
+                                    GLsizei levels,
+                                    GLenum internalFormat,
+                                    const Extents &size,
+                                    const GLint *attribList);
+
     angle::Result generateMipmap(Context *context);
 
     angle::Result clearImage(Context *context,
@@ -590,6 +615,7 @@ class Texture final : public RefCountObject<TextureID>,
                                 const uint8_t *data);
 
     void onBindAsImageTexture();
+    void onBindAsEglImageSource();
 
     egl::Surface *getBoundSurface() const;
     egl::Stream *getBoundStream() const;
@@ -666,6 +692,8 @@ class Texture final : public RefCountObject<TextureID>,
 
         return false;
     }
+
+    bool isEGLImageSource(const ImageIndex &index) const;
 
     bool isDepthOrStencil() const
     {
@@ -750,6 +778,8 @@ class Texture final : public RefCountObject<TextureID>,
     angle::Result releaseImageFromStream(const Context *context);
 
     void invalidateCompletenessCache() const;
+
+    void releaseTexImageInternalNoRedefinition(Context *context);
     angle::Result releaseTexImageInternal(Context *context);
 
     bool doesSubImageNeedInit(const Context *context,

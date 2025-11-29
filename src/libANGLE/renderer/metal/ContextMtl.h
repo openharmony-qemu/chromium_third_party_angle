@@ -278,11 +278,6 @@ class ContextMtl : public ContextImpl, public mtl::Context
                      const char *file,
                      const char *function,
                      unsigned int line) override;
-    void handleError(NSError *error,
-                     const char *message,
-                     const char *file,
-                     const char *function,
-                     unsigned int line) override;
 
     using ContextImpl::handleError;
 
@@ -324,6 +319,8 @@ class ContextMtl : public ContextImpl, public mtl::Context
     // Enqueue an event and return the command queue serial that the event was or will be placed in.
     uint64_t queueEventSignal(id<MTLEvent> event, uint64_t value);
     void serverWaitEvent(id<MTLEvent> event, uint64_t value);
+
+    void markResourceWrittenByCommandBuffer(const mtl::ResourceRef &resource);
 
     const mtl::ClearColorValue &getClearColorValue() const;
     const mtl::WriteMaskArray &getWriteMaskArray() const;
@@ -371,6 +368,9 @@ class ContextMtl : public ContextImpl, public mtl::Context
     // The previous content of texture will be loaded
     mtl::RenderCommandEncoder *getTextureRenderCommandEncoder(const mtl::TextureRef &textureTarget,
                                                               const mtl::ImageNativeIndex &index);
+    mtl::RenderCommandEncoder *getTextureRenderCommandEncoder(const mtl::TextureRef &textureTarget,
+                                                              mtl::MipmapNativeLevel level,
+                                                              uint32_t layer);
     // The previous content of texture will be loaded if clearColor is not provided
     mtl::RenderCommandEncoder *getRenderTargetCommandEncoderWithClear(
         const RenderTargetMtl &renderTarget,
@@ -532,6 +532,8 @@ class ContextMtl : public ContextImpl, public mtl::Context
                                          bool *pipelineDescChanged);
 
     angle::Result startOcclusionQueryInRenderPass(QueryMtl *query, bool clearOldValue);
+
+    angle::Result checkCommandBufferError();
 
     // Dirty bits.
     enum DirtyBitType : size_t

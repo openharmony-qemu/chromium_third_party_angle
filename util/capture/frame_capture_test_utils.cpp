@@ -130,7 +130,7 @@ bool LoadTraceNamesFromJSON(const std::string jsonFilePath, std::vector<std::str
         return false;
     }
 
-    if (!doc.IsObject() || !doc.HasMember("traces") || !doc["traces"].IsArray())
+    if (!doc.IsArray())
     {
         return false;
     }
@@ -138,7 +138,7 @@ bool LoadTraceNamesFromJSON(const std::string jsonFilePath, std::vector<std::str
     // Read trace json into a list of trace names.
     std::vector<std::string> traces;
 
-    rapidjson::Document::Array traceArray = doc["traces"].GetArray();
+    rapidjson::Document::Array traceArray = doc.GetArray();
     for (rapidjson::SizeType arrayIndex = 0; arrayIndex < traceArray.Size(); ++arrayIndex)
     {
         const rapidjson::Document::ValueType &arrayElement = traceArray[arrayIndex];
@@ -148,9 +148,7 @@ bool LoadTraceNamesFromJSON(const std::string jsonFilePath, std::vector<std::str
             return false;
         }
 
-        std::vector<std::string> traceAndVersion;
-        angle::SplitStringAlongWhitespace(arrayElement.GetString(), &traceAndVersion);
-        traces.push_back(traceAndVersion[0]);
+        traces.push_back(arrayElement.GetString());
     }
 
     *namesOut = std::move(traces);
@@ -175,33 +173,49 @@ bool LoadTraceInfoFromJSON(const std::string &traceName,
     const rapidjson::Document::Object &meta = doc["TraceMetadata"].GetObj();
 
     strncpy(traceInfoOut->name, traceName.c_str(), kTraceInfoMaxNameLen);
-    traceInfoOut->contextClientMajorVersion = meta["ContextClientMajorVersion"].GetInt();
-    traceInfoOut->contextClientMinorVersion = meta["ContextClientMinorVersion"].GetInt();
-    traceInfoOut->frameEnd                  = meta["FrameEnd"].GetInt();
-    traceInfoOut->frameStart                = meta["FrameStart"].GetInt();
-    traceInfoOut->drawSurfaceHeight         = meta["DrawSurfaceHeight"].GetInt();
-    traceInfoOut->drawSurfaceWidth          = meta["DrawSurfaceWidth"].GetInt();
-
-    angle::HexStringToUInt(meta["DrawSurfaceColorSpace"].GetString(),
-                           &traceInfoOut->drawSurfaceColorSpace);
-    angle::HexStringToUInt(meta["DisplayPlatformType"].GetString(),
-                           &traceInfoOut->displayPlatformType);
-    angle::HexStringToUInt(meta["DisplayDeviceType"].GetString(), &traceInfoOut->displayDeviceType);
-
-    traceInfoOut->configRedBits     = meta["ConfigRedBits"].GetInt();
-    traceInfoOut->configGreenBits   = meta["ConfigGreenBits"].GetInt();
-    traceInfoOut->configBlueBits    = meta["ConfigBlueBits"].GetInt();
-    traceInfoOut->configAlphaBits   = meta["ConfigAlphaBits"].GetInt();
-    traceInfoOut->configDepthBits   = meta["ConfigDepthBits"].GetInt();
-    traceInfoOut->configStencilBits = meta["ConfigStencilBits"].GetInt();
-
+    traceInfoOut->frameEnd               = meta["FrameEnd"].GetInt();
+    traceInfoOut->frameStart             = meta["FrameStart"].GetInt();
     traceInfoOut->isBinaryDataCompressed = meta["IsBinaryDataCompressed"].GetBool();
-    traceInfoOut->areClientArraysEnabled = meta["AreClientArraysEnabled"].GetBool();
-    traceInfoOut->isBindGeneratesResourcesEnabled =
-        meta["IsBindGeneratesResourcesEnabled"].GetBool();
-    traceInfoOut->isWebGLCompatibilityEnabled = meta["IsWebGLCompatibilityEnabled"].GetBool();
-    traceInfoOut->isRobustResourceInitEnabled = meta["IsRobustResourceInitEnabled"].GetBool();
-    traceInfoOut->windowSurfaceContextId      = doc["WindowSurfaceContextID"].GetInt();
+    traceInfoOut->isCL                   = meta.HasMember("IsOpenCL");
+
+    if (meta.HasMember("ContextClientMajorVersion"))
+    {
+        traceInfoOut->contextClientMajorVersion = meta["ContextClientMajorVersion"].GetInt();
+        traceInfoOut->contextClientMinorVersion = meta["ContextClientMinorVersion"].GetInt();
+        traceInfoOut->drawSurfaceHeight         = meta["DrawSurfaceHeight"].GetInt();
+        traceInfoOut->drawSurfaceWidth          = meta["DrawSurfaceWidth"].GetInt();
+
+        angle::HexStringToUInt(meta["DrawSurfaceColorSpace"].GetString(),
+                               &traceInfoOut->drawSurfaceColorSpace);
+        angle::HexStringToUInt(meta["DisplayPlatformType"].GetString(),
+                               &traceInfoOut->displayPlatformType);
+        angle::HexStringToUInt(meta["DisplayDeviceType"].GetString(),
+                               &traceInfoOut->displayDeviceType);
+
+        traceInfoOut->configRedBits          = meta["ConfigRedBits"].GetInt();
+        traceInfoOut->configGreenBits        = meta["ConfigGreenBits"].GetInt();
+        traceInfoOut->configBlueBits         = meta["ConfigBlueBits"].GetInt();
+        traceInfoOut->configAlphaBits        = meta["ConfigAlphaBits"].GetInt();
+        traceInfoOut->configDepthBits        = meta["ConfigDepthBits"].GetInt();
+        traceInfoOut->configStencilBits      = meta["ConfigStencilBits"].GetInt();
+        traceInfoOut->areClientArraysEnabled = meta["AreClientArraysEnabled"].GetBool();
+        traceInfoOut->isBindGeneratesResourcesEnabled =
+            meta["IsBindGeneratesResourcesEnabled"].GetBool();
+        traceInfoOut->isWebGLCompatibilityEnabled = meta["IsWebGLCompatibilityEnabled"].GetBool();
+        traceInfoOut->isRobustResourceInitEnabled = meta["IsRobustResourceInitEnabled"].GetBool();
+    }
+    else
+    {
+        traceInfoOut->contextClientMajorVersion = 1;
+        traceInfoOut->contextClientMinorVersion = 1;
+        traceInfoOut->drawSurfaceHeight         = 1;
+        traceInfoOut->drawSurfaceWidth          = 1;
+    }
+
+    if (doc.HasMember("WindowSurfaceContextID"))
+    {
+        traceInfoOut->windowSurfaceContextId = doc["WindowSurfaceContextID"].GetInt();
+    }
 
     if (doc.HasMember("RequiredExtensions"))
     {

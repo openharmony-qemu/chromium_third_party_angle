@@ -54,7 +54,6 @@ enum TBasicType
 {
     EbtVoid,
     EbtFloat,
-    EbtDouble,
     EbtInt,
     EbtUInt,
     EbtBool,
@@ -106,8 +105,6 @@ enum TBasicType
     EbtImage3D,
     EbtImage2DArray,
     EbtImageCube,
-    EbtImage1D,
-    EbtImage1DArray,
     EbtImage2DMS,
     EbtImage2DMSArray,
     EbtImageCubeArray,
@@ -117,8 +114,6 @@ enum TBasicType
     EbtIImage3D,
     EbtIImage2DArray,
     EbtIImageCube,
-    EbtIImage1D,
-    EbtIImage1DArray,
     EbtIImage2DMS,
     EbtIImage2DMSArray,
     EbtIImageCubeArray,
@@ -129,8 +124,6 @@ enum TBasicType
     EbtUImage3D,
     EbtUImage2DArray,
     EbtUImageCube,
-    EbtUImage1D,
-    EbtUImage1DArray,
     EbtUImage2DMS,
     EbtUImage2DMSArray,
     EbtUImageCubeArray,
@@ -151,10 +144,7 @@ enum TBasicType
     EbtSubpassInput = EbtGuardSubpassInputBegin,
     EbtISubpassInput,
     EbtUSubpassInput,
-    EbtSubpassInputMS,
-    EbtISubpassInputMS,
-    EbtUSubpassInputMS,
-    EbtGuardSubpassInputEnd = EbtUSubpassInputMS,
+    EbtGuardSubpassInputEnd = EbtUSubpassInput,
 
     EbtLastSimpleType = EbtGuardSubpassInputEnd,
 
@@ -373,10 +363,8 @@ inline bool IsFloatImage(TBasicType type)
 {
     switch (type)
     {
-        case EbtImage1D:
         case EbtImage2D:
         case EbtImage3D:
-        case EbtImage1DArray:
         case EbtImage2DArray:
         case EbtImageCube:
         case EbtImage2DMS:
@@ -397,10 +385,8 @@ inline bool IsIntegerImage(TBasicType type)
 
     switch (type)
     {
-        case EbtIImage1D:
         case EbtIImage2D:
         case EbtIImage3D:
-        case EbtIImage1DArray:
         case EbtIImage2DArray:
         case EbtIImageCube:
         case EbtIImage2DMS:
@@ -421,10 +407,8 @@ inline bool IsUnsignedImage(TBasicType type)
 
     switch (type)
     {
-        case EbtUImage1D:
         case EbtUImage2D:
         case EbtUImage3D:
-        case EbtUImage1DArray:
         case EbtUImage2DArray:
         case EbtUImageCube:
         case EbtUImage2DMS:
@@ -634,6 +618,54 @@ inline bool IsSamplerArray(TBasicType type)
     return false;
 }
 
+inline bool IsSampler2DArray(TBasicType type)
+{
+    switch (type)
+    {
+        case EbtSampler2DArray:
+        case EbtISampler2DArray:
+        case EbtUSampler2DArray:
+        case EbtSampler2DMSArray:
+        case EbtISampler2DMSArray:
+        case EbtUSampler2DMSArray:
+        case EbtSampler2DArrayShadow:
+            return true;
+        case EbtSampler2D:
+        case EbtISampler2D:
+        case EbtUSampler2D:
+        case EbtSampler2DRect:
+        case EbtISampler2DRect:
+        case EbtUSampler2DRect:
+        case EbtSampler2DRectShadow:
+        case EbtSamplerExternalOES:
+        case EbtSamplerExternal2DY2YEXT:
+        case EbtSampler2DShadow:
+        case EbtSampler2DMS:
+        case EbtISampler2DMS:
+        case EbtUSampler2DMS:
+        case EbtSamplerVideoWEBGL:
+        case EbtSampler3D:
+        case EbtISampler3D:
+        case EbtUSampler3D:
+        case EbtISamplerCube:
+        case EbtUSamplerCube:
+        case EbtSamplerCube:
+        case EbtSamplerCubeShadow:
+        case EbtSamplerBuffer:
+        case EbtSamplerCubeArray:
+        case EbtSamplerCubeArrayShadow:
+        case EbtISamplerBuffer:
+        case EbtISamplerCubeArray:
+        case EbtUSamplerBuffer:
+        case EbtUSamplerCubeArray:
+            return false;
+        default:
+            ASSERT(!IsSampler(type));
+    }
+
+    return false;
+}
+
 inline bool IsSamplerBuffer(TBasicType type)
 {
     switch (type)
@@ -715,12 +747,6 @@ inline bool IsImage2D(TBasicType type)
         case EbtImageCube:
         case EbtIImageCube:
         case EbtUImageCube:
-        case EbtImage1D:
-        case EbtIImage1D:
-        case EbtUImage1D:
-        case EbtImage1DArray:
-        case EbtIImage1DArray:
-        case EbtUImage1DArray:
         case EbtImage2DMSArray:
         case EbtIImage2DMSArray:
         case EbtUImage2DMSArray:
@@ -758,12 +784,6 @@ inline bool IsImage3D(TBasicType type)
         case EbtImageCube:
         case EbtIImageCube:
         case EbtUImageCube:
-        case EbtImage1D:
-        case EbtIImage1D:
-        case EbtUImage1D:
-        case EbtImage1DArray:
-        case EbtIImage1DArray:
-        case EbtUImage1DArray:
         case EbtImage2DMS:
         case EbtIImage2DMS:
         case EbtUImage2DMS:
@@ -807,12 +827,6 @@ inline bool IsImage2DArray(TBasicType type)
         case EbtImageCube:
         case EbtIImageCube:
         case EbtUImageCube:
-        case EbtImage1D:
-        case EbtIImage1D:
-        case EbtUImage1D:
-        case EbtImage1DArray:
-        case EbtIImage1DArray:
-        case EbtUImage1DArray:
         case EbtImage2DMS:
         case EbtIImage2DMS:
         case EbtUImage2DMS:
@@ -850,12 +864,6 @@ inline bool IsImageCube(TBasicType type)
         case EbtImage2DArray:
         case EbtIImage2DArray:
         case EbtUImage2DArray:
-        case EbtImage1D:
-        case EbtIImage1D:
-        case EbtUImage1D:
-        case EbtImage1DArray:
-        case EbtIImage1DArray:
-        case EbtUImage1DArray:
         case EbtImage2DMS:
         case EbtIImage2DMS:
         case EbtUImage2DMS:

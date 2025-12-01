@@ -21,8 +21,6 @@
 #include "libANGLE/renderer/wgpu/wgpu_wgsl_util.h"
 #include "libANGLE/trace.h"
 
-#include <dawn/webgpu_cpp.h>
-
 namespace rx
 {
 namespace
@@ -49,33 +47,48 @@ class WgpuDefaultBlockEncoder : public sh::Std140BlockEncoder
     }
 };
 
-void InitDefaultUniformBlock(const std::vector<sh::ShaderVariable> &uniforms,
-                             sh::BlockLayoutMap *blockLayoutMapOut,
-                             size_t *blockSizeOut)
+angle::Result InitDefaultUniformBlock(const std::vector<sh::ShaderVariable> &uniforms,
+                                      sh::BlockLayoutMap *blockLayoutMapOut,
+                                      size_t *blockSizeOut)
 {
     if (uniforms.empty())
     {
         *blockSizeOut = 0;
-        return;
+        return angle::Result::Continue;
     }
 
     WgpuDefaultBlockEncoder blockEncoder;
     sh::GetActiveUniformBlockInfo(uniforms, "", &blockEncoder, blockLayoutMapOut);
 
-    *blockSizeOut = blockEncoder.getCurrentOffset();
-    return;
+    // The default uniforms are packed into a struct, and so the size of the struct must be aligned
+    // to kUniformStructAlignment;
+    angle::CheckedNumeric blockSize =
+        CheckedRoundUp(blockEncoder.getCurrentOffset(), webgpu::kUniformStructAlignment);
+    if (!blockSize.IsValid())
+    {
+        ERR() << "Packing the default uniforms into a struct results in a struct that is too "
+                 "large. Unaligned size = "
+              << blockEncoder.getCurrentOffset()
+              << ", alignment = " << webgpu::kUniformStructAlignment;
+        return angle::Result::Stop;
+    }
+
+    *blockSizeOut = blockSize.ValueOrDie();
+    return angle::Result::Continue;
 }
 
 class CreateWGPUShaderModuleTask : public LinkSubTask
 {
   public:
-    CreateWGPUShaderModuleTask(wgpu::Instance instance,
-                               wgpu::Device device,
+    CreateWGPUShaderModuleTask(const DawnProcTable *wgpu,
+                               webgpu::InstanceHandle instance,
+                               webgpu::DeviceHandle device,
                                const gl::SharedCompiledShaderState &compiledShaderState,
                                const gl::ProgramExecutable &executable,
                                gl::ProgramMergedVaryings mergedVaryings,
                                TranslatedWGPUShaderModule &resultShaderModule)
-        : mInstance(instance),
+        : mProcTable(wgpu),
+          mInstance(instance),
           mDevice(device),
           mCompiledShaderState(compiledShaderState),
           mExecutable(executable),
@@ -101,15 +114,15 @@ class CreateWGPUShaderModuleTask : public LinkSubTask
         std::string finalShaderSource;
         if (shaderType == gl::ShaderType::Vertex)
         {
-            finalShaderSource = webgpu::WgslAssignLocations(mCompiledShaderState->translatedSource,
-                                                            mExecutable.getProgramInputs(),
-                                                            mMergedVaryings, shaderType);
+            finalShaderSource = webgpu::WgslAssignLocationsAndSamplerBindings(
+                mExecutable, mCompiledShaderState->translatedSource, mExecutable.getProgramInputs(),
+                mMergedVaryings, shaderType);
         }
         else if (shaderType == gl::ShaderType::Fragment)
         {
-            finalShaderSource = webgpu::WgslAssignLocations(mCompiledShaderState->translatedSource,
-                                                            mExecutable.getOutputVariables(),
-                                                            mMergedVaryings, shaderType);
+            finalShaderSource = webgpu::WgslAssignLocationsAndSamplerBindings(
+                mExecutable, mCompiledShaderState->translatedSource,
+                mExecutable.getOutputVariables(), mMergedVaryings, shaderType);
         }
         else
         {
@@ -120,21 +133,25 @@ class CreateWGPUShaderModuleTask : public LinkSubTask
             std::cout << finalShaderSource;
         }
 
-        wgpu::ShaderModuleWGSLDescriptor shaderModuleWGSLDescriptor;
-        shaderModuleWGSLDescriptor.code = finalShaderSource.c_str();
+        WGPUShaderSourceWGSL shaderModuleWGSLDescriptor = WGPU_SHADER_SOURCE_WGSL_INIT;
+        shaderModuleWGSLDescriptor.code = {finalShaderSource.c_str(), finalShaderSource.length()};
 
-        wgpu::ShaderModuleDescriptor shaderModuleDescriptor;
-        shaderModuleDescriptor.nextInChain = &shaderModuleWGSLDescriptor;
+        WGPUShaderModuleDescriptor shaderModuleDescriptor = WGPU_SHADER_MODULE_DESCRIPTOR_INIT;
+        shaderModuleDescriptor.nextInChain                = &shaderModuleWGSLDescriptor.chain;
 
-        mShaderModule.module = mDevice.CreateShaderModule(&shaderModuleDescriptor);
+        mShaderModule.module = webgpu::ShaderModuleHandle::Acquire(
+            mProcTable,
+            mProcTable->deviceCreateShaderModule(mDevice.get(), &shaderModuleDescriptor));
 
-        wgpu::CompilationInfoCallbackInfo callbackInfo;
-        callbackInfo.mode     = wgpu::CallbackMode::WaitAnyOnly;
-        callbackInfo.callback = [](WGPUCompilationInfoRequestStatus status,
-                                   struct WGPUCompilationInfo const *compilationInfo,
-                                   void *userdata) {
-            CreateWGPUShaderModuleTask *task = static_cast<CreateWGPUShaderModuleTask *>(userdata);
-
+        WGPUCompilationInfoCallbackInfo getCompilationInfoCallback =
+            WGPU_COMPILATION_INFO_CALLBACK_INFO_INIT;
+        getCompilationInfoCallback.mode     = WGPUCallbackMode_WaitAnyOnly;
+        getCompilationInfoCallback.callback = [](WGPUCompilationInfoRequestStatus status,
+                                                 struct WGPUCompilationInfo const *compilationInfo,
+                                                 void *userdata1, void *userdata2) {
+            CreateWGPUShaderModuleTask *task =
+                reinterpret_cast<CreateWGPUShaderModuleTask *>(userdata1);
+            ASSERT(userdata2 == nullptr);
             if (status != WGPUCompilationInfoRequestStatus_Success)
             {
                 task->mResult = angle::Result::Stop;
@@ -158,25 +175,27 @@ class CreateWGPUShaderModuleTask : public LinkSubTask
                         task->mLog << "Unknown: ";
                         break;
                 }
-                task->mLog << message.lineNum << ":" << message.linePos << ": " << message.message
+                task->mLog << message.lineNum << ":" << message.linePos << ": "
+                           << std::string(message.message.data, message.message.length)
                            << std::endl;
             }
         };
-        callbackInfo.userdata = this;
+        getCompilationInfoCallback.userdata1 = this;
 
-        wgpu::FutureWaitInfo waitInfo;
-        waitInfo.future = mShaderModule.module.GetCompilationInfo(callbackInfo);
-
-        wgpu::WaitStatus waitStatus = mInstance.WaitAny(1, &waitInfo, -1);
-        if (waitStatus != wgpu::WaitStatus::Success)
+        WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
+        waitInfo.future = mProcTable->shaderModuleGetCompilationInfo(mShaderModule.module.get(),
+                                                                     getCompilationInfoCallback);
+        WGPUWaitStatus waitStatus = mProcTable->instanceWaitAny(mInstance.get(), 1, &waitInfo, -1);
+        if (waitStatus != WGPUWaitStatus_Success)
         {
             mResult = angle::Result::Stop;
         }
     }
 
   private:
-    wgpu::Instance mInstance;
-    wgpu::Device mDevice;
+    const DawnProcTable *mProcTable = nullptr;
+    webgpu::InstanceHandle mInstance;
+    webgpu::DeviceHandle mDevice;
     gl::SharedCompiledShaderState mCompiledShaderState;
     const gl::ProgramExecutable &mExecutable;
     gl::ProgramMergedVaryings mMergedVaryings;
@@ -190,8 +209,12 @@ class CreateWGPUShaderModuleTask : public LinkSubTask
 class LinkTaskWgpu : public LinkTask
 {
   public:
-    LinkTaskWgpu(wgpu::Instance instance, wgpu::Device device, ProgramWgpu *program)
-        : mInstance(instance),
+    LinkTaskWgpu(const DawnProcTable *wgpu,
+                 webgpu::InstanceHandle instance,
+                 webgpu::DeviceHandle device,
+                 ProgramWgpu *program)
+        : mProcTable(wgpu),
+          mInstance(instance),
           mDevice(device),
           mProgram(program),
           mExecutable(&mProgram->getState().getExecutable())
@@ -216,8 +239,9 @@ class LinkTaskWgpu : public LinkTask
             if (shaders[shaderType])
             {
                 auto task = std::make_shared<CreateWGPUShaderModuleTask>(
-                    mInstance, mDevice, shaders[shaderType], *executable->getExecutable(),
-                    mergedVaryings, executable->getShaderModule(shaderType));
+                    mProcTable, mInstance, mDevice, shaders[shaderType],
+                    *executable->getExecutable(), mergedVaryings,
+                    executable->getShaderModule(shaderType));
                 linkSubTasksOut->push_back(task);
             }
         }
@@ -249,15 +273,19 @@ class LinkTaskWgpu : public LinkTask
         gl::ShaderMap<size_t> requiredBufferSize;
         requiredBufferSize.fill(0);
 
-        generateUniformLayoutMapping(&layoutMap, &requiredBufferSize);
+        ANGLE_TRY(generateUniformLayoutMapping(&layoutMap, &requiredBufferSize));
         initDefaultUniformLayoutMapping(&layoutMap);
 
         // All uniform initializations are complete, now resize the buffers accordingly and return
-        return executableWgpu->resizeUniformBlockMemory(requiredBufferSize);
+        ANGLE_TRY(executableWgpu->resizeUniformBlockMemory(requiredBufferSize));
+
+        executableWgpu->markDefaultUniformsDirty();
+
+        return angle::Result::Continue;
     }
 
-    void generateUniformLayoutMapping(gl::ShaderMap<sh::BlockLayoutMap> *layoutMapOut,
-                                      gl::ShaderMap<size_t> *requiredBufferSizeOut)
+    angle::Result generateUniformLayoutMapping(gl::ShaderMap<sh::BlockLayoutMap> *layoutMapOut,
+                                               gl::ShaderMap<size_t> *requiredBufferSizeOut)
     {
         for (const gl::ShaderType shaderType : mExecutable->getLinkedShaderStages())
         {
@@ -267,10 +295,12 @@ class LinkTaskWgpu : public LinkTask
             if (shader)
             {
                 const std::vector<sh::ShaderVariable> &uniforms = shader->uniforms;
-                InitDefaultUniformBlock(uniforms, &(*layoutMapOut)[shaderType],
-                                        &(*requiredBufferSizeOut)[shaderType]);
+                ANGLE_TRY(InitDefaultUniformBlock(uniforms, &(*layoutMapOut)[shaderType],
+                                                  &(*requiredBufferSizeOut)[shaderType]));
             }
         }
+
+        return angle::Result::Continue;
     }
 
     void initDefaultUniformLayoutMapping(gl::ShaderMap<sh::BlockLayoutMap> *layoutMapOut)
@@ -322,8 +352,9 @@ class LinkTaskWgpu : public LinkTask
         }
     }
 
-    wgpu::Instance mInstance;
-    wgpu::Device mDevice;
+    const DawnProcTable *mProcTable = nullptr;
+    webgpu::InstanceHandle mInstance;
+    webgpu::DeviceHandle mDevice;
     ProgramWgpu *mProgram = nullptr;
     const gl::ProgramExecutable *mExecutable;
     angle::Result mLinkResult = angle::Result::Stop;
@@ -352,10 +383,11 @@ void ProgramWgpu::setSeparable(bool separable) {}
 
 angle::Result ProgramWgpu::link(const gl::Context *context, std::shared_ptr<LinkTask> *linkTaskOut)
 {
-    wgpu::Device device     = webgpu::GetDevice(context);
-    wgpu::Instance instance = webgpu::GetInstance(context);
+    const DawnProcTable *wgpu       = webgpu::GetProcs(context);
+    webgpu::DeviceHandle device     = webgpu::GetDevice(context);
+    webgpu::InstanceHandle instance = webgpu::GetInstance(context);
 
-    *linkTaskOut = std::shared_ptr<LinkTask>(new LinkTaskWgpu(instance, device, this));
+    *linkTaskOut = std::shared_ptr<LinkTask>(new LinkTaskWgpu(wgpu, instance, device, this));
     return angle::Result::Continue;
 }
 

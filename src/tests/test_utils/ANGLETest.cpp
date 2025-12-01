@@ -171,10 +171,8 @@ bool gReuseDisplays = false;
 
 bool ShouldAlwaysForceNewDisplay(const PlatformParameters &params)
 {
-    // When running WebGPU tests on linux always force a new display. The underlying vulkan swap
-    // chain appears to fail to get a new image after swapping when rapidly creating new swap chains
-    // for an existing window.
-    if (params.isWebGPU() && IsLinux())
+    // When running WebGPU tests always force a new display.
+    if (params.isWebGPU())
     {
         return true;
     }
@@ -188,6 +186,19 @@ bool ShouldAlwaysForceNewDisplay(const PlatformParameters &params)
     SystemInfo *systemInfo = GetTestSystemInfo();
     return (!systemInfo || !IsWindows() || systemInfo->hasAMDGPU());
 }
+
+bool ShouldAlwaysForceNewWindow(const PlatformParameters &params)
+{
+    // The WebGPU underlying vulkan and D3D swap chain appears to fail to get a new image after
+    // swapping when rapidly creating new swap chains for an existing window.
+    if (params.isWebGPU())
+    {
+        return true;
+    }
+
+    return false;
+}
+}  // anonymous namespace
 
 GPUTestConfig::API GetTestConfigAPIFromRenderer(angle::GLESDriverType driverType,
                                                 EGLenum renderer,
@@ -227,7 +238,6 @@ GPUTestConfig::API GetTestConfigAPIFromRenderer(angle::GLESDriverType driverType
             return GPUTestConfig::kAPIUnknown;
     }
 }
-}  // anonymous namespace
 
 GLColorRGB::GLColorRGB(const Vector3 &floatColor)
     : R(ColorDenorm(floatColor.x())), G(ColorDenorm(floatColor.y())), B(ColorDenorm(floatColor.z()))
@@ -430,12 +440,6 @@ void SetTestStartDelay(const char *testStartDelay)
     gTestStartDelaySeconds = std::stoi(testStartDelay);
 }
 
-#if defined(ANGLE_TEST_ENABLE_RENDERDOC_CAPTURE)
-bool gEnableRenderDocCapture = true;
-#else
-bool gEnableRenderDocCapture = false;
-#endif
-
 // static
 std::array<Vector3, 6> ANGLETestBase::GetQuadVertices()
 {
@@ -472,6 +476,20 @@ testing::AssertionResult AssertEGLEnumsEqual(const char *lhsExpr,
     }
 }
 
+void *ANGLETestBase::operator new(size_t size)
+{
+    void *ptr = malloc(size ? size : size + 1);
+    // Initialize integer primitives to large positive values to avoid tests relying
+    // on the assumption that primitives (e.g. GLuint) would be zero-initialized.
+    memset(ptr, 0x7f, size);
+    return ptr;
+}
+
+void ANGLETestBase::operator delete(void *ptr)
+{
+    free(ptr);
+}
+
 ANGLETestBase::ANGLETestBase(const PlatformParameters &params)
     : mWidth(16),
       mHeight(16),
@@ -480,6 +498,7 @@ ANGLETestBase::ANGLETestBase(const PlatformParameters &params)
       mQuadIndexBuffer(0),
       m2DTexturedQuadProgram(0),
       m3DTexturedQuadProgram(0),
+      m2DArrayTexturedQuadProgram(0),
       mDeferContextInit(false),
       mAlwaysForceNewDisplay(ShouldAlwaysForceNewDisplay(params)),
       mForceNewDisplay(mAlwaysForceNewDisplay),
@@ -609,6 +628,10 @@ ANGLETestBase::~ANGLETestBase()
     {
         glDeleteProgram(m3DTexturedQuadProgram);
     }
+    if (m2DArrayTexturedQuadProgram)
+    {
+        glDeleteProgram(m2DArrayTexturedQuadProgram);
+    }
 
     if (!mSetUpCalled)
     {
@@ -686,6 +709,12 @@ void ANGLETestBase::ANGLETestSetUp()
     if (gEnableANGLEPerTestCaptureLabel)
     {
         SetupEnvironmentVarsForCaptureReplay();
+    }
+
+    if (ShouldAlwaysForceNewWindow(*mCurrentParams))
+    {
+        OSWindow::Delete(&mFixture->osWindow);
+        initOSWindow();
     }
 
     if (!mFixture->osWindow->valid())
@@ -815,7 +844,7 @@ void ANGLETestBase::ANGLETestTearDown()
         WriteDebugMessage("Exiting %s.%s\n", info->test_suite_name(), info->name());
     }
 
-    if (mCurrentParams->noFixture || !mFixture->osWindow->valid())
+    if (mCurrentParams->noFixture || !mFixture->osWindow || !mFixture->osWindow->valid())
     {
         mRenderDoc.endFrame();
         return;
@@ -848,12 +877,17 @@ void ANGLETestBase::ANGLETestTearDown()
     }
 
     Event myEvent;
-    while (mFixture->osWindow->popEvent(&myEvent))
+    while (mFixture->osWindow && mFixture->osWindow->popEvent(&myEvent))
     {
         if (myEvent.Type == Event::EVENT_CLOSED)
         {
             exit(0);
         }
+    }
+
+    if (ShouldAlwaysForceNewWindow(*mCurrentParams))
+    {
+        OSWindow::Delete(&mFixture->osWindow);
     }
 }
 
@@ -1259,6 +1293,40 @@ void main()
     return m3DTexturedQuadProgram;
 }
 
+GLuint ANGLETestBase::get2DArrayTexturedQuadProgram()
+{
+    if (m2DArrayTexturedQuadProgram)
+    {
+        return m2DArrayTexturedQuadProgram;
+    }
+
+    constexpr char kVS[] = R"(#version 300 es
+in vec2 position;
+out vec2 texCoord;
+void main()
+{
+    gl_Position = vec4(position, 0, 1);
+    texCoord = position * 0.5 + vec2(0.5);
+})";
+
+    constexpr char kFS[] = R"(#version 300 es
+precision highp float;
+
+in vec2 texCoord;
+out vec4 my_FragColor;
+
+uniform highp sampler2DArray tex;
+uniform float u_layer;
+
+void main()
+{
+    my_FragColor = texture(tex, vec3(texCoord, u_layer));
+})";
+
+    m2DArrayTexturedQuadProgram = CompileProgram(kVS, kFS);
+    return m2DArrayTexturedQuadProgram;
+}
+
 void ANGLETestBase::draw2DTexturedQuad(GLfloat positionAttribZ,
                                        GLfloat positionAttribXYScale,
                                        bool useVertexBuffer)
@@ -1274,6 +1342,29 @@ void ANGLETestBase::draw3DTexturedQuad(GLfloat positionAttribZ,
                                        float layer)
 {
     GLuint program = get3DTexturedQuadProgram();
+    ASSERT_NE(0u, program);
+    GLint activeProgram = 0;
+    glGetIntegerv(GL_CURRENT_PROGRAM, &activeProgram);
+    if (static_cast<GLuint>(activeProgram) != program)
+    {
+        glUseProgram(program);
+    }
+    glUniform1f(glGetUniformLocation(program, "u_layer"), layer);
+
+    drawQuad(program, "position", positionAttribZ, positionAttribXYScale, useVertexBuffer);
+
+    if (static_cast<GLuint>(activeProgram) != program)
+    {
+        glUseProgram(static_cast<GLuint>(activeProgram));
+    }
+}
+
+void ANGLETestBase::draw2DArrayTexturedQuad(GLfloat positionAttribZ,
+                                            GLfloat positionAttribXYScale,
+                                            bool useVertexBuffer,
+                                            float layer)
+{
+    GLuint program = get2DArrayTexturedQuadProgram();
     ASSERT_NE(0u, program);
     GLint activeProgram = 0;
     glGetIntegerv(GL_CURRENT_PROGRAM, &activeProgram);

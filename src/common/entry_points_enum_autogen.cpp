@@ -370,6 +370,8 @@ const char *GetEntryPointName(EntryPoint ep)
             return "eglLabelObjectKHR";
         case EntryPoint::EGLLockSurfaceKHR:
             return "eglLockSurfaceKHR";
+        case EntryPoint::EGLLockVulkanQueueANGLE:
+            return "eglLockVulkanQueueANGLE";
         case EntryPoint::EGLMakeCurrent:
             return "eglMakeCurrent";
         case EntryPoint::EGLPostSubBufferNV:
@@ -412,6 +414,8 @@ const char *GetEntryPointName(EntryPoint ep)
             return "eglQueryString";
         case EntryPoint::EGLQueryStringiANGLE:
             return "eglQueryStringiANGLE";
+        case EntryPoint::EGLQuerySupportedCompressionRatesEXT:
+            return "eglQuerySupportedCompressionRatesEXT";
         case EntryPoint::EGLQuerySurface:
             return "eglQuerySurface";
         case EntryPoint::EGLQuerySurface64KHR:
@@ -456,14 +460,14 @@ const char *GetEntryPointName(EntryPoint ep)
             return "eglSwapBuffers";
         case EntryPoint::EGLSwapBuffersWithDamageKHR:
             return "eglSwapBuffersWithDamageKHR";
-        case EntryPoint::EGLSwapBuffersWithFrameTokenANGLE:
-            return "eglSwapBuffersWithFrameTokenANGLE";
         case EntryPoint::EGLSwapInterval:
             return "eglSwapInterval";
         case EntryPoint::EGLTerminate:
             return "eglTerminate";
         case EntryPoint::EGLUnlockSurfaceKHR:
             return "eglUnlockSurfaceKHR";
+        case EntryPoint::EGLUnlockVulkanQueueANGLE:
+            return "eglUnlockVulkanQueueANGLE";
         case EntryPoint::EGLWaitClient:
             return "eglWaitClient";
         case EntryPoint::EGLWaitGL:
@@ -548,6 +552,8 @@ const char *GetEntryPointName(EntryPoint ep)
             return "glBlendColor";
         case EntryPoint::GLBlendEquation:
             return "glBlendEquation";
+        case EntryPoint::GLBlendEquationOES:
+            return "glBlendEquationOES";
         case EntryPoint::GLBlendEquationSeparate:
             return "glBlendEquationSeparate";
         case EntryPoint::GLBlendEquationSeparatei:
@@ -874,8 +880,6 @@ const char *GetEntryPointName(EntryPoint ep)
             return "glEGLImageTargetTexStorageEXT";
         case EntryPoint::GLEGLImageTargetTexture2DOES:
             return "glEGLImageTargetTexture2DOES";
-        case EntryPoint::GLEGLImageTargetTextureStorageEXT:
-            return "glEGLImageTargetTextureStorageEXT";
         case EntryPoint::GLEnable:
             return "glEnable";
         case EntryPoint::GLEnableClientState:
@@ -1532,6 +1536,8 @@ const char *GetEntryPointName(EntryPoint ep)
             return "glMultMatrixx";
         case EntryPoint::GLMultiDrawArraysANGLE:
             return "glMultiDrawArraysANGLE";
+        case EntryPoint::GLMultiDrawArraysEXT:
+            return "glMultiDrawArraysEXT";
         case EntryPoint::GLMultiDrawArraysIndirectEXT:
             return "glMultiDrawArraysIndirectEXT";
         case EntryPoint::GLMultiDrawArraysInstancedANGLE:
@@ -1542,6 +1548,8 @@ const char *GetEntryPointName(EntryPoint ep)
             return "glMultiDrawElementsANGLE";
         case EntryPoint::GLMultiDrawElementsBaseVertexEXT:
             return "glMultiDrawElementsBaseVertexEXT";
+        case EntryPoint::GLMultiDrawElementsEXT:
+            return "glMultiDrawElementsEXT";
         case EntryPoint::GLMultiDrawElementsIndirectEXT:
             return "glMultiDrawElementsIndirectEXT";
         case EntryPoint::GLMultiDrawElementsInstancedANGLE:
@@ -1552,8 +1560,6 @@ const char *GetEntryPointName(EntryPoint ep)
             return "glMultiTexCoord4f";
         case EntryPoint::GLMultiTexCoord4x:
             return "glMultiTexCoord4x";
-        case EntryPoint::GLNamedBufferStorageExternalEXT:
-            return "glNamedBufferStorageExternalEXT";
         case EntryPoint::GLNormal3f:
             return "glNormal3f";
         case EntryPoint::GLNormal3x:
@@ -1968,8 +1974,6 @@ const char *GetEntryPointName(EntryPoint ep)
             return "glTexParameterx";
         case EntryPoint::GLTexParameterxv:
             return "glTexParameterxv";
-        case EntryPoint::GLTexStorage1DEXT:
-            return "glTexStorage1DEXT";
         case EntryPoint::GLTexStorage2D:
             return "glTexStorage2D";
         case EntryPoint::GLTexStorage2DEXT:
@@ -1986,6 +1990,10 @@ const char *GetEntryPointName(EntryPoint ep)
             return "glTexStorage3DMultisample";
         case EntryPoint::GLTexStorage3DMultisampleOES:
             return "glTexStorage3DMultisampleOES";
+        case EntryPoint::GLTexStorageAttribs2DEXT:
+            return "glTexStorageAttribs2DEXT";
+        case EntryPoint::GLTexStorageAttribs3DEXT:
+            return "glTexStorageAttribs3DEXT";
         case EntryPoint::GLTexStorageMem2DEXT:
             return "glTexStorageMem2DEXT";
         case EntryPoint::GLTexStorageMem2DMultisampleEXT:

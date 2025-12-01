@@ -57,6 +57,7 @@ extern "C" {
 /* not exported */ void ReplayFrame(uint32_t frameIndex);
 /* not exported */ void ResetReplay();
 /* not exported */ void FinishReplay();
+/* not exported */ void SetupFirstFrame();
 
 ANGLE_REPLAY_EXPORT void SetValidateSerializedStateCallback(
     ValidateSerializedStateCallback callback);
@@ -88,6 +89,7 @@ extern GLuint *gResourceIDBuffer;
 extern GLuint *gBufferMap;
 extern GLuint *gFenceNVMap;
 extern GLuint *gFramebufferMap;
+extern GLuint **gFramebufferMapPerContext;
 extern GLuint *gMemoryObjectMap;
 extern GLuint *gProgramPipelineMap;
 extern GLuint *gQueryMap;
@@ -203,6 +205,7 @@ void UpdateResourceIDBuffer(int resourceIndex, GLuint id);
 void UpdateBufferID(GLuint id, GLsizei readBufferOffset);
 void UpdateFenceNVID(GLuint id, GLsizei readBufferOffset);
 void UpdateFramebufferID(GLuint id, GLsizei readBufferOffset);
+void UpdateFramebufferID2(GLuint contextId, GLuint id, GLsizei readBufferOffset);
 void UpdateMemoryObjectID(GLuint id, GLsizei readBufferOffset);
 void UpdateProgramPipelineID(GLuint id, GLsizei readBufferOffset);
 void UpdateQueryID(GLuint id, GLsizei readBufferOffset);
@@ -217,6 +220,7 @@ void UpdateVertexArrayID(GLuint id, GLsizei readBufferOffset);
 void SetCurrentContextID(GLuint id);
 
 void SetFramebufferID(GLuint id);
+void SetFramebufferID2(GLuint contextID, GLuint id);
 void SetBufferID(GLuint id);
 void SetRenderbufferID(GLuint id);
 void SetTextureID(GLuint id);
@@ -270,6 +274,7 @@ void CreateNativeClientBufferANDROID(const EGLint *attrib_list, uintptr_t client
 void CreateContext(GLuint contextID);
 
 void ValidateSerializedState(const char *serializedState, const char *fileName, uint32_t line);
+
 #define VALIDATE_CHECKPOINT(STATE) ValidateSerializedState(STATE, __FILE__, __LINE__)
 
 #if defined(__cplusplus)

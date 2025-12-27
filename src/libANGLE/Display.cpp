@@ -377,7 +377,9 @@ EGLAttrib GetDeviceTypeFromEnvironment()
 
 EGLAttrib GetPlatformTypeFromEnvironment()
 {
-#if defined(ANGLE_USE_OZONE)
+#if defined(OSOHOS)
+    return EGL_PLATFORM_VULKAN_DISPLAY_MODE_SIMPLE_ANGLE;
+#elif defined(ANGLE_USE_OZONE)
     return 0;
 #elif defined(ANGLE_USE_X11)
     return EGL_PLATFORM_X11_EXT;
@@ -387,9 +389,11 @@ EGLAttrib GetPlatformTypeFromEnvironment()
     return EGL_PLATFORM_VULKAN_DISPLAY_MODE_SIMPLE_ANGLE;
 #elif defined(ANGLE_USE_VULKAN_DISPLAY) && defined(ANGLE_VULKAN_DISPLAY_MODE_HEADLESS)
     return EGL_PLATFORM_VULKAN_DISPLAY_MODE_HEADLESS_ANGLE;
+#elif defined(OSOHOS)
+    return EGL_PLATFORM_VULKAN_DISPLAY_MODE_SIMPLE_ANGLE;
 #else
     return 0;
-#endif  // defined(ANGLE_USE_OZONE)
+#endif  // defined(OSOHOS)
 }
 
 rx::DisplayImpl *CreateDisplayFromAttribs(EGLAttrib displayType,

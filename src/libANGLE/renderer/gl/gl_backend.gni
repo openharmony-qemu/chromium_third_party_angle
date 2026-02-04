@@ -160,6 +160,14 @@ if (is_android) {
   ]
 }
 
+if (is_arkweb) {
+  gl_backend_sources += [
+    "../../../../../../arkweb/chromium_ext/third_party/angle/src/libANGLE/renderer/gl/egl/ohos/DisplayOhos.cpp",
+    "../../../../../../arkweb/chromium_ext/third_party/angle/src/libANGLE/renderer/gl/egl/ohos/DisplayOhos.h",
+    "../../../../../../arkweb/chromium_ext/third_party/angle/src/libANGLE/renderer/gl/egl/ohos/NativeBufferImageSiblingOhos.cpp",
+    "../../../../../../arkweb/chromium_ext/third_party/angle/src/libANGLE/renderer/gl/egl/ohos/NativeBufferImageSiblingOhos.h",
+  ]
+}
 if (angle_enable_cgl) {
   gl_backend_sources += [
     "cgl/ContextCGL.cpp",

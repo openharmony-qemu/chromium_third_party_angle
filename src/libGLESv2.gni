@@ -148,6 +148,13 @@ if (is_win) {
   }
 }
 
+if (is_arkweb) {
+  libangle_common_sources += [
+    "../../arkweb/chromium_ext/third_party/angle/src/common/ohos_util.h",
+    "../../arkweb/chromium_ext/third_party/angle/src/common/ohos_util.cpp",
+  ]
+}
+
 libangle_image_util_headers = [
   "src/image_util/AstcDecompressor.h",
   "src/image_util/copyimage.h",

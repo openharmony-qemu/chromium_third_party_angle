@@ -46,6 +46,10 @@ if (angle_has_build) {
     import("//build/config/android/config.gni")
   }
 
+  if (is_arkweb) {
+    import("//build/config/ohos/config.gni")
+  }
+
   if (is_win) {
     import("//build/config/win/visual_studio_version.gni")
   }

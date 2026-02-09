@@ -203,6 +203,7 @@ IGNORED_INCLUDES = {
     b'libANGLE/renderer/gl/egl/android/DisplayAndroid.h',
     b'libANGLE/renderer/gl/egl/DisplayEGL.h',
     b'libANGLE/renderer/gl/egl/gbm/DisplayGbm.h',
+    b'arkweb/chromium_ext/third_party/angle/src/libANGLE/renderer/gl/egl/ohos/DisplayOhos.h',
     b'libANGLE/renderer/gl/glx/DisplayGLX.h',
     b'libANGLE/renderer/gl/glx/DisplayGLX_api.h',
     b'libANGLE/renderer/gl/wgl/DisplayWGL.h',

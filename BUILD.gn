@@ -26,6 +26,9 @@ if (angle_has_build) {
     import("//build/config/android/rules.gni")
     import("android/angle_apk.gni")
   }
+  if (is_arkweb) {
+    import("//build/config/ohos/config.gni")
+  }
 } else {
   using_sanitizer = false
 }
@@ -1457,6 +1460,9 @@ angle_libGLESv2("libGLESv2") {
     deps = [ ":libANGLE_with_capture" ]
   } else {
     deps = [ ":libANGLE" ]
+  }
+  if (is_arkweb) {
+    deps += [ "//base" ]
   }
 }
 

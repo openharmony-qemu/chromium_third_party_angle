@@ -160,6 +160,14 @@ angle_unittests_wgsl_sources = [ "../tests/compiler_tests/WGSLOutput_test.cpp" ]
 
 angle_unittests_sources += [ "compiler_tests/ImmutableString_test_autogen.cpp" ]
 
+if (is_arkweb) {
+  angle_unittests_sources += [
+    "../../arkweb/chromium_ext/third_party/angle/src/common/ohos_util_unittest.cpp",
+    "../../arkweb/chromium_ext/third_party/angle/src/libANGLE/renderer/gl/egl/ohos/DisplayOhos_unittest.cpp",
+    "../../arkweb/chromium_ext/third_party/angle/src/libANGLE/renderer/gl/egl/ohos/NativeBufferImageSiblingOhos_unittest.cpp",
+  ]
+}
+
 if (!is_android && !is_fuchsia && !is_ios) {
   angle_unittests_sources += [ "test_utils/runner/TestSuite_unittest.cpp" ]
 }

@@ -26,6 +26,9 @@ if (angle_has_build) {
     import("//build/config/android/rules.gni")
     import("android/angle_apk.gni")
   }
+  if (is_arkweb) {
+    import("//build/config/ohos/config.gni")
+  }
 } else {
   using_sanitizer = false
 }
@@ -706,7 +709,7 @@ angle_static_library("angle_gpu_info_util") {
     libs += [ "dxgi.lib" ]
   }
 
-  if (is_linux || is_chromeos) {
+  if (is_linux || is_chromeos || is_ohos) {
     sources += libangle_gpu_info_util_linux_sources
 
     if (angle_use_x11 && angle_has_build) {
@@ -754,7 +757,8 @@ angle_source_set("angle_translator_headers") {
   public_deps = [ ":includes" ]
 }
 
-angle_static_library("translator") {
+template("translator_lib") {
+  angle_static_library(target_name) {
   sources = angle_translator_sources
   defines = []
 
@@ -792,6 +796,7 @@ angle_static_library("translator") {
     defines += [ "ANGLE_ENABLE_HLSL" ]
   }
 
+    if (!invoker.gl_d3d_only) {
   if (angle_enable_vulkan || use_fuzzing_engine) {
     _needs_glsl_base = true
     _needs_glsl_and_vulkan_base = true
@@ -813,6 +818,7 @@ angle_static_library("translator") {
     sources += angle_translator_lib_wgsl_sources
     defines += [ "ANGLE_ENABLE_WGPU" ]
   }
+    }
 
   if (_needs_glsl_base) {
     sources += angle_translator_glsl_base_sources
@@ -856,6 +862,17 @@ angle_static_library("translator") {
     # Necessary to suppress some system header xtree warnings in Release.
     # For some reason this warning doesn't get triggered in Chromium
     cflags = [ "/wd4718" ]
+  }
+}
+}
+
+translator_lib("translator") {
+  gl_d3d_only = false
+}
+
+if (angle_enable_essl || angle_enable_glsl || angle_enable_hlsl) {
+  translator_lib("translator_gl_d3d_only") {
+    gl_d3d_only = true
   }
 }
 
@@ -1457,6 +1474,9 @@ angle_libGLESv2("libGLESv2") {
     deps = [ ":libANGLE_with_capture" ]
   } else {
     deps = [ ":libANGLE" ]
+  }
+  if (is_arkweb) {
+    deps += [ "//base" ]
   }
 }
 

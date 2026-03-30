@@ -71,6 +71,8 @@
 #        endif
 #    elif defined(ANGLE_PLATFORM_ANDROID)
 #        include "libANGLE/renderer/gl/egl/android/DisplayAndroid.h"
+#    elif defined(ANGLE_PLATFORM_OHOS)
+#        include "../../../../../src/arkweb/chromium_ext/third_party/angle/src/libANGLE/renderer/gl/egl/ohos/DisplayOhos.h"
 #    else
 #        error Unsupported OpenGL platform.
 #    endif
@@ -341,7 +343,7 @@ EGLAttrib GetDisplayTypeFromEnvironment()
 #elif defined(ANGLE_ENABLE_VULKAN) && defined(ANGLE_PLATFORM_ANDROID)
     return EGL_PLATFORM_ANGLE_TYPE_VULKAN_ANGLE;
 #elif defined(ANGLE_ENABLE_OPENGL)
-#    if defined(ANGLE_PLATFORM_ANDROID) || defined(ANGLE_USE_GBM)
+#    if defined(ANGLE_PLATFORM_ANDROID) || defined(ANGLE_USE_GBM) || defined(ANGLE_PLATFORM_OHOS)
     return EGL_PLATFORM_ANGLE_TYPE_OPENGLES_ANGLE;
 #    else
     return EGL_PLATFORM_ANGLE_TYPE_OPENGL_ANGLE;
@@ -377,7 +379,9 @@ EGLAttrib GetDeviceTypeFromEnvironment()
 
 EGLAttrib GetPlatformTypeFromEnvironment()
 {
-#if defined(ANGLE_USE_OZONE)
+#if defined(OSOHOS)
+    return EGL_PLATFORM_VULKAN_DISPLAY_MODE_SIMPLE_ANGLE;
+#elif defined(ANGLE_USE_OZONE)
     return 0;
 #elif defined(ANGLE_USE_X11)
     return EGL_PLATFORM_X11_EXT;
@@ -387,9 +391,11 @@ EGLAttrib GetPlatformTypeFromEnvironment()
     return EGL_PLATFORM_VULKAN_DISPLAY_MODE_SIMPLE_ANGLE;
 #elif defined(ANGLE_USE_VULKAN_DISPLAY) && defined(ANGLE_VULKAN_DISPLAY_MODE_HEADLESS)
     return EGL_PLATFORM_VULKAN_DISPLAY_MODE_HEADLESS_ANGLE;
+#elif defined(OSOHOS)
+    return EGL_PLATFORM_VULKAN_DISPLAY_MODE_SIMPLE_ANGLE;
 #else
     return 0;
-#endif  // defined(ANGLE_USE_OZONE)
+#endif  // defined(OSOHOS)
 }
 
 rx::DisplayImpl *CreateDisplayFromAttribs(EGLAttrib displayType,
@@ -464,6 +470,10 @@ rx::DisplayImpl *CreateDisplayFromAttribs(EGLAttrib displayType,
             impl = nullptr;
             break;
 
+#    elif defined(ANGLE_PLATFORM_OHOS)
+            // No GL support on this platform, fail display creation.
+            impl = nullptr;
+            break;
 #    else
 #        error Unsupported OpenGL platform.
 #    endif
@@ -513,6 +523,8 @@ rx::DisplayImpl *CreateDisplayFromAttribs(EGLAttrib displayType,
             }
 #    elif defined(ANGLE_PLATFORM_ANDROID)
             impl = new rx::DisplayAndroid(state);
+#    elif defined(ANGLE_PLATFORM_OHOS)
+            impl = new rx::DisplayOhos(state);
 #    else
             // No GLES support on this platform, fail display creation.
             impl = nullptr;

@@ -139,7 +139,8 @@ struct hash<rx::vk::MemoryAllocInfoMapKey>
 
 namespace rx
 {
-
+namespace vk
+{
 // Memory tracker for allocations and deallocations, which is used in vk::Renderer.
 class MemoryAllocationTracker : angle::NonCopyable
 {
@@ -226,6 +227,7 @@ class MemoryAllocationTracker : angle::NonCopyable
     using MemoryAllocInfoMap = angle::HashMap<vk::MemoryAllocInfoMapKey, vk::MemoryAllocationInfo>;
     std::unordered_map<angle::BacktraceInfo, MemoryAllocInfoMap> mMemoryAllocationRecord;
 };
+}  // namespace vk
 }  // namespace rx
 
 #endif  // LIBANGLE_RENDERER_VULKAN_MEMORYTRACKING_H_

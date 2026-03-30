@@ -1281,6 +1281,7 @@ bool IsExternalImageTarget(EGLenum target)
         case EGL_LINUX_DMA_BUF_EXT:
         case EGL_METAL_TEXTURE_ANGLE:
         case EGL_VULKAN_IMAGE_ANGLE:
+        case EGL_NATIVE_BUFFER_OHOS:
             return true;
 
         default:

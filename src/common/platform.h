@@ -20,7 +20,10 @@
 #elif defined(ANDROID) && !defined(ANGLE_ANDROID_DMA_BUF)
 #    define ANGLE_PLATFORM_ANDROID 1
 #    define ANGLE_PLATFORM_POSIX 1
-#elif defined(__linux__) || defined(EMSCRIPTEN)
+#elif defined(__OHOS__)
+#    define ANGLE_PLATFORM_OHOS 1
+#    define ANGLE_PLATFORM_POSIX 1
+#elif defined(__linux__) || defined(EMSCRIPTEN) || defined(OSOHOS)
 #    define ANGLE_PLATFORM_LINUX 1
 #    define ANGLE_PLATFORM_POSIX 1
 #elif defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) ||              \

@@ -107,7 +107,9 @@ EGLSyncImpl *DisplayEGL::createSync()
 
 const char *DisplayEGL::getEGLPath() const
 {
-#if defined(ANGLE_PLATFORM_ANDROID)
+#if defined(ANGLE_PLATFORM_OHOS)
+    return "/system/lib64/libEGL.so";
+#elif defined(ANGLE_PLATFORM_ANDROID)
 #    if defined(__LP64__)
     return "/system/lib64/libEGL.so";
 #    else

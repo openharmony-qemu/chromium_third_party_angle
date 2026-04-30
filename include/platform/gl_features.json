@@ -844,6 +844,14 @@
                 "Disable GL_KHR_blend_equation_advanced due to various driver issues."
             ],
             "issue": "https://anglebug.com/42267098"
+        },
+        {
+            "name": "validate_max_per_stage_uniform_blocks_at_compile_time",
+            "category": "Workarounds",
+            "description": [
+                "Validate GL_MAX_*_UNIFORM_BLOCKS at compile time instead of link time to work around compiler bugs."
+            ],
+            "issue": "http://crbug.com/475877320"
         }
     ]
 }

@@ -445,6 +445,7 @@ enum class Feature
     UseVertexInputBindingStrideDynamicState,
     UseVkEventForImageBarrier,
     UseVmaForImageSuballocation,
+    ValidateMaxPerStageUniformBlocksAtCompileTime,
     VaryingsRequireMatchingPrecisionInSpirv,
     VerifyPipelineCacheInBlobCache,
     VertexIDDoesNotIncludeBaseVertex,

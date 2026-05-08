@@ -244,6 +244,8 @@ void InitBuiltInResources(ShBuiltInResources *resources)
     resources->MaxFragmentInputVectors = 15;
     resources->MinProgramTexelOffset   = -8;
     resources->MaxProgramTexelOffset   = 7;
+    resources->MaxFragmentUniformBlocks = 12;
+    resources->MaxVertexUniformBlocks   = 12;
 
     // Extensions constants.
     resources->MaxDualSourceDrawBuffers = 0;
@@ -302,6 +304,8 @@ void InitBuiltInResources(ShBuiltInResources *resources)
     resources->MaxUniformBufferBindings       = 32;
     resources->MaxShaderStorageBufferBindings = 4;
 
+    resources->MaxComputeUniformBlocks = 12;
+
     resources->MaxGeometryUniformComponents     = 1024;
     resources->MaxGeometryUniformBlocks         = 12;
     resources->MaxGeometryInputComponents       = 64;
@@ -314,6 +318,7 @@ void InitBuiltInResources(ShBuiltInResources *resources)
     resources->MaxGeometryShaderStorageBlocks   = 0;
     resources->MaxGeometryShaderInvocations     = 32;
     resources->MaxGeometryImageUniforms         = 0;
+    resources->MaxGeometryUniformBlocks         = 12;
 
     resources->MaxTessControlInputComponents       = 64;
     resources->MaxTessControlOutputComponents      = 64;
@@ -323,6 +328,7 @@ void InitBuiltInResources(ShBuiltInResources *resources)
     resources->MaxTessControlImageUniforms         = 0;
     resources->MaxTessControlAtomicCounters        = 0;
     resources->MaxTessControlAtomicCounterBuffers  = 0;
+    resources->MaxTessControlUniformBlocks         = 12;
 
     resources->MaxTessPatchComponents = 120;
     resources->MaxPatchVertices       = 32;
@@ -335,6 +341,7 @@ void InitBuiltInResources(ShBuiltInResources *resources)
     resources->MaxTessEvaluationImageUniforms        = 0;
     resources->MaxTessEvaluationAtomicCounters       = 0;
     resources->MaxTessEvaluationAtomicCounterBuffers = 0;
+    resources->MaxTessEvaluationUniformBlocks        = 12;
 
     resources->SubPixelBits = 8;
 

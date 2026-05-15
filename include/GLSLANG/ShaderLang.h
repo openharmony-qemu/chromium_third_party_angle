@@ -26,7 +26,7 @@
 
 // Version number for shader translation API.
 // It is incremented every time the API changes.
-#define ANGLE_SH_VERSION 386
+#define ANGLE_SH_VERSION 387
 
 enum ShShaderSpec
 {
@@ -409,6 +409,11 @@ struct ShCompileOptions
     // two meiump values, but ARM compiler is comparing a 32 bit value with a 16 bit value,
     // causing the comparison to fail.
     uint64_t castMediumpFloatTo16Bit : 1;
+
+    // Whether |#extension ... : disable| is allowed after non-preprocessor tokens in WebGL.
+    // WebGL1 deviates from GLSL by allowing |#extension| directives after non-preprocessor tokens.
+    // This option restricts this deviation to non-disable behaviors.
+    uint64_t allowExtensionDisableAfterNonPPTokensInWebGL : 1;
 
     // anglebug.com/42265995: packUnorm4x8 fails on Pixel 4 if it is not passed a highp vec4.
     // TODO(anglebug.com/42265995): This workaround is currently only applied for pixel local

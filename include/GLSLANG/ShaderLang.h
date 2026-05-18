@@ -26,7 +26,7 @@
 
 // Version number for shader translation API.
 // It is incremented every time the API changes.
-#define ANGLE_SH_VERSION 386
+#define ANGLE_SH_VERSION 387
 
 enum ShShaderSpec
 {
@@ -401,6 +401,11 @@ struct ShCompileOptions
     // Add round() after applying dither.  This works around a Qualcomm quirk where values can get
     // ceil()ed instead.
     uint64_t roundOutputAfterDithering : 1;
+
+    // Whether |#extension ... : disable| is allowed after non-preprocessor tokens in WebGL.
+    // WebGL1 deviates from GLSL by allowing |#extension| directives after non-preprocessor tokens.
+    // This option restricts this deviation to non-disable behaviors.
+    uint64_t allowExtensionDisableAfterNonPPTokensInWebGL : 1;
 
     // issuetracker.google.com/274859104 add OpQuantizeToF16 instruction to cast
     // mediump floating-point values to 16 bit. ARM compiler utilized RelaxedPrecision

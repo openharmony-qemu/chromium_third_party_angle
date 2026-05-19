@@ -838,11 +838,11 @@ const char *Texture2DArray()
 precision highp float;
 uniform highp sampler2DArray tex2DArray;
 uniform int slice;
-int vec2 v_texCoord;
+in vec2 v_texCoord;
 out vec4 fragColor;
 void main()
 {
-  fragColor = texture(tex2DArray, vec3(v_texCoord, float(slice)));
+    fragColor = texture(tex2DArray, vec3(v_texCoord, float(slice)));
 })";
 }
 

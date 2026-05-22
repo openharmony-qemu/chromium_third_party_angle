@@ -309,7 +309,13 @@ TParseContext::TParseContext(TSymbolTable &symt,
       mDefaultBufferBlockStorage(sh::IsWebGLBasedSpec(spec) ? EbsStd140 : EbsShared),
       mDiagnostics(diagnostics),
       mDirectiveHandler(ext, *mDiagnostics, mShaderVersion, mShaderType),
-      mPreprocessor(mDiagnostics, &mDirectiveHandler, angle::pp::PreprocessorSettings(spec)),
+      mPreprocessor(mDiagnostics,
+                    &mDirectiveHandler,
+                    angle::pp::PreprocessorSettings(
+                        spec,
+                        options.allowExtensionDisableAfterNonPPTokensInWebGL
+                            ? angle::pp::WebGLExtensionDisableBehavior::AnywhereInShader
+                            : angle::pp::WebGLExtensionDisableBehavior::Standard)),
       mScanner(nullptr),
       mMaxExpressionComplexity(static_cast<size_t>(options.limitExpressionComplexity
                                                        ? resources.MaxExpressionComplexity

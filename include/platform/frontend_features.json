@@ -225,6 +225,13 @@
                 "Enable multi-draw and base vertex base instance extensions for non-WebGL contexts if they are emulated."
             ],
             "issue": "http://anglebug.com/355645824"
+        },
+        {
+            "name": "allow_extension_disable_after_non_pp_tokens",
+            "category": "Features",
+            "description": [
+                "Allow #extension ... : disable after non preprocessor tokens in WebGL."
+           ]
         }
     ]
 }

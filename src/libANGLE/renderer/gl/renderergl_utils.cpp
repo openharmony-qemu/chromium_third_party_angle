@@ -2721,6 +2721,10 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
     // number of samples in currently bound FBO and require to reset sample
     // coverage each time FBO changes.
     ANGLE_FEATURE_CONDITION(features, resetSampleCoverageOnFBOChange, isQualcomm);
+
+    // IMG GL drivers crash while compiling shaders with more than the limit of uniform blocks.
+    ANGLE_FEATURE_CONDITION(features, validateMaxPerStageUniformBlocksAtCompileTime,
+                            IsPowerVR(vendor));
 }
 
 void InitializeFrontendFeatures(const FunctionsGL *functions, angle::FrontendFeatures *features)

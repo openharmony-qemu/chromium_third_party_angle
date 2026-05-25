@@ -1513,6 +1513,8 @@ void TCompiler::setResourceString()
         << ":MaxFragmentInputVectors:" << mResources.MaxFragmentInputVectors
         << ":MinProgramTexelOffset:" << mResources.MinProgramTexelOffset
         << ":MaxProgramTexelOffset:" << mResources.MaxProgramTexelOffset
+        << ":MaxFragmentUniformBlocks:" << mResources.MaxFragmentUniformBlocks
+        << ":MaxVertexUniformBlocks:" << mResources.MaxVertexUniformBlocks
         << ":MaxDualSourceDrawBuffers:" << mResources.MaxDualSourceDrawBuffers
         << ":MaxViewsOVR:" << mResources.MaxViewsOVR
         << ":NV_draw_buffers:" << mResources.NV_draw_buffers
@@ -1560,6 +1562,7 @@ void TCompiler::setResourceString()
         << ":MaxFragmentAtomicCounterBuffers:" << mResources.MaxFragmentAtomicCounterBuffers
         << ":MaxCombinedAtomicCounterBuffers:" << mResources.MaxCombinedAtomicCounterBuffers
         << ":MaxAtomicCounterBufferSize:" << mResources.MaxAtomicCounterBufferSize
+        << ":MaxComputeUnformBlocks:" << mResources.MaxComputeUniformBlocks
         << ":MaxGeometryUniformComponents:" << mResources.MaxGeometryUniformComponents
         << ":MaxGeometryUniformBlocks:" << mResources.MaxGeometryUniformBlocks
         << ":MaxGeometryInputComponents:" << mResources.MaxGeometryInputComponents
@@ -1572,6 +1575,7 @@ void TCompiler::setResourceString()
         << ":MaxGeometryShaderStorageBlocks:" << mResources.MaxGeometryShaderStorageBlocks
         << ":MaxGeometryShaderInvocations:" << mResources.MaxGeometryShaderInvocations
         << ":MaxGeometryImageUniforms:" << mResources.MaxGeometryImageUniforms
+        << ":MaxGeometryUniformBlocks:" << mResources.MaxGeometryUniformBlocks
         << ":MaxClipDistances" << mResources.MaxClipDistances
         << ":MaxCullDistances" << mResources.MaxCullDistances
         << ":MaxCombinedClipAndCullDistances" << mResources.MaxCombinedClipAndCullDistances
@@ -1583,6 +1587,7 @@ void TCompiler::setResourceString()
         << ":MaxTessControlImageUniforms:" << mResources.MaxTessControlImageUniforms
         << ":MaxTessControlAtomicCounters:" << mResources.MaxTessControlAtomicCounters
         << ":MaxTessControlAtomicCounterBuffers:" << mResources.MaxTessControlAtomicCounterBuffers
+        << ":MaxTessControlUniformBlocks:" << mResources.MaxTessControlUniformBlocks
         << ":MaxTessPatchComponents:" << mResources.MaxTessPatchComponents
         << ":MaxPatchVertices:" << mResources.MaxPatchVertices
         << ":MaxTessGenLevel:" << mResources.MaxTessGenLevel
@@ -1592,7 +1597,9 @@ void TCompiler::setResourceString()
         << ":MaxTessEvaluationUniformComponents:" << mResources.MaxTessEvaluationUniformComponents
         << ":MaxTessEvaluationImageUniforms:" << mResources.MaxTessEvaluationImageUniforms
         << ":MaxTessEvaluationAtomicCounters:" << mResources.MaxTessEvaluationAtomicCounters
-        << ":MaxTessEvaluationAtomicCounterBuffers:" << mResources.MaxTessEvaluationAtomicCounterBuffers;
+        << ":MaxTessEvaluationAtomicCounterBuffers:" << mResources.MaxTessEvaluationAtomicCounterBuffers
+        << ":MaxTessControlUniformBlocks:" << mResources.MaxTessControlUniformBlocks
+    ;
     // clang-format on
 
     mBuiltInResourcesString = strstream.str();

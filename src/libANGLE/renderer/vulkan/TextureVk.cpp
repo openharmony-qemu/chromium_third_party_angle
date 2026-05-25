@@ -3052,8 +3052,9 @@ angle::Result TextureVk::reinitImageAsRenderable(ContextVk *contextVk, const vk:
         // invalidate must be called after wait for finish.
         ANGLE_TRY(srcBuffer->invalidate(renderer));
 
-        size_t dstBufferSize = sourceBox.width * sourceBox.height * sourceBox.depth *
-                               dstFormat.pixelBytes * layerCount;
+        size_t dstBufferSize =
+            static_cast<size_t>(sourceBox.width) * static_cast<size_t>(sourceBox.height) *
+            static_cast<size_t>(sourceBox.depth) * dstFormat.pixelBytes * layerCount;
 
         // Allocate memory in the destination texture for the copy/conversion.
         uint8_t *dstData = nullptr;

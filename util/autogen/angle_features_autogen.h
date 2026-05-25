@@ -457,6 +457,7 @@ enum class Feature
     UseVkEventForBufferBarrier,
     UseVkEventForImageBarrier,
     UseVmaForImageSuballocation,
+    ValidateMaxPerStageUniformBlocksAtCompileTime,
     VaryingsRequireMatchingPrecisionInSpirv,
     VerifyPipelineCacheInBlobCache,
     VertexIDDoesNotIncludeBaseVertex,

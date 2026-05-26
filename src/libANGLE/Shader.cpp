@@ -675,6 +675,11 @@ void Shader::compile(const Context *context, angle::JobResultExpectancy resultEx
         options.enforcePackingRestrictions = true;
         options.initSharedVariables        = true;
 
+        if (context->getFrontendFeatures().allowExtensionDisableAfterNonPpTokens.enabled)
+        {
+            options.allowExtensionDisableAfterNonPPTokensInWebGL = true;
+        }
+
         if (context->getFrontendFeatures().rejectWebglShadersWithUndefinedBehavior.enabled)
         {
             options.rejectWebglShadersWithUndefinedBehavior = true;

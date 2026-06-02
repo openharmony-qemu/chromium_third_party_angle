@@ -8567,7 +8567,8 @@ angle::Result ImageHelper::updateSubresourceOnHost(ContextVk *contextVk,
 
 angle::Result ImageHelper::reformatStagedBufferUpdates(ContextVk *contextVk,
                                                        angle::FormatID srcFormatID,
-                                                       angle::FormatID dstFormatID)
+                                                       angle::FormatID dstFormatID,
+                                                       gl::TextureType dstTextureType)
 {
     const angle::Format &srcFormat = angle::Format::Get(srcFormatID);
     const angle::Format &dstFormat = angle::Format::Get(dstFormatID);
@@ -8594,6 +8595,10 @@ angle::Result ImageHelper::reformatStagedBufferUpdates(ContextVk *contextVk,
                 GLuint srcDataDepthPitch = srcDataRowPitch * copy.imageExtent.height;
                 GLuint dstDataDepthPitch = dstDataRowPitch * copy.imageExtent.height;
 
+                const uint32_t depthOrLayerCount = dstTextureType == gl::TextureType::_3D
+                                                       ? copy.imageExtent.depth
+                                                       : copy.imageSubresource.layerCount;
+
                 // Retrieve source buffer
                 vk::BufferHelper *srcBuffer = update.data.buffer.bufferHelper;
                 ASSERT(srcBuffer->isMapped());
@@ -8608,7 +8613,7 @@ angle::Result ImageHelper::reformatStagedBufferUpdates(ContextVk *contextVk,
 
                 uint8_t *dstData;
                 VkDeviceSize dstBufferOffset;
-                size_t dstBufferSize = dstDataDepthPitch * copy.imageExtent.depth;
+                size_t dstBufferSize = dstDataDepthPitch * depthOrLayerCount;
                 ANGLE_TRY(contextVk->initBufferForImageCopy(
                     dstBuffer, dstBufferSize, MemoryCoherency::CachedNonCoherent, dstFormatID,
                     &dstBufferOffset, &dstData));
@@ -8620,8 +8625,7 @@ angle::Result ImageHelper::reformatStagedBufferUpdates(ContextVk *contextVk,
                                   pixelReadFunction, dstData, dstDataRowPitch, dstFormat.pixelBytes,
                                   dstDataDepthPitch, pixelWriteFunction, dstFormatInfo.format,
                                   dstFormatInfo.componentType, copy.imageExtent.width,
-                                  copy.imageExtent.height, copy.imageExtent.depth, false, false,
-                                  false);
+                                  copy.imageExtent.height, depthOrLayerCount, false, false, false);
 
                 // Replace srcBuffer with dstBuffer
                 update.data.buffer.bufferHelper            = dstBuffer;

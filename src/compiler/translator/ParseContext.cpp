@@ -45,6 +45,9 @@ namespace
 {
 const int kWebGLMaxStructNesting = 4;
 
+// The 1024 character identifier limit, `-2` for the `_u`
+constexpr size_t kMaxAvailableIdentifierLength = 1022;
+
 bool ShouldEnforceESSL100LoopAndIndexingLimitations(ShShaderSpec spec,
                                                     int shaderVersion,
                                                     const ShCompileOptions &compileOptions)
@@ -480,6 +483,7 @@ TParseContext::TParseContext(TSymbolTable &symt,
       mGeometryInputArraySize(0),
       mMaxPatchVertices(resources.MaxPatchVertices),
       mTessControlShaderOutputVertices(0),
+      mUserVariableNamePrefix(resources.UserVariableNamePrefix),
       mTessEvaluationShaderInputPrimitiveType(EtetUndefined),
       mTessEvaluationShaderInputVertexSpacingType(EtetUndefined),
       mTessEvaluationShaderInputOrderingType(EtetUndefined),
@@ -1129,6 +1133,18 @@ bool TParseContext::checkIsNotReserved(const TSourceLoc &line, const ImmutableSt
                     "unintented behaviors are possible",
                     identifier.data());
         }
+    }
+
+    // Validate that identifier names won't conflict with the name hashing done later.
+    // See https://crbug.com/499176133
+    if ((identifier.length() >= kMaxAvailableIdentifierLength) &&
+        mUserVariableNamePrefix != '\0' && identifier[0] == '_' &&
+        identifier[1] == mUserVariableNamePrefix)
+    {
+        std::string err = "identifiers beginning with `_u` must be < " +
+                          std::to_string(kMaxAvailableIdentifierLength) + " characters";
+        error(line, err.c_str(), identifier);
+        return false;
     }
     return true;
 }

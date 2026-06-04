@@ -46,6 +46,8 @@ ANGLE_INLINE bool operator<(const AttributeRange &a, const AttributeRange &b)
 class VertexArrayVk : public VertexArrayImpl
 {
   public:
+    using VertexArrayGeneration = UniqueSerial;
+
     VertexArrayVk(ContextVk *contextVk,
                   const gl::VertexArrayState &state,
                   const gl::VertexArrayBuffers &vertexArrayBuffers);

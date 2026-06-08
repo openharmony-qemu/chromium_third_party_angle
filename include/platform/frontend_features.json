@@ -257,6 +257,13 @@
                 "Force every context into debug mode as if EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR was used."
             ],
             "issue": "https://anglebug.com/423956139"
+        },
+        {
+            "name": "allow_extension_disable_after_non_pp_tokens",
+            "category": "Features",
+            "description": [
+                "Allow #extension ... : disable after non preprocessor tokens in WebGL."
+           ]
         }
     ]
 }

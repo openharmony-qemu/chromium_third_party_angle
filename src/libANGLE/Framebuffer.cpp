@@ -2796,7 +2796,6 @@ bool Framebuffer::partialBufferClearNeedsInit(const Context *context,
     switch (bufferType)
     {
         case GL_COLOR:
-            ASSERT(drawBuffers.any());
             return partialClearNeedsInit(context, drawBuffers, false, false);
         case GL_DEPTH:
             return partialClearNeedsInit(context, {}, true, false);

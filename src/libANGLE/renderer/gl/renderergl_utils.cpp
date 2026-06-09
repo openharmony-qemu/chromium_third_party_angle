@@ -3160,6 +3160,11 @@ angle::Result ShouldApplyLastRowPaddingWorkaround(ContextGL *contextGL,
                                                   const void *pixels,
                                                   bool *shouldApplyOut)
 {
+    if (size.width == 0 || size.height == 0 || size.depth == 0)
+    {
+        *shouldApplyOut = false;
+        return angle::Result::Continue;
+    }
     if (pixelBuffer == nullptr)
     {
         *shouldApplyOut = false;

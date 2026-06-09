@@ -336,6 +336,9 @@ angle::Result TextureGL::setSubImage(const gl::Context *context,
                                      gl::Buffer *unpackBuffer,
                                      const uint8_t *pixels)
 {
+    ASSERT(area.width > 0);
+    ASSERT(area.height > 0);
+    ASSERT(area.depth > 0);
     ASSERT(TextureTargetToType(index.getTarget()) == getType());
 
     ContextGL *contextGL              = GetImplAs<ContextGL>(context);
@@ -546,7 +549,7 @@ angle::Result TextureGL::setSubImagePaddingWorkaround(const gl::Context *context
         {
             // Do not include skipBytes in the last image pixel start offset as it will be done by
             // the driver
-            GLint lastImageOffset          = (area.depth - 1) * imageBytes;
+            size_t lastImageOffset         = (area.depth - 1) * imageBytes;
             const GLubyte *lastImagePixels = pixels + lastImageOffset;
             ANGLE_GL_TRY(context, functions->texSubImage3D(
                                       ToGLenum(target), static_cast<GLint>(level), area.x, area.y,
@@ -557,9 +560,12 @@ angle::Result TextureGL::setSubImagePaddingWorkaround(const gl::Context *context
         // Upload the last row of the last slice "manually"
         ANGLE_TRY(stateManager->setPixelUnpackState(context, directUnpack));
 
-        GLint lastRowOffset =
-            skipBytes + (area.depth - 1) * imageBytes + (area.height - 1) * rowBytes;
-        const GLubyte *lastRowPixels = pixels + lastRowOffset;
+        angle::CheckedNumeric<GLuint> checkedLastRowOffset = angle::base::CheckAdd(
+            angle::base::CheckAdd(
+                skipBytes, angle::base::CheckMul(angle::base::CheckSub(area.depth, 1), imageBytes)),
+            angle::base::CheckMul(angle::base::CheckSub(area.height, 1), rowBytes));
+        ANGLE_CHECK_GL_MATH(contextGL, checkedLastRowOffset.IsValid());
+        const GLubyte *lastRowPixels = pixels + checkedLastRowOffset.ValueOrDie();
         ANGLE_GL_TRY(context,
                      functions->texSubImage3D(ToGLenum(target), static_cast<GLint>(level), area.x,
                                               area.y + area.height - 1, area.z + area.depth - 1,
@@ -580,8 +586,10 @@ angle::Result TextureGL::setSubImagePaddingWorkaround(const gl::Context *context
         // Upload the last row "manually"
         ANGLE_TRY(stateManager->setPixelUnpackState(context, directUnpack));
 
-        GLint lastRowOffset          = skipBytes + (area.height - 1) * rowBytes;
-        const GLubyte *lastRowPixels = pixels + lastRowOffset;
+        angle::CheckedNumeric<GLuint> checkedLastRowOffset = angle::base::CheckAdd(
+            skipBytes, angle::base::CheckMul(angle::base::CheckSub(area.height, 1), rowBytes));
+        ANGLE_CHECK_GL_MATH(contextGL, checkedLastRowOffset.IsValid());
+        const GLubyte *lastRowPixels = pixels + checkedLastRowOffset.ValueOrDie();
         ANGLE_GL_TRY(context, functions->texSubImage2D(ToGLenum(target), static_cast<GLint>(level),
                                                        area.x, area.y + area.height - 1, area.width,
                                                        1, format, type, lastRowPixels));

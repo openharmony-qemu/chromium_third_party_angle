@@ -94,6 +94,7 @@
 42265226 VULKAN : GLSLTest_ES3.GLVertexIDIntegerTextureDrawElementsU8LineIds/* = SKIP
 235877059 VULKAN : MultisampleTestES3.ResolveToFBO/ES3_Vulkan_EmulatedPrerotation180 = SKIP
 235877059 VULKAN : MultisampleTestES3.ResolveToFBO/ES3_Vulkan_EmulatedPrerotation270 = SKIP
+506165684 VULKAN : RobustResourceInitTest.SampleReinitSampleRGB/* = SKIP
 // ANGLE is broken if a context is made current before a surface is created in the presence of multiple queue families
 42266900 VULKAN : EGLContextSharingTestNoFixture.*/*ForceDelayedDeviceCreationForTesting* = SKIP
 42266900 VULKAN : EGLSurfacelessContextTest.*/*ForceDelayedDeviceCreationForTesting* = SKIP
@@ -836,6 +837,13 @@ b/217922015 PIXEL6 VULKAN : GLSLTest_ES3.NestedPowFromUniform/* = SKIP
 42266242 PIXEL6 VULKAN : PixelLocalStorageTestES31.DrawStateReset/* = SKIP
 378404998 PIXEL6 VULKAN : VulkanPerformanceCounterTest_ES31.ColorMaskedFramebufferFetchDrawThenClear/* = SKIP
 b/330697097 PIXEL6 VULKAN : FramebufferTest_ES31.MultisampleResolveBothAttachments/* = SKIP
+
+// Pixel 10 expectations.
+499129768 PIXEL10 GLES : Texture2DNorm16TestES3.ReadbackWithPBO/* = SKIP
+500569110 PIXEL10 GLES : MSRTTES3Test.UnresolveWithAndWithoutStencil/* = SKIP
+501584689 PIXEL10 GLES : MSRTTSRGBES3Test.Basic/ES3_OpenGLES_RobustResourceInit = SKIP
+
+42265693 PIXEL10 VULKAN : FramebufferFetchES31.MultiSampledWithSampleID/* = SKIP
 
 // Some Metal tests fail on iOS Intel simulator
 40096874 IOS METAL : CubeMapTextureTest.SampleCoordinateTransformGrad/* = SKIP

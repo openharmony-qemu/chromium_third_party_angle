@@ -1721,6 +1721,8 @@ b/292285899 PIXEL4ORXL GLES : EGLSurfaceTest.DestroyAndRecreateWhileCurrent/* = 
 
 // WebGPU does not support BGRA
 42267264 WGPU : ClearTest.*BGRA* = SKIP
+// WebGPU error BufferOffset (5242862) is not a multiple of 4.
+496503799 WGPU : BufferDataTest.UnalignedVertexAttribPointer/* = SKIP
 
 // Fails on Vulkan
 406807990 VULKAN : TextureUploadFormatTest.AllWithPBO/* = SKIP

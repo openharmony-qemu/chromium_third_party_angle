@@ -4325,6 +4325,165 @@ void main()
     ASSERT_NE(currentStep, Step::Abort);
 }
 
+// Ensure vulkan backend is handling EGLImage multiple sibling properly and no UAF on
+// when sibling ImageHelper gets deleted.
+TEST_P(MultithreadingTest, EGLImageSiblingDeleteShouldNotUAF)
+{
+    ANGLE_SKIP_TEST_IF(!platformSupportsMultithreading());
+    // Bug is in ANGLE's Vulkan backend (vk_helpers.cpp).
+    ANGLE_SKIP_TEST_IF(!IsVulkan());
+    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_OES_EGL_image"));
+
+    EGLWindow *window = getEGLWindow();
+    EGLDisplay dpy    = window->getDisplay();
+
+    ANGLE_SKIP_TEST_IF(!IsEGLDisplayExtensionEnabled(dpy, "EGL_KHR_image_base"));
+    ANGLE_SKIP_TEST_IF(!IsEGLDisplayExtensionEnabled(dpy, "EGL_KHR_gl_texture_2D_image"));
+
+    // Release the test fixture's context: RunLockStepThreads spawns its own pair of
+    // share-group contexts and we don't want a third context muddying the iteration order.
+    EXPECT_EGL_TRUE(eglMakeCurrent(dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+
+    constexpr GLsizei kTexSize = 64;
+
+    std::mutex mutex;
+    std::condition_variable condVar;
+
+    enum class Step
+    {
+        Start,
+        T0CreatedImage,
+        T1CreatedSibling,
+        T0StartedRP,
+        T1StartedRP,
+        T0DeletedSiblingB,
+        Finish,
+        Abort,
+    };
+    Step currentStep = Step::Start;
+
+    EGLImage eglImage = EGL_NO_IMAGE_KHR;
+
+    auto thread0 = [&](EGLDisplay dpy, EGLSurface surface, EGLContext context) {
+        ThreadSynchronization<Step> threadSynchronization(&currentStep, &mutex, &condVar);
+
+        EXPECT_EGL_TRUE(eglMakeCurrent(dpy, surface, surface, context));
+        EXPECT_EGL_SUCCESS();
+
+        GLuint sourceTex = 0;
+        glGenTextures(1, &sourceTex);
+        glBindTexture(GL_TEXTURE_2D, sourceTex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kTexSize, kTexSize, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                     nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        ASSERT_GL_NO_ERROR();
+
+        eglImage = eglCreateImageKHR(
+            dpy, context, EGL_GL_TEXTURE_2D_KHR,
+            reinterpret_cast<EGLClientBuffer>(static_cast<uintptr_t>(sourceTex)), nullptr);
+        ASSERT_EGL_SUCCESS();
+        ASSERT_NE(eglImage, EGL_NO_IMAGE_KHR);
+
+        GLuint siblingB = 0;
+        glGenTextures(1, &siblingB);
+        glBindTexture(GL_TEXTURE_2D, siblingB);
+        glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, eglImage);
+        ASSERT_GL_NO_ERROR();
+
+        glDeleteTextures(1, &sourceTex);
+        ASSERT_GL_NO_ERROR();
+
+        threadSynchronization.nextStep(Step::T0CreatedImage);
+        ASSERT_TRUE(threadSynchronization.waitForStep(Step::T1CreatedSibling));
+
+        EXPECT_EGL_TRUE(eglDestroyImageKHR(dpy, eglImage));
+        eglImage = EGL_NO_IMAGE_KHR;
+
+        ANGLE_GL_PROGRAM(redProgram, essl1_shaders::vs::Simple(), essl1_shaders::fs::Red());
+
+        GLuint fbo = 0;
+        glGenFramebuffers(1, &fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, siblingB, 0);
+        ASSERT_EQ(glCheckFramebufferStatus(GL_FRAMEBUFFER),
+                  static_cast<GLenum>(GL_FRAMEBUFFER_COMPLETE));
+        glViewport(0, 0, kTexSize, kTexSize);
+
+        drawQuad(redProgram, essl1_shaders::PositionAttrib(), 0.5f);
+        ASSERT_GL_NO_ERROR();
+
+        threadSynchronization.nextStep(Step::T0StartedRP);
+        ASSERT_TRUE(threadSynchronization.waitForStep(Step::T1StartedRP));
+
+        glDeleteTextures(1, &siblingB);
+        ASSERT_GL_NO_ERROR();
+
+        threadSynchronization.nextStep(Step::T0DeletedSiblingB);
+
+        glDeleteFramebuffers(1, &fbo);
+        glFlush();
+
+        ASSERT_TRUE(threadSynchronization.waitForStep(Step::Finish));
+        EXPECT_EGL_TRUE(eglMakeCurrent(dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+    };
+
+    auto thread1 = [&](EGLDisplay dpy, EGLSurface surface, EGLContext context) {
+        ThreadSynchronization<Step> threadSynchronization(&currentStep, &mutex, &condVar);
+
+        ASSERT_TRUE(threadSynchronization.waitForStep(Step::T0CreatedImage));
+
+        EXPECT_EGL_TRUE(eglMakeCurrent(dpy, surface, surface, context));
+        EXPECT_EGL_SUCCESS();
+
+        GLuint siblingC = 0;
+        glGenTextures(1, &siblingC);
+        glBindTexture(GL_TEXTURE_2D, siblingC);
+        glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, eglImage);
+        ASSERT_GL_NO_ERROR();
+
+        threadSynchronization.nextStep(Step::T1CreatedSibling);
+        ASSERT_TRUE(threadSynchronization.waitForStep(Step::T0StartedRP));
+
+        ANGLE_GL_PROGRAM(greenProgram, essl1_shaders::vs::Simple(), essl1_shaders::fs::Green());
+
+        GLuint fbo = 0;
+        glGenFramebuffers(1, &fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, siblingC, 0);
+        ASSERT_EQ(glCheckFramebufferStatus(GL_FRAMEBUFFER),
+                  static_cast<GLenum>(GL_FRAMEBUFFER_COMPLETE));
+        glViewport(0, 0, kTexSize, kTexSize);
+
+        drawQuad(greenProgram, essl1_shaders::PositionAttrib(), 0.5f);
+        ASSERT_GL_NO_ERROR();
+
+        threadSynchronization.nextStep(Step::T1StartedRP);
+        ASSERT_TRUE(threadSynchronization.waitForStep(Step::T0DeletedSiblingB));
+
+        glDeleteTextures(1, &siblingC);
+        ASSERT_GL_NO_ERROR();
+
+        glFinish();
+
+        glDeleteFramebuffers(1, &fbo);
+        threadSynchronization.nextStep(Step::Finish);
+        EXPECT_EGL_TRUE(eglMakeCurrent(dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+    };
+
+    std::array<LockStepThreadFunc, 2> threadFuncs = {
+        std::move(thread0),
+        std::move(thread1),
+    };
+
+    RunLockStepThreads(getEGLWindow(), threadFuncs.size(), threadFuncs.data());
+
+    ASSERT_NE(currentStep, Step::Abort);
+
+    EXPECT_EGL_TRUE(
+        eglMakeCurrent(dpy, window->getSurface(), window->getSurface(), window->getContext()));
+}
+
 ANGLE_INSTANTIATE_TEST(
     MultithreadingTest,
     ES2_METAL(),

@@ -393,4 +393,34 @@ void ShareGroupVk::logBufferPools() const
         }
     }
 }
+
+void ShareGroupVk::finalizeImageLayoutInAllSharedContexts(vk::ImageHelper *image)
+{
+    if (image->useTileMemory())
+    {
+        for (auto context : getContexts())
+        {
+            ContextVk *sharedContextVk = vk::GetImpl(context.second);
+            sharedContextVk->removeImageWithTileMemory(image);
+        }
+    }
+
+    vk::ImageRenderPassUsage &imageRenderPassUsage = image->getRenderPassUsage();
+    if (imageRenderPassUsage.hasAttachmentUsage() || image->isForeignImage())
+    {
+        for (auto context : getContexts())
+        {
+            ContextVk *sharedContextVk = vk::GetImpl(context.second);
+            bool finalized             = sharedContextVk->finalizeImageLayout(image);
+
+            if ((finalized && imageRenderPassUsage.hasAttachmentUsage()) ||
+                (image->isForeignImage() && !image->isReleasedToForeign()))
+            {
+                (void)sharedContextVk->flushAndSubmitCommands(
+                    nullptr, nullptr, RenderPassClosureReason::ForeignImageRelease);
+                ASSERT(!sharedContextVk->hasForeignImagesToTransition());
+            }
+        }
+    }
+}
 }  // namespace rx

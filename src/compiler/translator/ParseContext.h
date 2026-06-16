@@ -990,6 +990,7 @@ class TParseContext : angle::NonCopyable
 
     int mMaxPatchVertices;
     int mTessControlShaderOutputVertices;
+    char mUserVariableNamePrefix;
     TLayoutTessEvaluationType mTessEvaluationShaderInputPrimitiveType;
     TLayoutTessEvaluationType mTessEvaluationShaderInputVertexSpacingType;
     TLayoutTessEvaluationType mTessEvaluationShaderInputOrderingType;

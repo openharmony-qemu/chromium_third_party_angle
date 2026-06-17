@@ -520,7 +520,7 @@ ANGLE_INLINE VertexArray::DirtyBindingBits VertexArray::bindVertexBufferImpl(con
             boundBuffer->addRef();
             boundBuffer->onNonTFBindingChanged(1);
             boundBuffer->addVertexArrayBinding(context, bindingIndex);
-            if (context->isWebGL() || context->isHardenedContext())
+            if (context->isWebGL())
             {
                 mCachedBufferPropertyTransformFeedbackConflict.set(
                     bindingIndex, boundBuffer->hasTFBBindingConflict());
@@ -760,7 +760,7 @@ void VertexArray::onBind(const Context *context)
         }
     }
 
-    if (context->isWebGL() || context->isHardenedContext())
+    if (context->isWebGL())
     {
         for (size_t bindingIndex : bufferBindingMask)
         {
@@ -863,7 +863,7 @@ void VertexArray::onSharedBufferBind(const Context *context,
         }
     }
 
-    if (context->isWebGL() || context->isHardenedContext())
+    if (context->isWebGL())
     {
         if (buffer->hasTFBBindingConflict())
         {
@@ -913,7 +913,7 @@ void VertexArray::onBufferChanged(const Context *context,
             break;
 
         case angle::SubjectMessage::BindingChanged:
-            if (context->isWebGL() || context->isHardenedContext())
+            if (context->isWebGL())
             {
                 bufferBindingMask.reset(kElementArrayBufferIndex);
 

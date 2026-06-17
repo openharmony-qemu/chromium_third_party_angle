@@ -3189,7 +3189,7 @@ bool ValidateMapBufferBase(const Context *context,
         }
     }
 
-    if (context->isWebGL() || context->isHardenedContext())
+    if (context->isWebGL())
     {
         if (buffer->hasTFBBindingConflict())
         {
@@ -3690,7 +3690,7 @@ bool ValidateBufferData(const Context *context,
     }
 
     // Do some additional WebGL-specific validation
-    if (ANGLE_UNLIKELY(context->isWebGL() || context->isHardenedContext()))
+    if (ANGLE_UNLIKELY(context->isWebGL()))
     {
         if (buffer->hasTFBBindingConflict())
         {
@@ -3762,7 +3762,7 @@ bool ValidateBufferSubData(const Context *context,
     }
 
     // Do some additional WebGL-specific validation
-    if (ANGLE_UNLIKELY(context->isWebGL() || context->isHardenedContext()))
+    if (ANGLE_UNLIKELY(context->isWebGL()))
     {
         if (buffer->hasTFBBindingConflict())
         {

@@ -3619,6 +3619,13 @@ bool ValidateMultiDrawArraysInstancedANGLE(const Context *context,
             return false;
         }
     }
+
+    if (!ValidateDrawArraysTransformFeedbackBufferSize(context, entryPoint, counts, instanceCounts,
+                                                       drawcount))
+    {
+        return false;
+    }
+
     return true;
 }
 
@@ -3667,8 +3674,19 @@ bool ValidateDrawArraysInstancedBaseInstanceANGLE(const Context *context,
                                                   GLsizei instanceCount,
                                                   GLuint baseInstance)
 {
-    return ValidateDrawArraysInstancedBase(context, entryPoint, mode, first, count, instanceCount,
-                                           baseInstance);
+    if (!ValidateDrawArraysInstancedBase(context, entryPoint, mode, first, count, instanceCount,
+                                         baseInstance))
+    {
+        return false;
+    }
+
+    if (!ValidateDrawArraysTransformFeedbackBufferSize(context, entryPoint, &count, &instanceCount,
+                                                       1))
+    {
+        return false;
+    }
+
+    return true;
 }
 
 bool ValidateDrawElementsInstancedBaseVertexBaseInstanceANGLE(const Context *context,
@@ -3713,6 +3731,13 @@ bool ValidateMultiDrawArraysInstancedBaseInstanceANGLE(const Context *context,
             return false;
         }
     }
+
+    if (!ValidateDrawArraysTransformFeedbackBufferSize(context, entryPoint, counts, instanceCounts,
+                                                       drawcount))
+    {
+        return false;
+    }
+
     return true;
 }
 
@@ -4465,7 +4490,17 @@ bool ValidateDrawArraysInstanced(const Context *context,
                                  GLsizei count,
                                  GLsizei primcount)
 {
-    return ValidateDrawArraysInstancedBase(context, entryPoint, mode, first, count, primcount, 0);
+    if (!ValidateDrawArraysInstancedBase(context, entryPoint, mode, first, count, primcount, 0))
+    {
+        return false;
+    }
+
+    if (!ValidateDrawArraysTransformFeedbackBufferSize(context, entryPoint, &count, &primcount, 1))
+    {
+        return false;
+    }
+
+    return true;
 }
 
 bool ValidateFenceSync(const Context *context,

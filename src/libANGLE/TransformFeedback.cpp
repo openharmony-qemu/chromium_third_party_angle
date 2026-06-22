@@ -150,6 +150,15 @@ angle::Result TransformFeedback::begin(const Context *context,
     mState.mVerticesDrawn = 0;
     bindProgram(context, program);
     recomputeVertexCapacity(context);
+    
+    for (auto &buffer : mState.mIndexedBuffers)
+    {
+        if (buffer.get())
+        {
+            buffer->onTFActiveChanged(context, true);
+        }
+    }
+
     return angle::Result::Continue;
 }
 
@@ -165,6 +174,13 @@ angle::Result TransformFeedback::end(const Context *context)
     {
         mState.mProgram->release(context);
         mState.mProgram = nullptr;
+    }
+    for (auto &buffer : mState.mIndexedBuffers)
+    {
+        if (buffer.get())
+        {
+            buffer->onTFActiveChanged(context, false);
+        }
     }
     return angle::Result::Continue;
 }
@@ -321,7 +337,7 @@ bool TransformFeedback::buffersBoundForOtherUseInWebGL() const
 {
     for (auto &buffer : mState.mIndexedBuffers)
     {
-        if (buffer.get() && buffer->hasWebGLXFBBindingConflict(true))
+        if (buffer.get() && buffer->isBoundToTFAndNonTFSimultaneously())
         {
             return true;
         }

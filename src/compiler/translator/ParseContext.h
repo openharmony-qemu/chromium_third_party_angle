@@ -953,6 +953,10 @@ class TParseContext : angle::NonCopyable
     std::vector<ControlFlow> mControlFlow;
     // Whether ESSL 1.0 limitations in Appendix A must be enforced.
     bool mValidateESSL100Limitations;
+    // Tracks the largest constant gl_FragData index used for dual-source validation.
+    int mMaxFragDataArrayIndexUsed;
+    // Needed for post-parse dual-source FragData range validation.
+    int mMaxDualSourceDrawBuffers;
     // Whether the variable is initialized to true, and never modified.  If this is used as a loop
     // variable, where the loop doesn't have break or return, at the end of parse we can detect
     // these loops as infinite loop.

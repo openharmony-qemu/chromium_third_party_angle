@@ -474,6 +474,8 @@ TParseContext::TParseContext(TSymbolTable &symt,
       mIsReturnVisitedInMain(false),
       mValidateESSL100Limitations(
           ShouldEnforceESSL100LoopAndIndexingLimitations(spec, mShaderVersion, options)),
+      mMaxFragDataArrayIndexUsed(0),
+      mMaxDualSourceDrawBuffers(resources.MaxDualSourceDrawBuffers),
       mGeometryShaderInputPrimitiveType(EptUndefined),
       mGeometryShaderOutputPrimitiveType(EptUndefined),
       mGeometryShaderInvocations(0),
@@ -6722,9 +6724,10 @@ TIntermTyped *TParseContext::addIndexExpression(TIntermTyped *baseExpression,
 
         if (!baseExpression->getType().isUnsizedArray())
         {
-            if (baseExpression->isArray())
+            if (baseExpression->isArray() && baseExpression->getQualifier() == EvqFragData)
             {
-                if (baseExpression->getQualifier() == EvqFragData && index > 0)
+                mMaxFragDataArrayIndexUsed = std::max(mMaxFragDataArrayIndexUsed, index);
+                if (index > 0)
                 {
                     if (!isExtensionEnabled(TExtension::EXT_draw_buffers))
                     {
@@ -9843,6 +9846,17 @@ bool TParseContext::postParseChecks()
         !isCullDistanceRedeclared())
     {
         mIRBuilder.onGlCullDistanceSized(mCullDistanceInfo.id, usedCullDistances);
+    }
+
+    const bool secondaryFragDataUsed =
+        symbolTable.gl_SecondaryFragDataEXT() != nullptr &&
+        symbolTable.isStaticallyUsed(*symbolTable.gl_SecondaryFragDataEXT());
+    if (secondaryFragDataUsed && mMaxFragDataArrayIndexUsed >= mMaxDualSourceDrawBuffers)
+    {
+        mDiagnostics->globalError(
+            "array index for gl_FragData must be less than "
+            "GL_MAX_DUAL_SOURCE_DRAW_BUFFERS_EXT when "
+            "gl_SecondaryFragDataEXT is used");
     }
 
     ValidateFragColorAndFragData(mShaderType, mShaderVersion, symbolTable, mDiagnostics);

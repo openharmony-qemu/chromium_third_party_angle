@@ -82,6 +82,7 @@ class ShareGroupVk : public ShareGroupImpl
     }
 
     void onTextureRelease(TextureVk *textureVk);
+    void finalizeImageLayoutInAllSharedContexts(vk::ImageHelper *image);
 
     angle::Result scheduleMonolithicPipelineCreationTask(
         ContextVk *contextVk,

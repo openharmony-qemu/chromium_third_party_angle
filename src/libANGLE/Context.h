@@ -827,6 +827,16 @@ class Context final : public egl::LabeledObject, angle::NonCopyable, public angl
 
     bool areBlobCacheFuncsSet() const;
 
+    bool retainIdUntilObjectDestroyed() const;
+
+    void onBufferDestroy(const Buffer *buffer) const;
+    void onTextureDestroy(const Texture *texture) const;
+    void onRenderbufferDestroy(const Renderbuffer *renderBuffer) const;
+    void onSamplerDestroy(const Sampler *sampler) const;
+    void onSyncDestroy(const Sync *sync) const;
+    void onFramebufferDestroy(const Framebuffer *framebuffer) const;
+    void onProgramPipelineDestroy(const ProgramPipeline *programPipeline) const;
+
   private:
     void initializeDefaultResources();
     void releaseSharedObjects();
@@ -993,6 +1003,7 @@ class Context final : public egl::LabeledObject, angle::NonCopyable, public angl
     OverlayType mOverlay;
 
     bool mIsDestroyed;
+    bool mDestroyedManagers;
 
     std::unique_ptr<Framebuffer> mDefaultFramebuffer;
 };

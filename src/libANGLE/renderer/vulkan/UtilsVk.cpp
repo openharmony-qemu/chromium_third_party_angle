@@ -3074,7 +3074,9 @@ angle::Result UtilsVk::colorBlitResolve(ContextVk *contextVk,
 
     if (srcImagelayout == vk::ImageAccess::ColorWriteFragmentShaderFeedback)
     {
-        srcImage->setRenderPassUsageFlag(vk::RenderPassUsage::ColorTextureSampler);
+        vk::RenderPassUsageFlags &renderPassUsageFlags =
+            srcImage->getRenderPassUsage().flags(&contextVk->getStartedRenderPassCommands());
+        renderPassUsageFlags.set(vk::RenderPassUsage::ColorTextureSampler);
     }
 
     ANGLE_TRY(setupBlitResolveGraphicsProgram(
@@ -3189,7 +3191,7 @@ angle::Result UtilsVk::depthStencilBlitResolve(ContextVk *contextVk,
                               dstImage->getAspectFlags(), nullptr,
                               vk::RenderPassSource::InternalUtils, &commandBuffer));
 
-    contextVk->onDepthStencilDraw(dstImageLevel, dstImageLayer, 1, dstImage, nullptr, {});
+    contextVk->onDepthStencilDraw(dstImageLevel, dstImageLayer, 1, dstImage, nullptr);
     // Pick layout consistent with GetImageReadAccess() to avoid unnecessary layout change.
     contextVk->onImageRenderPassRead(srcImage->getAspectFlags(), srcImagelayout, srcImage);
 
@@ -3199,11 +3201,15 @@ angle::Result UtilsVk::depthStencilBlitResolve(ContextVk *contextVk,
     {
         if (blitDepth)
         {
-            srcImage->setRenderPassUsageFlag(vk::RenderPassUsage::DepthTextureSampler);
+            vk::RenderPassUsageFlags &imageRenderPassUsageFlags =
+                srcImage->getRenderPassUsage().flags(&contextVk->getStartedRenderPassCommands());
+            imageRenderPassUsageFlags.set(vk::RenderPassUsage::DepthTextureSampler);
         }
         if (blitStencil)
         {
-            srcImage->setRenderPassUsageFlag(vk::RenderPassUsage::StencilTextureSampler);
+            vk::RenderPassUsageFlags &imageRenderPassUsageFlags =
+                srcImage->getRenderPassUsage().flags(&contextVk->getStartedRenderPassCommands());
+            imageRenderPassUsageFlags.set(vk::RenderPassUsage::StencilTextureSampler);
         }
     }
 
@@ -4933,12 +4939,12 @@ angle::Result UtilsVk::drawOverlay(ContextVk *contextVk,
 
     // Overlay is always drawn as the last render pass before present.  Automatically move the
     // layout to PresentSrc.
-    contextVk->onColorDraw(gl::LevelIndex(0), 0, 1, dst, nullptr, {}, vk::PackedAttachmentIndex(0));
+    contextVk->onColorDraw(gl::LevelIndex(0), 0, 1, dst, nullptr, vk::PackedAttachmentIndex(0));
     if (contextVk->getFeatures().supportsPresentation.enabled &&
         !contextVk->getFeatures().preferDynamicRendering.enabled)
     {
         contextVk->getStartedRenderPassCommands().setImageOptimizeForPresent(dst);
-        contextVk->finalizeImageLayout(dst, {});
+        contextVk->getStartedRenderPassCommands().finalizeImageLayout(contextVk, dst);
     }
 
     // Close the render pass for this temporary framebuffer.

@@ -96,8 +96,9 @@ angle::Result BufferGL::setData(const gl::Context *context,
     StateManagerGL *stateManager = GetStateManagerGL(context);
 
     stateManager->bindBuffer(DestBufferOperationTarget, mBufferID);
-    ANGLE_GL_TRY(context, functions->bufferData(gl::ToGLenum(DestBufferOperationTarget), size, data,
-                                                ToGLenum(usage)));
+    ANGLE_GL_TRY_ALWAYS_CHECK(
+        context, functions->bufferData(gl::ToGLenum(DestBufferOperationTarget), size, data,
+                                       ToGLenum(usage)));
 
     // Initialize the shadow buffer if needed. Don't delete existing shadow data. WebGL allows users
     // to bind as an element array buffer first and then copy source/dest later (but not the other

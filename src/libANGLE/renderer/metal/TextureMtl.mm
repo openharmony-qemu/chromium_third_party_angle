@@ -2069,11 +2069,21 @@ angle::Result TextureMtl::redefineImage(const gl::Context *context,
 
     // If native texture still exists, it means the size hasn't been changed, no need to create new
     // image
-    if (mNativeTextureStorage && imageDef.image && imageWithinNativeStorageLevels)
+    if (mNativeTextureStorage && imageWithinNativeStorageLevels)
     {
-        ASSERT(imageDef.image->textureType() ==
-                   mtl::GetTextureType(GetTextureImageType(index.getType())) &&
-               imageDef.formatID == mFormat.intendedFormatId && imageDef.image->sizeAt0() == size);
+        if (imageDef.image &&
+            imageDef.image->textureType() ==
+                mtl::GetTextureType(GetTextureImageType(index.getType())) &&
+            imageDef.formatID == mFormat.intendedFormatId && imageDef.image->sizeAt0() == size)
+        {
+            // Keep it! (No-op)
+        }
+        else
+        {
+            // Recreate the view at this index.
+            imageDef.image = nullptr;
+            imageDef       = getImageDefinition(index);
+        }
     }
     else
     {

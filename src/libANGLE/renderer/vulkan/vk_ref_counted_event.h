@@ -296,6 +296,17 @@ class RefCountedEventArrayWithAccessFlags final : public RefCountedEventArray
         ASSERT(mBitMask[eventStage]);
         return mAccessFlags[eventStage];
     }
+
+    void release(Renderer *renderer)
+    {
+        RefCountedEventArray::release(renderer);
+        mAccessFlags.fill(0);
+    }
+    void release(Context *context)
+    {
+        RefCountedEventArray::release(context);
+        mAccessFlags.fill(0);
+    }
     void releaseToEventCollector(RefCountedEventCollector *eventCollector)
     {
         for (EventStage eventStage : mBitMask)
@@ -319,8 +330,16 @@ class RefCountedEventWithAccessFlags final
   public:
     RefCountedEventWithAccessFlags() : mAccessFlags(0) {}
 
-    void release(Renderer *renderer) { mEvent.release(renderer); }
-    void release(Context *context) { mEvent.release(context); }
+    void release(Renderer *renderer)
+    {
+        mEvent.release(renderer);
+        mAccessFlags = 0;
+    }
+    void release(Context *context)
+    {
+        mEvent.release(context);
+        mAccessFlags = 0;
+    }
     void releaseToEventCollector(RefCountedEventCollector *eventCollector)
     {
         eventCollector->emplace_back(std::move(mEvent));

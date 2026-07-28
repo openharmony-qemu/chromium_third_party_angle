@@ -77,7 +77,7 @@ class LibraryCache : angle::NonCopyable
         std::mutex lock;
     };
 
-    std::shared_ptr<LibraryCacheEntry> getCacheEntry(LibraryKey &&key);
+    LibraryCacheEntry &getCacheEntry(LibraryKey &&key);
 
     static constexpr unsigned int kMaxCachedLibraries = 128;
 
@@ -87,8 +87,7 @@ class LibraryCache : angle::NonCopyable
     // Lock for searching and adding new entries to the cache
     std::mutex mCacheLock;
 
-    using CacheMap = angle::base::
-        HashingMRUCache<LibraryKey, std::shared_ptr<LibraryCacheEntry>, LibraryKeyHasher>;
+    using CacheMap = angle::base::HashingMRUCache<LibraryKey, LibraryCacheEntry, LibraryKeyHasher>;
     CacheMap mCache;
 };
 

@@ -182,14 +182,15 @@ class TextureMtl : public TextureImpl
                                     int layer,
                                     GLenum format);
 
+    const mtl::Format &getFormat() const { return mFormat; }
+
   private:
     void deallocateNativeStorage(bool keepImages, bool keepSamplerStateAndFormat = false);
     angle::Result createNativeStorage(const gl::Context *context,
                                       gl::TextureType type,
                                       GLuint mips,
                                       GLuint samples,
-                                      const gl::Extents &size,
-                                      const mtl::Format &format);
+                                      const gl::Extents &size);
     angle::Result onBaseMaxLevelsChanged(const gl::Context *context);
     angle::Result ensureSamplerStateCreated(const gl::Context *context);
     // Ensure image at given index is created:
@@ -327,10 +328,10 @@ class TextureMtl : public TextureImpl
 
     angle::Result generateMipmapCPU(const gl::Context *context);
 
-    bool needsFormatViewForPixelLocalStorage(const ShPixelLocalStorageOptions &,
-                                             const mtl::Format &format) const;
+    bool needsFormatViewForPixelLocalStorage(const ShPixelLocalStorageOptions &) const;
     bool isImmutableOrPBuffer() const;
 
+    mtl::Format mFormat;
     egl::Surface *mBoundSurface = nullptr;
     class NativeTextureWrapper;
     class NativeTextureWrapperWithViewSupport;

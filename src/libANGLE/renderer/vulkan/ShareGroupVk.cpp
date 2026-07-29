@@ -416,8 +416,14 @@ void ShareGroupVk::finalizeImageLayoutInAllSharedContexts(vk::ImageHelper *image
             if ((finalized && imageRenderPassUsage.hasAttachmentUsage()) ||
                 (image->isForeignImage() && !image->isReleasedToForeign()))
             {
-                (void)sharedContextVk->flushAndSubmitCommands(
+                const angle::Result result = sharedContextVk->flushAndSubmitCommands(
                     nullptr, nullptr, RenderPassClosureReason::ForeignImageRelease);
+
+                // In case of failure, remove the dangling image pointer to avoid UAF
+                if (result != angle::Result::Continue)
+                {
+                    sharedContextVk->forgetAllForeignImagesOnError();
+                }
                 ASSERT(!sharedContextVk->hasForeignImagesToTransition());
             }
         }

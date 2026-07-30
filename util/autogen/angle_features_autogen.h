@@ -290,6 +290,7 @@ enum class Feature
     ResyncDepthRangeOnClipControl,
     RetainSPIRVDebugInfo,
     RewriteRepeatedAssignToSwizzled,
+    RecreateImmutableTextureOnBaseLevelIncrease,
     RewriteRowMajorMatrices,
     RewriteUnaryMinusOperator,
     RGBA4IsNotSupportedForColorRendering,

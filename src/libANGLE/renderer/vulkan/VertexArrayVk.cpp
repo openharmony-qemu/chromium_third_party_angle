@@ -170,7 +170,7 @@ angle::Result StreamVertexDataWithDivisor(ContextVk *contextVk,
     return angle::Result::Continue;
 }
 
-size_t GetVertexCountForRange(GLint64 srcBufferBytes,
+size_t GetVertexCountForRange(uint64_t srcBufferBytes,
                               uint32_t srcFormatSize,
                               uint32_t srcVertexStride)
 {
@@ -190,8 +190,21 @@ size_t GetVertexCountForRange(GLint64 srcBufferBytes,
 
 size_t GetVertexCount(BufferVk *srcBuffer, const gl::VertexBinding &binding, uint32_t srcFormatSize)
 {
+    GLint64 size = srcBuffer->getSize();
+    if (size < 0)
+    {
+        return 0;
+    }
+
+    uintptr_t unsignedSize = static_cast<uintptr_t>(size);
+    uintptr_t offset       = binding.getOffset();
+    if (unsignedSize < offset)
+    {
+        return 0;
+    }
+
     // Bytes usable for vertex data.
-    GLint64 bytes = srcBuffer->getSize() - binding.getOffset();
+    uint64_t bytes = unsignedSize - offset;
     GLuint stride = binding.getStride();
     if (stride == 0)
     {
@@ -221,8 +234,13 @@ angle::Result CalculateMaxVertexCountForConversion(ContextVk *contextVk,
 
     // Start the range with the range from the the beginning of the buffer to the end of
     // buffer. Then scissor it with the dirtyRange.
-    size_t srcOffset  = conversion->getCacheKey().offset;
-    GLint64 srcLength = srcBuffer->getSize() - srcOffset;
+    VkDeviceSize srcBufferSize = srcBuffer->getSize();
+    size_t srcOffset           = conversion->getCacheKey().offset;
+    if (srcBufferSize < srcOffset)
+    {
+        return angle::Result::Continue;
+    }
+    uint64_t srcLength = srcBufferSize - srcOffset;
 
     // The max number of vertices from binding to the end of the buffer
     size_t maxNumVertices = GetVertexCountForRange(srcLength, srcFormatSize, srcStride);
@@ -235,11 +253,15 @@ angle::Result CalculateMaxVertexCountForConversion(ContextVk *contextVk,
     vk::MemoryHostVisibility hostVisible = conversion->getCacheKey().hostVisible
                                                ? vk::MemoryHostVisibility::Visible
                                                : vk::MemoryHostVisibility::NonVisible;
-    ANGLE_TRY(contextVk->initBufferForVertexConversion(conversion, maxNumVertices * dstStride,
-                                                       hostVisible));
+
+    uint64_t dstBufferSize = static_cast<uint64_t>(maxNumVertices) * dstStride;
+    ANGLE_VK_CHECK_MATH(contextVk, dstBufferSize <= std::numeric_limits<size_t>::max());
+
+    ANGLE_TRY(contextVk->initBufferForVertexConversion(
+        conversion, static_cast<size_t>(dstBufferSize), hostVisible));
 
     // Calculate numVertices to convert
-    *maxNumVerticesOut = GetVertexCountForRange(srcLength, srcFormatSize, srcStride);
+    *maxNumVerticesOut = maxNumVertices;
 
     return angle::Result::Continue;
 }

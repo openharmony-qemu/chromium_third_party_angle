@@ -8792,6 +8792,10 @@ void ImageHelper::removeSingleSubresourceStagedUpdates(ContextVk *contextVk,
         }
         else
         {
+            // The layer range should either match the update, or not intersect with it.  If this
+            // assertion fails, the update should be pertially removed, but is retained which is
+            // incorrect.
+            ASSERT(!update->intersectsLayerRange(layerIndex, layerCount, mLayerCount));
             index++;
         }
     }
@@ -9299,7 +9303,8 @@ angle::Result ImageHelper::updateSubresourceOnHost(ContextVk *contextVk,
 
 angle::Result ImageHelper::reformatStagedBufferUpdates(ContextVk *contextVk,
                                                        angle::FormatID srcFormatID,
-                                                       angle::FormatID dstFormatID)
+                                                       angle::FormatID dstFormatID,
+                                                       gl::TextureType dstTextureType)
 {
     const angle::Format &srcFormat = angle::Format::Get(srcFormatID);
     const angle::Format &dstFormat = angle::Format::Get(dstFormatID);
@@ -9326,6 +9331,10 @@ angle::Result ImageHelper::reformatStagedBufferUpdates(ContextVk *contextVk,
                 GLuint srcDataDepthPitch = srcDataRowPitch * copy.imageExtent.height;
                 GLuint dstDataDepthPitch = dstDataRowPitch * copy.imageExtent.height;
 
+                const uint32_t depthOrLayerCount = dstTextureType == gl::TextureType::_3D
+                                                       ? copy.imageExtent.depth
+                                                       : copy.imageSubresource.layerCount;
+
                 // Retrieve source buffer
                 vk::BufferHelper *srcBuffer = update.data.buffer.bufferHelper;
                 ASSERT(srcBuffer->isMapped());
@@ -9340,7 +9349,7 @@ angle::Result ImageHelper::reformatStagedBufferUpdates(ContextVk *contextVk,
 
                 uint8_t *dstData;
                 VkDeviceSize dstBufferOffset;
-                size_t dstBufferSize = dstDataDepthPitch * copy.imageExtent.depth;
+                size_t dstBufferSize = dstDataDepthPitch * depthOrLayerCount;
                 ANGLE_TRY(contextVk->initBufferForImageCopy(
                     dstBuffer, dstBufferSize, MemoryCoherency::CachedNonCoherent, dstFormatID,
                     &dstBufferOffset, &dstData));
@@ -9352,8 +9361,7 @@ angle::Result ImageHelper::reformatStagedBufferUpdates(ContextVk *contextVk,
                                   pixelReadFunction, dstData, dstDataRowPitch, dstFormat.pixelBytes,
                                   dstDataDepthPitch, pixelWriteFunction, dstFormatInfo.format,
                                   dstFormatInfo.componentType, copy.imageExtent.width,
-                                  copy.imageExtent.height, copy.imageExtent.depth, false, false,
-                                  false);
+                                  copy.imageExtent.height, depthOrLayerCount, false, false, false);
 
                 // Replace srcBuffer with dstBuffer
                 update.data.buffer.bufferHelper            = dstBuffer;
@@ -9947,9 +9955,11 @@ angle::Result ImageHelper::stageSubresourceUpdateFromFramebuffer(
 void ImageHelper::stageSubresourceUpdateFromImage(RefCounted<ImageHelper> *image,
                                                   const gl::ImageIndex &index,
                                                   LevelIndex srcMipLevel,
+                                                  uint32_t srcLayerIndex,
                                                   const gl::Offset &destOffset,
                                                   const gl::Extents &glExtents,
-                                                  const VkImageType imageType)
+                                                  const VkImageType srcImageType,
+                                                  const VkImageType dstImageType)
 {
     gl::LevelIndex updateLevelGL(index.getLevelIndex());
     VkImageAspectFlags imageAspectFlags = vk::GetFormatAspectFlags(image->get().getActualFormat());
@@ -9957,26 +9967,31 @@ void ImageHelper::stageSubresourceUpdateFromImage(RefCounted<ImageHelper> *image
     VkImageCopy copyToImage               = {};
     copyToImage.srcSubresource.aspectMask = imageAspectFlags;
     copyToImage.srcSubresource.mipLevel   = srcMipLevel.get();
+    copyToImage.srcSubresource.baseArrayLayer = srcLayerIndex;
     copyToImage.srcSubresource.layerCount = index.getLayerCount();
     copyToImage.dstSubresource.aspectMask = imageAspectFlags;
     copyToImage.dstSubresource.mipLevel   = updateLevelGL.get();
+    copyToImage.dstSubresource.layerCount     = index.getLayerCount();
 
-    if (imageType == VK_IMAGE_TYPE_3D)
+    // These values must be set explicitly to follow the Vulkan spec:
+    // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/VkImageCopy.html
+    // If either of the calling command's srcImage or dstImage parameters are of VkImageType
+    // VK_IMAGE_TYPE_3D, the baseArrayLayer and layerCount members of the corresponding
+    // subresource must be 0 and 1, respectively.
+    if (srcImageType == VK_IMAGE_TYPE_3D)
     {
-        // These values must be set explicitly to follow the Vulkan spec:
-        // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/VkImageCopy.html
-        // If either of the calling command's srcImage or dstImage parameters are of VkImageType
-        // VK_IMAGE_TYPE_3D, the baseArrayLayer and layerCount members of the corresponding
-        // subresource must be 0 and 1, respectively
-        copyToImage.dstSubresource.baseArrayLayer = 0;
-        copyToImage.dstSubresource.layerCount     = 1;
+        ASSERT(srcLayerIndex == 0);
+        copyToImage.srcSubresource.layerCount = 1;
+    }
+    if (dstImageType == VK_IMAGE_TYPE_3D)
+    {
+        copyToImage.dstSubresource.layerCount = 1;
         // Preserve the assumption that destOffset.z == "dstSubresource.baseArrayLayer"
         ASSERT(destOffset.z == (index.hasLayer() ? index.getLayerIndex() : 0));
     }
     else
     {
         copyToImage.dstSubresource.baseArrayLayer = index.hasLayer() ? index.getLayerIndex() : 0;
-        copyToImage.dstSubresource.layerCount     = index.getLayerCount();
     }
 
     gl_vk::GetOffset(destOffset, &copyToImage.dstOffset);
@@ -9995,9 +10010,9 @@ void ImageHelper::stageSubresourceUpdatesFromAllImageLevels(RefCounted<ImageHelp
         const gl::ImageIndex index =
             gl::ImageIndex::Make2DArrayRange(levelGL.get(), 0, image->get().getLayerCount());
 
-        stageSubresourceUpdateFromImage(image, index, levelVk, gl::kOffsetZero,
+        stageSubresourceUpdateFromImage(image, index, levelVk, 0, gl::kOffsetZero,
                                         image->get().getLevelExtents(levelVk),
-                                        image->get().getType());
+                                        image->get().getType(), image->get().getType());
     }
 }
 
@@ -10258,15 +10273,7 @@ void ImageHelper::stageSelfAsSubresourceUpdates(
     for (LevelIndex levelVk(0); levelVk < LevelIndex(levelCount); ++levelVk)
     {
         gl::LevelIndex levelGL = toGLLevel(levelVk);
-        if (!skipLevelsAllFaces.test(levelGL.get()))
-        {
-            const gl::ImageIndex index =
-                gl::ImageIndex::Make2DArrayRange(levelGL.get(), 0, mLayerCount);
-
-            stageSubresourceUpdateFromImage(prevImage.get(), index, levelVk, gl::kOffsetZero,
-                                            getLevelExtents(levelVk), mImageType);
-        }
-        else if (textureType == gl::TextureType::CubeMap)
+        if (textureType == gl::TextureType::CubeMap)
         {
             for (uint32_t face = 0; face < gl::kCubeFaceCount; ++face)
             {
@@ -10275,11 +10282,19 @@ void ImageHelper::stageSelfAsSubresourceUpdates(
                     const gl::ImageIndex index =
                         gl::ImageIndex::Make2DArrayRange(levelGL.get(), face, 1);
 
-                    stageSubresourceUpdateFromImage(prevImage.get(), index, levelVk,
+                    stageSubresourceUpdateFromImage(prevImage.get(), index, levelVk, face,
                                                     gl::kOffsetZero, getLevelExtents(levelVk),
-                                                    mImageType);
+                                                    mImageType, mImageType);
                 }
             }
+        }
+        else if (!skipLevelsAllFaces.test(levelGL.get()))
+        {
+            const gl::ImageIndex index =
+                gl::ImageIndex::Make2DArrayRange(levelGL.get(), 0, mLayerCount);
+
+            stageSubresourceUpdateFromImage(prevImage.get(), index, levelVk, 0, gl::kOffsetZero,
+                                            getLevelExtents(levelVk), mImageType, mImageType);
         }
     }
 
@@ -10309,7 +10324,7 @@ angle::Result ImageHelper::flushSingleSubresourceStagedUpdates(ContextVk *contex
         {
             SubresourceUpdate &update = (*levelUpdates)[updateIndex];
 
-            if (update.intersectsLayerRange(layer, layerCount))
+            if (update.intersectsLayerRange(layer, layerCount, mLayerCount))
             {
                 // On any data update or the clear does not match exact layer range, we'll need to
                 // do a full upload.
@@ -12233,10 +12248,11 @@ bool ImageHelper::SubresourceUpdate::matchesLayerRange(uint32_t layerIndex,
 }
 
 bool ImageHelper::SubresourceUpdate::intersectsLayerRange(uint32_t layerIndex,
-                                                          uint32_t layerCount) const
+                                                          uint32_t layerCount,
+                                                          uint32_t imageLayerCount) const
 {
     uint32_t updateBaseLayer, updateLayerCount;
-    getDestSubresource(gl::ImageIndex::kEntireLevel, &updateBaseLayer, &updateLayerCount);
+    getDestSubresource(imageLayerCount, &updateBaseLayer, &updateLayerCount);
     uint32_t updateLayerEnd = updateBaseLayer + updateLayerCount;
 
     return updateBaseLayer < (layerIndex + layerCount) && updateLayerEnd > layerIndex;

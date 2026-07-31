@@ -885,6 +885,9 @@
 330697097 PIXEL6 VULKAN : FramebufferTest_ES31.MultisampleResolveBothAttachments/* = SKIP
 42266019 PIXEL6 VULKAN : VulkanPerformanceCounterTest_DepthStencilLoadStoreOps.MultisampleDepthStencilResolveSeparately/* = SKIP
 
+// Blocked on preferBGR565ToRGB565 availability
+519580088 PIXEL6 VULKAN : VulkanImageTest.ImportRGB565/ES3_Vulkan_ForceFallbackFormat = SKIP
+
 // Some Metal tests fail on iOS Intel simulator
 40096874 IOS METAL : CubeMapTextureTest.SampleCoordinateTransformGrad/* = SKIP
 40096874 IOS METAL : CubeMapTextureTest.SampleCoordinateTransformGrad_ES3/* = SKIP

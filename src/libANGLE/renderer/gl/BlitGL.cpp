@@ -1383,6 +1383,8 @@ angle::Result BlitGL::initializeResources(const gl::Context *context)
     }
     ASSERT(mSRGBMipmapGenerationFormat.internalFormat != GL_NONE);
 
+    mStateManager->setRasterizerDiscardEnabled(false);
+
     mResourcesInitialized = true;
     return angle::Result::Continue;
 }

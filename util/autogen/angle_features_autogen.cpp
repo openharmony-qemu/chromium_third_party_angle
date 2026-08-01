@@ -290,6 +290,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
     {Feature::ResyncDepthRangeOnClipControl, "resyncDepthRangeOnClipControl"},
     {Feature::RetainSPIRVDebugInfo, "retainSPIRVDebugInfo"},
     {Feature::RewriteRepeatedAssignToSwizzled, "rewriteRepeatedAssignToSwizzled"},
+    {Feature::RecreateImmutableTextureOnBaseLevelIncrease, "recreateImmutableTextureOnBaseLevelIncrease"},
     {Feature::RewriteRowMajorMatrices, "rewriteRowMajorMatrices"},
     {Feature::RewriteUnaryMinusOperator, "rewriteUnaryMinusOperator"},
     {Feature::RGBA4IsNotSupportedForColorRendering, "RGBA4IsNotSupportedForColorRendering"},

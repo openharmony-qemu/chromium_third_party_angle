@@ -3343,6 +3343,79 @@ TEST_P(CopyTextureTestES3, TextureCopyMultipleSlicesBetween2DArrayAnd3D)
     EXPECT_PIXEL_RECT32I_EQ(0, kTexHeight / 2, kTexWidth, kTexHeight / 2, kIntGreen);
 }
 
+// Test that glCopyTextureCHROMIUM and glCopySubTextureCHROMIUM work if the texture base level
+// changes after the texture is synced.
+TEST_P(CopyTextureTestES3, ChangeBaseLevel)
+{
+    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_CHROMIUM_copy_texture"));
+
+    constexpr uint32_t kWidth  = 33;
+    constexpr uint32_t kHeight = 17;
+
+    const std::vector<GLColor> kMip0(kWidth * kHeight, GLColor::red);
+    const std::vector<GLColor> kMip2(kWidth * kHeight, GLColor::green);
+    const std::vector<GLColor> kMip4(kWidth * kHeight, GLColor::blue);
+
+    // Define levels 0, 2 and 4 for the src texture.
+    GLTexture src;
+    glBindTexture(GL_TEXTURE_2D, src);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                 kMip0.data());
+    glTexImage2D(GL_TEXTURE_2D, 2, GL_RGBA8, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                 kMip2.data());
+    glTexImage2D(GL_TEXTURE_2D, 4, GL_RGBA8, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                 kMip4.data());
+
+    // Sync the texture to level 2 and copy from it.  The texture is expected to be
+    // framebuffer-attachment-complete, so it's ok to copy from the base level without having the
+    // rest of the mip chain.
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 2);
+
+    // Copy from level 2
+    GLTexture dst2;
+    glBindTexture(GL_TEXTURE_2D, dst2);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                 nullptr);
+    glCopyTextureCHROMIUM(src, 2, GL_TEXTURE_2D, dst2, 0, GL_RGBA, GL_UNSIGNED_BYTE, GL_FALSE,
+                          GL_FALSE, GL_FALSE);
+    ASSERT_GL_NO_ERROR();
+
+    // Then switch to level 0 and copy from that
+    glBindTexture(GL_TEXTURE_2D, src);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+
+    GLTexture dst0;
+    glBindTexture(GL_TEXTURE_2D, dst0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                 nullptr);
+    glCopyTextureCHROMIUM(src, 0, GL_TEXTURE_2D, dst0, 0, GL_RGBA, GL_UNSIGNED_BYTE, GL_FALSE,
+                          GL_FALSE, GL_FALSE);
+    ASSERT_GL_NO_ERROR();
+
+    // Switch to level 4 and copy with glCopySubTextureCHROMIUM.
+    glBindTexture(GL_TEXTURE_2D, src);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 4);
+
+    GLTexture dst4;
+    glBindTexture(GL_TEXTURE_2D, dst4);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                 nullptr);
+    glCopySubTextureCHROMIUM(src, 4, GL_TEXTURE_2D, dst4, 0, 0, 0, 0, 0, kWidth, kHeight, GL_FALSE,
+                             GL_FALSE, GL_FALSE);
+    ASSERT_GL_NO_ERROR();
+
+    // Verify the destinations.
+    GLFramebuffer fbo;
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dst0, 0);
+    EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, kMip0[0]);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dst2, 0);
+    EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, kMip2[0]);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dst4, 0);
+    EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, kMip4[0]);
+    ASSERT_GL_NO_ERROR();
+}
+
 // Test that glCopyTextureCHROMIUM and glCopySubTextureCHROMIUM fail validation if the source level
 // is outside the [BASE, MAX] range.
 TEST_P(CopyTextureTestES3, VerifySourceLevelInBaseMaxRange)

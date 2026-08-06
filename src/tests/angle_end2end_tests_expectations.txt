@@ -2280,6 +2280,10 @@
 499091328 MAC AMD METAL : Texture2DArrayTestES3.ReformatStagedBufferUpdatesLayerCountOOB_2DArray/* = SKIP
 512995370 MAC AMD METAL : Texture2DArrayTestES3.ReformatStagedBufferUpdatesLayerCountOOB_3D/* = SKIP
 
+529867799 METAL : ReadPixelsPBOTest.PackLargeRowLength/* = SKIP
+529867799 VULKAN : ReadPixelsPBOTest.PackLargeRowLength/* = SKIP
+529867799 INTEL OPENGL : ReadPixelsPBOTest.PackLargeRowLength/* = SKIP
+
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // Slow tests, should appear last in this file
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -652,6 +652,7 @@ MSG kWebglBindAttribLocationReservedPrefix = "Attributes that begin with 'webgl_
 MSG kWebglNameLengthLimitExceeded = "Location name lengths must not be greater than 256 characters.";
 MSG kYUVOutputMissmatch = "Program and framebuffer YUV output state does not match.";
 MSG kYUVTargetExtensionRequired = "GL_EXT_YUV_target not enabled.";
+MSG kYuvTexSubImage2DOddOffsetOrDimension  = "TexSubImage2D with YUV formats requires even offsets and dimensions.";
 MSG kZeroBoundToTarget = "Zero is bound to target.";
 MSG kUnrecognizedShaderStageBit = "Unrecognized shader stage bit.";
 MSG kProgramNotSeparable = "Program object was not linked with its PROGRAM_SEPARABLE status set.";

@@ -1703,8 +1703,8 @@ angle::Result TextureVk::copySubImageImplWithTransfer(ContextVk *contextVk,
         const gl::ImageIndex stagingIndex =
             gl::ImageIndex::Make2DArrayRange(level.get(), baseLayer, layerCount);
         mImage->stageSubresourceUpdateFromImage(stagingImage.release(), stagingIndex,
-                                                vk::LevelIndex(0), dstOffsetModified, extents,
-                                                imageType);
+                                                vk::LevelIndex(0), 0, dstOffsetModified, extents,
+                                                VK_IMAGE_TYPE_2D, imageType);
     }
 
     return angle::Result::Continue;
@@ -1878,8 +1878,8 @@ angle::Result TextureVk::copySubImageImplWithDraw(ContextVk *contextVk,
         const gl::ImageIndex stagingIndex =
             gl::ImageIndex::Make2DArrayRange(level.get(), baseLayer, layerCount);
         mImage->stageSubresourceUpdateFromImage(stagingImage.release(), stagingIndex,
-                                                vk::LevelIndex(0), dstOffsetModified, extents,
-                                                imageType);
+                                                vk::LevelIndex(0), 0, dstOffsetModified, extents,
+                                                VK_IMAGE_TYPE_2D, imageType);
     }
 
     return angle::Result::Continue;
@@ -4486,7 +4486,7 @@ angle::Result TextureVk::ensureRenderableWithFormat(ContextVk *contextVk,
             // First try to convert any staged buffer updates from old format to new format using
             // CPU.
             ANGLE_TRY(mImage->reformatStagedBufferUpdates(contextVk, previousActualFormatID,
-                                                          actualFormatID));
+                                                          actualFormatID, mState.getType()));
         }
     }
 

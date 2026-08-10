@@ -8579,17 +8579,14 @@ void StateResetHelper::setDefaultResetCalls(const gl::Context *context,
         case angle::EntryPoint::GLBlendFunc:
         {
             Capture(&mResetCalls[angle::EntryPoint::GLBlendFunc],
-                    CaptureBlendFunc(context->getState(), true, kDefaultBlendState.sourceBlendRGB,
-                                     kDefaultBlendState.destBlendRGB));
+                    CaptureBlendFunc(context->getState(), true, GL_ONE, GL_ZERO));
             break;
         }
         case angle::EntryPoint::GLBlendFuncSeparate:
         {
             Capture(&mResetCalls[angle::EntryPoint::GLBlendFuncSeparate],
                     CaptureBlendFuncSeparate(
-                        context->getState(), true, kDefaultBlendState.sourceBlendRGB,
-                        kDefaultBlendState.destBlendRGB, kDefaultBlendState.sourceBlendAlpha,
-                        kDefaultBlendState.destBlendAlpha));
+                        context->getState(), true, GL_ONE, GL_ZERO, GL_ONE, GL_ZERO));
             break;
         }
         case angle::EntryPoint::GLBlendEquation:

@@ -4389,6 +4389,154 @@ TEST_P(TransformFeedbackTest, RenderOnceChangeXfbBufferRenderAgain)
     glEndTransformFeedback();
 }
 
+// Test that deleting a buffer bound to a transform feedback slot that is no longer active doesn't
+// crash.
+TEST_P(TransformFeedbackTest, StaleBufferBindingInactiveXfb)
+{
+    std::vector<std::string> tfVaryings = {"gl_Position"};
+    mProgram                            = CompileProgramWithTransformFeedback(
+        essl3_shaders::vs::Simple(), essl3_shaders::fs::Red(), tfVaryings, GL_INTERLEAVED_ATTRIBS);
+    ASSERT_NE(0u, mProgram);
+    glUseProgram(mProgram);
+
+    GLBuffer buf0;
+    glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buf0);
+    glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 1024, nullptr, GL_DYNAMIC_COPY);
+
+    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf0);
+
+    // Draw once with the buffers, syncs initial state.
+    glBeginTransformFeedback(GL_POINTS);
+    glDrawArrays(GL_POINTS, 0, 1);
+    glEndTransformFeedback();
+
+    // Unbind and delete the buffer
+    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, 0);
+    buf0.reset();
+
+    // Regular draw while TF inactive, but still using a program that was compiled with transform
+    // feedback.  It shouldn't crash.
+    glDrawArrays(GL_POINTS, 0, 1);
+    ASSERT_GL_NO_ERROR();
+}
+// Test validation of buffer bounds checking for transform feedback with multidraw commands
+TEST_P(WebGLTransformFeedbackTest, TooSmallBuffersMultiDraw)
+{
+    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_ANGLE_multi_draw"));
+
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glEnable(GL_RASTERIZER_DISCARD);
+
+    // Set the program's transform feedback varyings (just gl_Position)
+    std::vector<std::string> tfVaryings;
+    tfVaryings.push_back("gl_Position");
+    compileDefaultProgram(tfVaryings, GL_INTERLEAVED_ATTRIBS);
+    GLint positionLocation = glGetAttribLocation(mProgram, essl1_shaders::PositionAttrib());
+
+    glUseProgram(mProgram);
+
+    const GLfloat vertices[] = {
+        -1.0f, 1.0f, 0.5f, -1.0f, -1.0f, 0.5f, 1.0f, -1.0f, 0.5f,
+        -1.0f, 1.0f, 0.5f, 1.0f,  -1.0f, 0.5f, 1.0f, 1.0f,  0.5f,
+    };
+
+    GLBuffer buffer;
+    glBindBuffer(GL_ARRAY_BUFFER, buffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(positionLocation, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    glEnableVertexAttribArray(positionLocation);
+
+    const GLsizei verticesToDraw = 3;
+    const size_t stride          = sizeof(float) * 4;
+    const GLsizei drawcount      = 2;
+    const size_t bytesNeeded     = stride * verticesToDraw * drawcount;
+
+    const GLsizei firsts[drawcount] = {0, 0};
+    const GLsizei counts[drawcount] = {verticesToDraw, verticesToDraw};
+
+    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, mTransformFeedbackBuffer);
+
+    // Set up the buffer to be the right size
+    uint8_t tfData[bytesNeeded] = {0};
+    glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bytesNeeded, &tfData, GL_STATIC_DRAW);
+
+    glBeginTransformFeedback(GL_POINTS);
+    glMultiDrawArraysANGLE(GL_POINTS, firsts, counts, drawcount);
+    EXPECT_GL_NO_ERROR();
+    glEndTransformFeedback();
+
+    // Set up the buffer to be too small
+    glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bytesNeeded - 1, &tfData, GL_STATIC_DRAW);
+
+    glBeginTransformFeedback(GL_POINTS);
+    EXPECT_GL_NO_ERROR();
+    glMultiDrawArraysANGLE(GL_POINTS, firsts, counts, drawcount);
+    EXPECT_GL_ERROR(GL_INVALID_OPERATION);
+    glEndTransformFeedback();
+}
+
+// Test validation of buffer bounds checking for transform feedback with multidraw instanced
+// commands
+TEST_P(WebGLTransformFeedbackTest, TooSmallBuffersMultiDrawInstanced)
+{
+    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_ANGLE_multi_draw"));
+    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_ANGLE_instanced_arrays"));
+
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glEnable(GL_RASTERIZER_DISCARD);
+
+    // Set the program's transform feedback varyings (just gl_Position)
+    std::vector<std::string> tfVaryings;
+    tfVaryings.push_back("gl_Position");
+    compileDefaultProgram(tfVaryings, GL_INTERLEAVED_ATTRIBS);
+    GLint positionLocation = glGetAttribLocation(mProgram, essl1_shaders::PositionAttrib());
+
+    glUseProgram(mProgram);
+
+    const GLfloat vertices[] = {
+        -1.0f, 1.0f, 0.5f, -1.0f, -1.0f, 0.5f, 1.0f, -1.0f, 0.5f,
+        -1.0f, 1.0f, 0.5f, 1.0f,  -1.0f, 0.5f, 1.0f, 1.0f,  0.5f,
+    };
+
+    GLBuffer buffer;
+    glBindBuffer(GL_ARRAY_BUFFER, buffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(positionLocation, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    glEnableVertexAttribArray(positionLocation);
+
+    const GLsizei verticesToDraw = 3;
+    const size_t stride          = sizeof(float) * 4;
+    const GLsizei drawcount      = 2;
+    const GLsizei instanceCount  = 2;
+    const size_t bytesNeeded     = stride * verticesToDraw * drawcount * instanceCount;
+
+    const GLsizei firsts[drawcount]         = {0, 0};
+    const GLsizei counts[drawcount]         = {verticesToDraw, verticesToDraw};
+    const GLsizei instanceCounts[drawcount] = {instanceCount, instanceCount};
+
+    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, mTransformFeedbackBuffer);
+
+    // Set up the buffer to be the right size
+    uint8_t tfData[bytesNeeded] = {0};
+    glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bytesNeeded, &tfData, GL_STATIC_DRAW);
+
+    glBeginTransformFeedback(GL_POINTS);
+    glMultiDrawArraysInstancedANGLE(GL_POINTS, firsts, counts, instanceCounts, drawcount);
+    EXPECT_GL_NO_ERROR();
+    glEndTransformFeedback();
+
+    // Set up the buffer to be too small
+    glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bytesNeeded - 1, &tfData, GL_STATIC_DRAW);
+
+    glBeginTransformFeedback(GL_POINTS);
+    EXPECT_GL_NO_ERROR();
+    glMultiDrawArraysInstancedANGLE(GL_POINTS, firsts, counts, instanceCounts, drawcount);
+    EXPECT_GL_ERROR(GL_INVALID_OPERATION);
+    glEndTransformFeedback();
+}
+
 // Test bufferData call and transform feedback.
 TEST_P(TransformFeedbackTest, BufferDataAndTransformFeedback)
 {

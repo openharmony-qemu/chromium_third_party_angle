@@ -2976,13 +2976,16 @@ class ImageHelper final : public Resource, public angle::Subject
         void release(Renderer *renderer);
 
         // Returns true if the update's layer range exact matches [layerIndex,
-        // layerIndex+layerCount) range
+        // layerIndex+layerCount) range.  To support VK_REMAINING_ARRAY_LAYERS, the number of layers
+        // in the image is also passed in.
+        bool matchesLayerRange(uint32_t layerIndex,
+                               uint32_t layerCount,
+                               uint32_t imageLayerCount) const;
+        // Returns true if the update is to any layer within range of [layerIndex,
+        // layerIndex+layerCount)
         bool intersectsLayerRange(uint32_t layerIndex,
                                   uint32_t layerCount,
                                   uint32_t imageLayerCount) const;
-        // Returns true if the update is to any layer within range of [layerIndex,
-        // layerIndex+layerCount)
-        bool intersectsLayerRange(uint32_t layerIndex, uint32_t layerCount) const;
         void getDestSubresource(uint32_t imageLayerCount,
                                 uint32_t *baseLayerOut,
                                 uint32_t *layerCountOut) const;

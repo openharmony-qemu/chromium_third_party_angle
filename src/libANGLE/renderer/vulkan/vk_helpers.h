@@ -1008,6 +1008,10 @@ class BufferHelper : public ReadWriteResource
         mDescriptorSetCacheManager.addKey(sharedCacheKey);
     }
 
+    angle::Result initializeRobustMemory(ErrorContext *context,
+                                         VkBufferUsageFlags usage,
+                                         VkDeviceSize size);
+
     angle::Result initializeNonZeroMemory(ErrorContext *context,
                                           VkBufferUsageFlags usage,
                                           VkDeviceSize size);
@@ -1088,6 +1092,11 @@ class BufferHelper : public ReadWriteResource
     BufferSerial mSerial;
     // Manages the descriptorSet cache that created with this BufferHelper object.
     DescriptorSetCacheManager mDescriptorSetCacheManager;
+
+    angle::Result initializeMemoryWithValueImpl(ErrorContext *context,
+                                                VkBufferUsageFlags usage,
+                                                VkDeviceSize size,
+                                                const int value);
     // For external buffer
     GLeglClientBufferEXT mClientBuffer;
 

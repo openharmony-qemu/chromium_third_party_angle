@@ -1,6 +1,6 @@
 {
   "src/libANGLE/renderer/angle_format.py":
-    "45ffbde9a8edc7cec1c6c3afc5517b30",
+    "ad644811f7f2e1d0b4947534f839a11b",
   "src/libANGLE/renderer/d3d/d3d11/gen_texture_format_table.py":
     "70dcd2607cd481f450233c7c2b5c7ac0",
   "src/libANGLE/renderer/d3d/d3d11/texture_format_data.json":

@@ -2569,6 +2569,9 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
     // switching to workadround the driver issues.
     ANGLE_FEATURE_CONDITION(features, unbindFBOBeforeSwitchingContext, IsPowerVR(vendor));
 
+    ANGLE_FEATURE_CONDITION(features, useTempForNonZeroBaseLevelGenMipmapUsingCopyImageSubData,
+                            IsPowerVR(vendor));
+
     // http://crbug.com/1181068 and http://crbug.com/783979
     ANGLE_FEATURE_CONDITION(features, flushOnFramebufferChange,
                             IsApple() && Has9thGenIntelGPU(systemInfo));

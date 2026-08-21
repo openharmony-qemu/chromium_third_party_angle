@@ -480,6 +480,7 @@ class ContextVk : public ContextImpl, public vk::Context, public MultisampleText
                                        gl::SamplerFormat format,
                                        gl::Texture **textureOut);
     void updateColorMasks();
+    void updateBlendEnabled();
     void updateBlendFuncsAndEquations();
 
     void handleError(VkResult errorCode,

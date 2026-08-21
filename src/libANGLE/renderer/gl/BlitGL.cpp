@@ -163,6 +163,7 @@ angle::Result SetClearState(StateManagerGL *stateManager,
     }
 
     stateManager->setScissorTestEnabled(false);
+    stateManager->setRasterizerDiscardEnabled(false);
 
     return angle::Result::Continue;
 }
@@ -1382,8 +1383,6 @@ angle::Result BlitGL::initializeResources(const gl::Context *context)
         }
     }
     ASSERT(mSRGBMipmapGenerationFormat.internalFormat != GL_NONE);
-
-    mStateManager->setRasterizerDiscardEnabled(false);
 
     mResourcesInitialized = true;
     return angle::Result::Continue;

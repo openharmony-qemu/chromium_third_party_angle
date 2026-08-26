@@ -1677,8 +1677,26 @@ bool Framebuffer::partialClearNeedsInit(const Context *context,
         return true;
     }
 
+    // Clearing only one aspect of a packed depth-stencil attachment is a partial
+    // clear of the underlying resource. While the framebuffer tracks depth and
+    // stencil initialization needs separately in mState.mResourceNeedsInit, the
+    // underlying resource (texture level or renderbuffer) has a single shared
+    // InitState. Marking one aspect as Initialized updates the shared resource state,
+    // which would incorrectly suppress robust-init of the other aspect.
+    if (depth && !stencil && mState.mDepthAttachment.isAttached() &&
+        mState.mDepthAttachment.getStencilSize() > 0 &&
+        mState.mResourceNeedsInit[DIRTY_BIT_DEPTH_ATTACHMENT])
+    {
+        return true;
+    }
+    if (stencil && !depth && mState.mStencilAttachment.isAttached() &&
+        mState.mStencilAttachment.getDepthSize() > 0 &&
+        mState.mResourceNeedsInit[DIRTY_BIT_STENCIL_ATTACHMENT])
+    {
+        return true;
+    }
+
     // Scissors can affect clearing.
-    // TODO(jmadill): Check for complete scissor overlap.
     if (glState.isScissorTestEnabled())
     {
         return true;

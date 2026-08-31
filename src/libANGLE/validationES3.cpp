@@ -233,6 +233,23 @@ bool ValidateColorMaskForSharedExponentColorBuffer(const Context *context,
     return true;
 }
 
+bool ValidES3ExtensionFormatCombination(GLenum format, GLenum type, GLenum internalFormat)
+{
+    switch (internalFormat)
+    {
+        case GL_LUMINANCE4_ALPHA4_OES:
+            return (type == GL_UNSIGNED_BYTE && format == GL_LUMINANCE_ALPHA);
+        case GL_DEPTH_COMPONENT32_OES:
+            return (type == GL_UNSIGNED_INT && format == GL_DEPTH_COMPONENT);
+        case GL_RGB10_EXT:
+        case GL_RGB8_OES:
+        case GL_RGB565_OES:
+            return (type == GL_UNSIGNED_INT_2_10_10_10_REV_EXT && format == GL_RGB);
+        default:
+            return false;
+    }
+}
+
 }  // anonymous namespace
 
 bool ValidateTexImageFormatCombination(const Context *context,
@@ -303,44 +320,11 @@ bool ValidateTexImageFormatCombination(const Context *context,
     }
     else
     {
-        if (!ValidES3FormatCombination(format, type, internalFormat))
+        if (!ValidES3FormatCombination(format, type, internalFormat) &&
+            !ValidES3ExtensionFormatCombination(format, type, internalFormat))
         {
-            bool extensionFormatsAllowed = false;
-            switch (internalFormat)
-            {
-                case GL_LUMINANCE4_ALPHA4_OES:
-                    if (context->getExtensions().requiredInternalformatOES &&
-                        type == GL_UNSIGNED_BYTE && format == GL_LUMINANCE_ALPHA)
-                    {
-                        extensionFormatsAllowed = true;
-                    }
-                    break;
-                case GL_DEPTH_COMPONENT32_OES:
-                    if ((context->getExtensions().requiredInternalformatOES &&
-                         context->getExtensions().depth32OES) &&
-                        type == GL_UNSIGNED_INT && format == GL_DEPTH_COMPONENT)
-                    {
-                        extensionFormatsAllowed = true;
-                    }
-                    break;
-                case GL_RGB10_EXT:
-                case GL_RGB8_OES:
-                case GL_RGB565_OES:
-                    if (context->getExtensions().requiredInternalformatOES &&
-                        context->getExtensions().textureType2101010REVEXT &&
-                        type == GL_UNSIGNED_INT_2_10_10_10_REV_EXT && format == GL_RGB)
-                    {
-                        extensionFormatsAllowed = true;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            if (!extensionFormatsAllowed)
-            {
-                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidFormatCombination);
-                return false;
-            }
+            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidFormatCombination);
+            return false;
         }
     }
 
@@ -732,6 +716,17 @@ bool ValidateES3TexImageParametersBase(const Context *context,
                                                format, type))
         {
             return false;
+        }
+
+        if (isSubImage)
+        {
+            const GLenum textureSizedInternalFormat = actualFormatInfo.sizedInternalFormat;
+            if (!ValidES3FormatCombination(format, type, textureSizedInternalFormat) &&
+                !ValidES3ExtensionFormatCombination(format, type, textureSizedInternalFormat))
+            {
+                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kTextureTypeMismatch);
+                return false;
+            }
         }
     }
 

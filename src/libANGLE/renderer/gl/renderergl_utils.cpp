@@ -38,6 +38,7 @@
 
 #include <EGL/eglext.h>
 #include <algorithm>
+#include <cctype>
 #include <sstream>
 
 using angle::CheckedNumeric;
@@ -211,6 +212,59 @@ bool IsPowerVrRogue(const FunctionsGL *functions)
 }
 
 }  // namespace
+
+// Example GL_VENDOR, GL_RENDERER and GL_VERSION strings:
+//   GL_VENDOR:   "Imagination Technologies"
+//   GL_RENDERER: "PowerVR D-Series DXT-48-1536"
+//   GL_VERSION:  "OpenGL ES 3.2 build 25.3@6908880"
+//   GL_VENDOR:   "Imagination Technologies"
+//   GL_RENDERER: "PowerVR D-Series DXT-48-1536"
+//   GL_VERSION:  "OpenGL ES 3.2 build 26.1@7000000"
+bool GetPowerVRDriverVersion(const std::string &vendorString,
+                             const std::string &rendererString,
+                             const std::string &versionString,
+                             std::array<int, 2> *versionOut)
+{
+    ASSERT(versionOut);
+    (*versionOut)[0] = 0;
+    (*versionOut)[1] = 0;
+
+    if (vendorString.find("Imagination") == std::string::npos)
+    {
+        return false;
+    }
+
+    if (rendererString.find("PowerVR") == std::string::npos)
+    {
+        return false;
+    }
+
+    size_t atPos = versionString.find('@');
+    if (atPos == std::string::npos)
+    {
+        return false;
+    }
+
+    size_t startPos = atPos;
+    while (startPos > 0 && !std::isspace(static_cast<unsigned char>(versionString[startPos - 1])))
+    {
+        --startPos;
+    }
+
+    // SAFETY: this offset is computed safely above.
+    std::istringstream stream(ANGLE_UNSAFE_BUFFERS(&versionString[startPos]));
+    int major = 0;
+    int minor = 0;
+    char dot  = 0;
+    if (!(stream >> major >> dot >> minor) || dot != '.')
+    {
+        return false;
+    }
+
+    (*versionOut)[0] = major;
+    (*versionOut)[1] = minor;
+    return true;
+}
 
 SwapControlData::SwapControlData()
     : targetSwapInterval(0), maxSwapInterval(-1), currentSwapInterval(-1)
@@ -2338,6 +2392,13 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
 
     ANGLE_FEATURE_CONDITION(features, unpackOverlappingRowsSeparatelyUnpackBuffer, isNvidia);
     ANGLE_FEATURE_CONDITION(features, packOverlappingRowsSeparatelyPackBuffer, isNvidia);
+
+    std::array<int, 2> powerVRVersion = {0, 0};
+    bool isPowerVRDriver =
+        GetPowerVRDriverVersion(GetVendorString(functions), GetRendererString(functions),
+                                GetVersionString(functions), &powerVRVersion);
+    ANGLE_FEATURE_CONDITION(features, splitLevel0PboFullSubImage2D,
+                            isPowerVRDriver && powerVRVersion < (std::array<int, 2>{26, 2}));
     // Mali GLES computes readPixels row_stride as (int32_t)(row_length*bpp)*8;
     // wraps negative when the byte pitch >= 0x10000000 -> OOB write into the
     // PBO's cmem mapping. Route through readPixelsRowByRow so Mali only ever

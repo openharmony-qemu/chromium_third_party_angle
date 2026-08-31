@@ -855,6 +855,14 @@
                 "Some ES2 Mali drivers are unable to query enough information from a linked program to use passthrough shaders."
             ],
             "issue": "https://crbug.com/451796659"
+        },
+        {
+            "name": "split_level_0_pbo_full_sub_image_2D",
+            "category": "Workarounds",
+            "description": [
+                "Split full-image level 0 PBO uploads via TexSubImage2D into two calls to work around driver bugs."
+            ],
+            "issue": "http://crbug.com/496807874"
         }
     ]
 }

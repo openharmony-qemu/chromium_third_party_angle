@@ -370,6 +370,27 @@ bool IsESSL100ConstantExpression(TIntermNode *node)
 {
     return node->getAsConstantUnion() != nullptr && node->getAsTyped()->getQualifier() == EvqConst;
 }
+
+bool IsWholeArrayFragDataUsed(TIntermTyped *node)
+{
+    if (node->getQualifier() == EvqFragData)
+    {
+        return true;
+    }
+
+    TIntermBinary *asBinary = node->getAsBinaryNode();
+    if (asBinary != nullptr && asBinary->getOp() == EOpComma)
+    {
+        return IsWholeArrayFragDataUsed(asBinary->getRight());
+    }
+
+    // Either this is not ESSL 100 (where gl_FragData may be used), or gl_FragData is not used as a
+    // whole array.
+    //
+    // Note: ESSL 100 does not allow arrays in ternary operator, so there is no need to check for
+    // TIntermTernary here for a whole-array use of gl_FragData.
+    return false;
+}
 }  // namespace
 
 // This tracks each binding point's current default offset for inheritance of subsequent
@@ -2820,6 +2841,22 @@ void TParseContext::functionCallClipCullDistanceCheck(const TFunction *fnCandida
         TIntermTyped *argument = (*fnCall->getSequence())[i]->getAsTyped();
         checkClipCullDistanceWholeArrayUse(argument->getLine(), argument->getQualifier(),
                                            "Cannot pass to function unless it is explicitly sized");
+    }
+}
+
+void TParseContext::functionCallFragDataCheck(const TFunction *fnCandidate,
+                                              TIntermAggregate *fnCall)
+{
+    for (size_t i = 0; i < fnCandidate->getParamCount(); ++i)
+    {
+        TIntermTyped *argument = (*fnCall->getSequence())[i]->getAsTyped();
+        if (IsWholeArrayFragDataUsed(argument))
+        {
+            // The whole array is passed to the function.  For validation purposes, assume all
+            // indices are accessed in the function.
+            ASSERT(argument->getType().isArray());
+            mMaxFragDataArrayIndexUsed = argument->getType().getOutermostArraySize() - 1;
+        }
     }
 }
 
@@ -9355,6 +9392,7 @@ TIntermTyped *TParseContext::addNonConstructorFunctionCallImpl(TFunctionLookup *
             checkImageMemoryAccessForUserDefinedFunctions(fnCandidate, callNode);
             functionCallRValueLValueErrorCheck(fnCandidate, callNode);
             functionCallClipCullDistanceCheck(fnCandidate, callNode);
+            functionCallFragDataCheck(fnCandidate, callNode);
 
             mCallGraph[mCurrentFunction].insert(fnCandidate);
             mIRBuilder.callFunction(mFunctionToId.at(fnCandidate));

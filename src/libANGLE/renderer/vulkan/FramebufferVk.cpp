@@ -470,6 +470,8 @@ void FramebufferVk::destroy(const gl::Context *context)
 
     if (mFragmentShadingRateImage.valid())
     {
+        contextVk->finalizeImageLayout(&mFragmentShadingRateImage);
+
         vk::Renderer *renderer = contextVk->getRenderer();
         mFragmentShadingRateImageView.release(renderer, mFragmentShadingRateImage.getResourceUse());
         mFragmentShadingRateImage.releaseImage(renderer);
@@ -2672,6 +2674,7 @@ angle::Result FramebufferVk::syncState(const gl::Context *context,
     if (shouldUpdateColorMaskAndBlend)
     {
         contextVk->updateColorMasks();
+        contextVk->updateBlendEnabled();
         contextVk->updateBlendFuncsAndEquations();
     }
 
@@ -2856,7 +2859,7 @@ void FramebufferVk::updateRenderPassDesc(ContextVk *contextVk)
     {
         // Update descriptions regarding multisampled-render-to-texture use.
         bool isRenderToTexture = false;
-        for (size_t colorIndexGL : mState.getEnabledDrawBuffers())
+        for (size_t colorIndexGL : mState.getColorAttachmentsMask())
         {
             const gl::FramebufferAttachment *color = mState.getColorAttachment(colorIndexGL);
             ASSERT(color);
@@ -3470,12 +3473,15 @@ void FramebufferVk::clearWithCommand(ContextVk *contextVk,
     // Go through deferred clears and add them to the list of attachments to clear.  If any
     // attachment is unused, skip the clear.  clearWithLoadOp will follow and move the remaining
     // clears up to loadOp.
+    //
+    // If attachment is already finalized, we can't use loadOp to do clear.
     vk::PackedAttachmentIndex colorIndexVk(0);
     for (size_t colorIndexGL : mState.getColorAttachmentsMask())
     {
         if (clears->getColorMask().test(colorIndexGL))
         {
             if (renderPassCommands->hasAnyColorAccess(colorIndexVk) ||
+                renderPassCommands->hasColorAttachmentFinalized(colorIndexVk) ||
                 renderPassCommands->getRenderPassDesc().hasColorUnresolveAttachment(colorIndexGL) ||
                 !optimizeWithLoadOp)
             {
@@ -3511,6 +3517,7 @@ void FramebufferVk::clearWithCommand(ContextVk *contextVk,
     dsClearValue.depthStencil.stencil = clears->getStencilValue();
     if (clears->testDepth() &&
         (renderPassCommands->hasAnyDepthAccess() ||
+         renderPassCommands->hasDepthAttachmentFinalized() ||
          renderPassCommands->getRenderPassDesc().hasDepthUnresolveAttachment() ||
          !optimizeWithLoadOp))
     {
@@ -3523,6 +3530,7 @@ void FramebufferVk::clearWithCommand(ContextVk *contextVk,
 
     if (clears->testStencil() &&
         (renderPassCommands->hasAnyStencilAccess() ||
+         renderPassCommands->hasStencilAttachmentFinalized() ||
          renderPassCommands->getRenderPassDesc().hasStencilUnresolveAttachment() ||
          !optimizeWithLoadOp))
     {
@@ -4015,7 +4023,7 @@ GLint FramebufferVk::getSamplesImpl() const
 {
     const gl::FramebufferAttachment *lastAttachment = nullptr;
 
-    for (size_t colorIndexGL : mState.getEnabledDrawBuffers() & mState.getColorAttachmentsMask())
+    for (size_t colorIndexGL : mState.getColorAttachmentsMask())
     {
         const gl::FramebufferAttachment *color = mState.getColorAttachment(colorIndexGL);
         ASSERT(color);
@@ -4062,7 +4070,7 @@ angle::Result FramebufferVk::flushDepthStencilDeferredClear(ContextVk *contextVk
 
     vk::CommandResources resources;
     resources.onImageTransferWrite(renderTarget->getLevelIndex(), 1, renderTarget->getLayerIndex(),
-                                   1, image.getAspectFlags(), &image);
+                                   renderTarget->getLayerCount(), image.getAspectFlags(), &image);
     vk::OutsideRenderPassCommandBuffer *commandBuffer;
     ANGLE_TRY(contextVk->getOutsideRenderPassCommandBuffer(resources, &commandBuffer));
 
@@ -4071,7 +4079,7 @@ angle::Result FramebufferVk::flushDepthStencilDeferredClear(ContextVk *contextVk
     range.baseMipLevel            = image.toVkLevel(renderTarget->getLevelIndex()).get();
     range.levelCount              = 1;
     range.baseArrayLayer          = renderTarget->getLayerIndex();
-    range.layerCount              = 1;
+    range.layerCount              = renderTarget->getLayerCount();
 
     VkClearDepthStencilValue clearValue = {};
 

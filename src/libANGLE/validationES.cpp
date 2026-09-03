@@ -1688,6 +1688,11 @@ bool ValidateRenderbufferStorageParametersBase(const Context *context,
         return false;
     }
 
+    if (!ValidateNoActivePLSConflict(context, entryPoint, id))
+    {
+        return false;
+    }
+
     return true;
 }
 
@@ -2246,9 +2251,8 @@ bool ValidateGenerateMipmapBase(const Context *context,
         return false;
     }
 
-    if (context->getState().isTextureBoundToActivePLS(texture->id()))
+    if (!ValidateNoActivePLSConflict(context, entryPoint, texture->id()))
     {
-        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kActivePLSBackingTexture);
         return false;
     }
 
@@ -4054,7 +4058,7 @@ bool ValidateCopyTexImageParametersBase(const Context *context,
         isSubImage ? *texture->getFormat(target, level).info
                    : GetInternalFormatInfo(internalformat, GL_UNSIGNED_BYTE);
 
-    if (formatInfo.depthBits > 0 || formatInfo.compressed)
+    if (formatInfo.depthBits > 0 || formatInfo.compressed || formatInfo.paletted)
     {
         ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidFormat);
         return false;
@@ -4279,16 +4283,15 @@ const char *ValidateDrawStates(const Context *context, GLenum *outErrorCode)
     bool framebufferIsYUV = framebuffer->hasYUVAttachment();
     if (ANGLE_UNLIKELY(framebufferIsYUV))
     {
-        const BlendState &blendState = state.getBlendState();
-        if (!blendState.colorMaskRed || !blendState.colorMaskGreen || !blendState.colorMaskBlue ||
-            !blendState.colorMaskAlpha)
+        const BlendStateExt &blendStateExt = state.getBlendStateExt();
+        if (blendStateExt.getColorMaskIndexed(0) != BlendStateExt::kColorMaskRGBA)
         {
             // When rendering into a YUV framebuffer, the color mask must have r g b and alpha set
             // to true.
             return kInvalidColorMaskForYUV;
         }
 
-        if (blendState.blend)
+        if (blendStateExt.getEnabledMask().test(0))
         {
             // When rendering into a YUV framebuffer, blending must be disabled.
             return kInvalidBlendStateForYUV;
@@ -4303,27 +4306,26 @@ const char *ValidateDrawStates(const Context *context, GLenum *outErrorCode)
         }
     }
 
-    // Advanced blend equation can only be enabled for a single render target.
+    // Advanced blend equation can only be enabled for color attachment zero and with only that
+    // attachment enabled.
     const BlendStateExt &blendStateExt = state.getBlendStateExt();
-    if (ANGLE_UNLIKELY(blendStateExt.getUsesAdvancedBlendEquationMask().any()))
+    const gl::DrawBufferMask drawBuffersWithAdvancedBlend =
+        blendStateExt.getUsesAdvancedBlendEquationMask() & blendStateExt.getEnabledMask();
+    if (ANGLE_UNLIKELY(drawBuffersWithAdvancedBlend.any()))
     {
+        // Note: Framebuffer::getDrawBufferMask() excludes non-existing draw buffers.  But if
+        // glDrawBuffers sets them to non-NONE, draw with advanced blend is still expected to fail.
+        // So we can't do a quick check with getDrawBufferMask() alone.
         const size_t drawBufferCount            = framebuffer->getDrawbufferStateCount();
-        uint32_t advancedBlendRenderTargetCount = 0;
-
-        for (size_t drawBufferIndex : blendStateExt.getUsesAdvancedBlendEquationMask())
+        const bool advancedBlendOnDrawBufferZero =
+            drawBuffersWithAdvancedBlend[0] && framebuffer->getDrawBufferState(0) != GL_NONE;
+        for (size_t drawBufferIndex = 1; drawBufferIndex < drawBufferCount; ++drawBufferIndex)
         {
-            if (drawBufferIndex < drawBufferCount &&
-                framebuffer->getDrawBufferState(drawBufferIndex) != GL_NONE &&
-                blendStateExt.getEnabledMask().test(drawBufferIndex) &&
-                blendStateExt.getUsesAdvancedBlendEquationMask().test(drawBufferIndex))
+            if (framebuffer->getDrawBufferState(drawBufferIndex) != GL_NONE &&
+                (advancedBlendOnDrawBufferZero || drawBuffersWithAdvancedBlend[drawBufferIndex]))
             {
-                ++advancedBlendRenderTargetCount;
+                return kAdvancedBlendEquationWithMRT;
             }
-        }
-
-        if (advancedBlendRenderTargetCount > 1)
-        {
-            return kAdvancedBlendEquationWithMRT;
         }
     }
 
@@ -9057,5 +9059,165 @@ bool ValidateLogicOpCommon(const PrivateState &state,
             errors->validationError(entryPoint, GL_INVALID_ENUM, kInvalidLogicOp);
             return false;
     }
+}
+
+bool ValidateWebGLBufferBinding(const Context *context,
+                                angle::EntryPoint entryPoint,
+                                BufferBinding target,
+                                BufferID bufferId)
+{
+    ASSERT(context->isWebGL());
+
+    WebGLBufferType bufferType = WebGLBufferType::Undefined;
+    if (Buffer *buffer = context->getBuffer(bufferId))
+    {
+        bufferType = buffer->getWebGLType();
+    }
+
+    switch (bufferType)
+    {
+        case WebGLBufferType::Undefined:
+            // Valid. A buffer that has not been bound yet can be bound to any valid binding point
+            break;
+
+        case WebGLBufferType::ElementArray:
+        {
+            // Once a buffer has been bound to ELEMENT_ARRAY_BUFFER, it can only be bound to
+            // ELEMENT_ARRAY_BUFFER and COPY_READ/WRITE_BUFFER bindings.
+            constexpr angle::PackedEnumBitSet<BufferBinding> kValidElementArrayBufferBindingTargets(
+                {
+                    BufferBinding::ElementArray,
+                    BufferBinding::CopyRead,
+                    BufferBinding::CopyWrite,
+                });
+
+            if (!kValidElementArrayBufferBindingTargets.test(target))
+            {
+                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, err::kWebGLBufferTypeMismatch);
+                return false;
+            }
+        }
+        break;
+
+        case WebGLBufferType::OtherData:
+            // After being bound to non ELEMENT_ARRAY_BUFFER target, a buffer cannot be bound to
+            // ELEMENT_ARRAY_BUFFER target.
+            if (target == BufferBinding::ElementArray)
+            {
+                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, err::kWebGLBufferTypeMismatch);
+                return false;
+            }
+            break;
+    }
+
+    return true;
+}
+
+static bool IsTextureBoundToFramebuffer(const Context *context,
+                                        const Framebuffer *framebuffer,
+                                        TextureID textureId)
+{
+    if (framebuffer == nullptr)
+    {
+        return false;
+    }
+
+    for (const FramebufferAttachment &colorAttachment : framebuffer->getColorAttachments())
+    {
+        if (colorAttachment.isTextureWithId(textureId))
+        {
+            return true;
+        }
+    }
+
+    const FramebufferAttachment *depth = framebuffer->getDepthAttachment();
+    if ((depth != nullptr) && depth->isTextureWithId(textureId))
+    {
+        return true;
+    }
+
+    const FramebufferAttachment *stencil = framebuffer->getStencilAttachment();
+    if ((stencil != nullptr) && stencil->isTextureWithId(textureId))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+static bool IsRenderbufferBoundToFramebuffer(const Context *context,
+                                             const Framebuffer *framebuffer,
+                                             RenderbufferID renderbufferId)
+{
+    if (framebuffer == nullptr)
+    {
+        return false;
+    }
+
+    for (const FramebufferAttachment &colorAttachment : framebuffer->getColorAttachments())
+    {
+        if (colorAttachment.isRenderbufferWithId(renderbufferId.value))
+        {
+            return true;
+        }
+    }
+
+    const FramebufferAttachment *depth = framebuffer->getDepthAttachment();
+    if ((depth != nullptr) && depth->isRenderbufferWithId(renderbufferId.value))
+    {
+        return true;
+    }
+
+    const FramebufferAttachment *stencil = framebuffer->getStencilAttachment();
+    if ((stencil != nullptr) && stencil->isRenderbufferWithId(renderbufferId.value))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+bool ValidateNoActivePLSConflict(const Context *context,
+                                 angle::EntryPoint entryPoint,
+                                 TextureID textureId)
+{
+    if (context->getState().getPixelLocalStorageActivePlanes() == 0)
+    {
+        return true;
+    }
+
+    if (context->getState().isTextureBoundToActivePLS(textureId))
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kPLSActive);
+        return false;
+    }
+
+    const Framebuffer *framebuffer = context->getState().getDrawFramebuffer();
+    if (IsTextureBoundToFramebuffer(context, framebuffer, textureId))
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kPLSActive);
+        return false;
+    }
+
+    return true;
+}
+
+bool ValidateNoActivePLSConflict(const Context *context,
+                                 angle::EntryPoint entryPoint,
+                                 RenderbufferID renderbufferId)
+{
+    if (context->getState().getPixelLocalStorageActivePlanes() == 0)
+    {
+        return true;
+    }
+
+    const Framebuffer *framebuffer = context->getState().getDrawFramebuffer();
+    if (IsRenderbufferBoundToFramebuffer(context, framebuffer, renderbufferId))
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kPLSActive);
+        return false;
+    }
+
+    return true;
 }
 }  // namespace gl

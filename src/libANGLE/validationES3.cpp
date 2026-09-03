@@ -592,10 +592,20 @@ bool ValidateES3TexImageParametersBase(const Context *context,
         return false;
     }
 
-    if (context->getState().isTextureBoundToActivePLS(texture->id()))
+    if (isSubImage)
     {
-        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kActivePLSBackingTexture);
-        return false;
+        if (context->getState().isTextureBoundToActivePLS(texture->id()))
+        {
+            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kActivePLSBackingTexture);
+            return false;
+        }
+    }
+    else
+    {
+        if (!ValidateNoActivePLSConflict(context, entryPoint, texture->id()))
+        {
+            return false;
+        }
     }
 
     if (texture->getImmutableFormat() && !isSubImage)
@@ -1443,6 +1453,11 @@ bool ValidateES3TexStorageParametersTexObject(const Context *context,
         return false;
     }
 
+    if (!ValidateNoActivePLSConflict(context, entryPoint, texture->id()))
+    {
+        return false;
+    }
+
     return true;
 }
 
@@ -2065,6 +2080,12 @@ static bool ValidateBindBufferCommon(const Context *context,
         !context->isBufferGenerated(buffer))
     {
         ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kObjectNotGenerated);
+        return false;
+    }
+
+    if (context->isWebGL() && !ValidateWebGLBufferBinding(context, entryPoint, target, buffer))
+    {
+        // Error already generated
         return false;
     }
 
@@ -3410,6 +3431,17 @@ bool ValidateCopyBufferSubData(const Context *context,
             ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kCopyAlias);
             return false;
         }
+    }
+
+    // WebGL2 spec:
+    // 6.2 Copying Buffers
+    // Attempting to use copyBufferSubData to copy between buffers that have element array and other
+    // data WebGL buffer types as specified in section Buffer Object Binding generates an
+    // INVALID_OPERATION error and no copying is performed.
+    if (context->isWebGL() && readBuffer->getWebGLType() != writeBuffer->getWebGLType())
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, err::kWebGLBufferTypeMismatch);
+        return false;
     }
 
     return true;

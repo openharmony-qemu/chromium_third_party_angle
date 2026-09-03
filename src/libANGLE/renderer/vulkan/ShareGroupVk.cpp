@@ -176,8 +176,8 @@ void ShareGroupVk::onDestroy(const egl::Display *display)
     mPipelineLayoutCache.destroy(mRenderer);
     mDescriptorSetLayoutCache.destroy(mRenderer);
 
-    mSamplerCache.destroy(mRenderer, hasDisplayTextureShareGroup);
-    mYuvConversionCache.destroy(mRenderer, hasDisplayTextureShareGroup);
+    mSamplerCache.destroy(mRenderer);
+    mYuvConversionCache.destroy(mRenderer);
 
     mMetaDescriptorPools[DescriptorSetIndex::UniformsAndXfb].destroy(mRenderer);
     mMetaDescriptorPools[DescriptorSetIndex::Texture].destroy(mRenderer);
@@ -390,6 +390,42 @@ void ShareGroupVk::logBufferPools() const
             std::ostringstream log;
             pool->addStats(&log);
             INFO() << "Pool[" << i << "]:" << log.str();
+        }
+    }
+}
+
+void ShareGroupVk::finalizeImageLayoutInAllSharedContexts(vk::ImageHelper *image)
+{
+    if (image->useTileMemory())
+    {
+        for (auto context : getContexts())
+        {
+            ContextVk *sharedContextVk = vk::GetImpl(context.second);
+            sharedContextVk->removeImageWithTileMemory(image);
+        }
+    }
+
+    vk::ImageRenderPassUsage &imageRenderPassUsage = image->getRenderPassUsage();
+    if (imageRenderPassUsage.hasAttachmentUsage() || image->isForeignImage())
+    {
+        for (auto context : getContexts())
+        {
+            ContextVk *sharedContextVk = vk::GetImpl(context.second);
+            bool finalized             = sharedContextVk->finalizeImageLayout(image);
+
+            if ((finalized && imageRenderPassUsage.hasAttachmentUsage()) ||
+                (image->isForeignImage() && !image->isReleasedToForeign()))
+            {
+                const angle::Result result = sharedContextVk->flushAndSubmitCommands(
+                    nullptr, nullptr, RenderPassClosureReason::ForeignImageRelease);
+
+                // In case of failure, remove the dangling image pointer to avoid UAF
+                if (result != angle::Result::Continue)
+                {
+                    sharedContextVk->forgetAllForeignImagesOnError();
+                }
+                ASSERT(!sharedContextVk->hasForeignImagesToTransition());
+            }
         }
     }
 }

@@ -14559,6 +14559,84 @@ TEST_P(TextureCubeTestES3,
     incompatibleCubeFacesThenSingleFaceCompatibleUploadAndIncompatibleAgain(GL_ALPHA);
 }
 
+// Test cube map redefinition vs changing the base level.
+TEST_P(TextureCubeTestES3, CubeMapRedefinedWithBaseLevelChange)
+{
+    constexpr GLuint kSize = 4;
+
+    const std::vector<GLColor> kRed(kSize * kSize, GLColor::red);
+    const std::vector<GLColor> kGreen(kSize * kSize, GLColor::green);
+
+    // Create a cubemap at level 1
+    GLTexture cube;
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cube);
+    for (GLenum face = 0; face < 6; face++)
+    {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 1, GL_RGBA, kSize / 2, kSize / 2, 0,
+                     GL_RGBA, GL_UNSIGNED_BYTE, kRed.data());
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 1);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, 1);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    // Make sure the texture is synced.
+    constexpr char kFS[] = R"(precision highp float;
+uniform samplerCube texCube;
+void main()
+{
+    gl_FragColor = textureCube(texCube, vec3(0));
+})";
+    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), kFS);
+    drawQuad(program, essl1_shaders::PositionAttrib(), 1.0f);
+    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
+
+    // Define level 0 in a way that is mip-compatible with level 1, then set base level to 0.  While
+    // level 0 is being defined, it's outside the [base, max] levels of the texture.
+    for (GLenum face = 0; face < 6; face++)
+    {
+        const GLenum cubeFace = GL_TEXTURE_CUBE_MAP_POSITIVE_X + face;
+        glTexImage2D(cubeFace, 0, GL_RGBA, kSize, kSize, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                     kGreen.data());
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
+
+    // Incompatibly redefine a face of level 1
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 1, GL_RGBA, kSize, kSize, 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, kGreen.data());
+
+    // Attach a framebuffer to level 0.  This should work despite the invalid definition of level 1.
+    // Note also that MIN_FILTER does not enable mipmapping.
+    GLFramebuffer fbo;
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+                           cube, 0);
+    EXPECT_PIXEL_RECT_EQ(0, 0, kSize, kSize, GLColor::green);
+
+    // Redefine the face of level 1 to be compatible, then make sure that none of the data to the
+    // other levels are lost.
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 1, GL_RGBA, kSize / 2, kSize / 2, 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, kGreen.data());
+    for (GLenum face = 0; face < 6; face++)
+    {
+        const GLenum cubeFace = GL_TEXTURE_CUBE_MAP_POSITIVE_X + face;
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, cubeFace, cube, 1);
+        EXPECT_PIXEL_RECT_EQ(
+            0, 0, kSize / 2, kSize / 2,
+            cubeFace == GL_TEXTURE_CUBE_MAP_NEGATIVE_X ? GLColor::green : GLColor::red);
+    }
+
+    // For completeness, verify that level 0 is also intact.
+    for (GLenum face = 0; face < 6; face++)
+    {
+        const GLenum cubeFace = GL_TEXTURE_CUBE_MAP_POSITIVE_X + face;
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, cubeFace, cube, 0);
+        EXPECT_PIXEL_RECT_EQ(0, 0, kSize, kSize, GLColor::green);
+    }
+
+    ASSERT_GL_NO_ERROR();
+}
+
 // Test that glCopyImageSubData works with GL_TEXTURE_CUBE_MAP_ARRAY layers unique to array cubes
 TEST_P(TextureCubeTestES32, CopyImageSubDataCubeMapArray)
 {
@@ -14692,27 +14770,28 @@ TEST_P(TextureCubeTestES32, CopyImageSubDataCubeMapArray)
 // Test that the maximum texture layer can allocate enough memory.
 TEST_P(TextureCubeTestES32, MaxArrayTextureLayersVerify)
 {
-    GLint maxTextureLayers = 0;
-    GLTexture texture;
+    constexpr uint32_t kSize = 128;
 
+    GLTexture texture;
     glBindTexture(GL_TEXTURE_2D_ARRAY, texture);
     ASSERT_GL_NO_ERROR();
 
+    GLint maxTextureLayers = -1;
     glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxTextureLayers);
     ASSERT_GL_NO_ERROR();
 
-    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 256, 256, maxTextureLayers, 0, GL_RGBA,
+    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, kSize, kSize, maxTextureLayers, 0, GL_RGBA,
                  GL_UNSIGNED_BYTE, nullptr);
     ASSERT_GL_NO_ERROR();
 
-    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 256, 256, maxTextureLayers + 1, 0, GL_RGBA,
+    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, kSize, kSize, maxTextureLayers + 1, 0, GL_RGBA,
                  GL_UNSIGNED_BYTE, nullptr);
     EXPECT_GL_ERROR(GL_INVALID_VALUE);
 
-    glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, 256, 256, maxTextureLayers);
+    glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, kSize, kSize, maxTextureLayers);
     ASSERT_GL_NO_ERROR();
 
-    glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, 256, 256, maxTextureLayers + 1);
+    glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, kSize, kSize, maxTextureLayers + 1);
     EXPECT_GL_ERROR(GL_INVALID_VALUE);
 }
 

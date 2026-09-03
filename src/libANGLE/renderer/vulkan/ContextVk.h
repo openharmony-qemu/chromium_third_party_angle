@@ -241,6 +241,22 @@ class ContextVk : public ContextImpl, public vk::Context, public MultisampleText
     {
         return mShareGroupVk->getMetaDescriptorPools();
     }
+    SamplerCache &getSamplerCache()
+    {
+        if (hasDisplayTextureShareGroup())
+        {
+            return mRenderer->getSamplerCache();
+        }
+        return mShareGroupVk->getSamplerCache();
+    }
+    SamplerYcbcrConversionCache &getYuvConversionCache()
+    {
+        if (hasDisplayTextureShareGroup())
+        {
+            return mRenderer->getYuvConversionCache();
+        }
+        return mShareGroupVk->getYuvConversionCache();
+    }
 
     // Device loss
     gl::GraphicsResetStatus getResetStatus() override;
@@ -464,6 +480,7 @@ class ContextVk : public ContextImpl, public vk::Context, public MultisampleText
                                        gl::SamplerFormat format,
                                        gl::Texture **textureOut);
     void updateColorMasks();
+    void updateBlendEnabled();
     void updateBlendFuncsAndEquations();
 
     void handleError(VkResult errorCode,
@@ -547,47 +564,52 @@ class ContextVk : public ContextImpl, public vk::Context, public MultisampleText
                      uint32_t layerCount,
                      vk::ImageHelper *image,
                      vk::ImageHelper *resolveImage,
-                     UniqueSerial imageSiblingSerial,
                      vk::PackedAttachmentIndex packedAttachmentIndex)
     {
         ASSERT(mRenderPassCommands->started());
         mRenderPassCommands->colorImagesDraw(level, layerStart, layerCount, image, resolveImage,
-                                             imageSiblingSerial, packedAttachmentIndex);
+                                             packedAttachmentIndex);
     }
     void onColorResolve(gl::LevelIndex level,
                         uint32_t layerStart,
                         uint32_t layerCount,
                         vk::ImageHelper *image,
                         VkImageView view,
-                        UniqueSerial imageSiblingSerial,
                         size_t colorIndexGL)
     {
         ASSERT(mRenderPassCommands->started());
         mRenderPassCommands->addColorResolveAttachment(colorIndexGL, image, view, level, layerStart,
-                                                       layerCount, imageSiblingSerial);
+                                                       layerCount);
     }
     void onDepthStencilDraw(gl::LevelIndex level,
                             uint32_t layerStart,
                             uint32_t layerCount,
                             vk::ImageHelper *image,
-                            vk::ImageHelper *resolveImage,
-                            UniqueSerial imageSiblingSerial)
+                            vk::ImageHelper *resolveImage)
     {
         ASSERT(mRenderPassCommands->started());
         mRenderPassCommands->depthStencilImagesDraw(level, layerStart, layerCount, image,
-                                                    resolveImage, imageSiblingSerial);
+                                                    resolveImage);
+
+        if (image && image->useTileMemory())
+        {
+            addImageWithTileMemory(image);
+        }
     }
     void onDepthStencilResolve(gl::LevelIndex level,
                                uint32_t layerStart,
                                uint32_t layerCount,
                                VkImageAspectFlags aspects,
                                vk::ImageHelper *image,
-                               VkImageView view,
-                               UniqueSerial imageSiblingSerial)
+                               VkImageView view)
     {
         ASSERT(mRenderPassCommands->started());
+        if (image && image->useTileMemory())
+        {
+            addImageWithTileMemory(image);
+        }
         mRenderPassCommands->addDepthStencilResolveAttachment(
-            image, view, aspects, level, layerStart, layerCount, imageSiblingSerial);
+            image, view, aspects, level, layerStart, layerCount);
     }
 
     void onFragmentShadingRateRead(vk::ImageHelper *image)
@@ -596,7 +618,14 @@ class ContextVk : public ContextImpl, public vk::Context, public MultisampleText
         mRenderPassCommands->fragmentShadingRateImageRead(image);
     }
 
-    void finalizeImageLayout(vk::ImageHelper *image, UniqueSerial imageSiblingSerial);
+    bool finalizeImageLayout(vk::ImageHelper *image)
+    {
+        if (mRenderPassCommands->started())
+        {
+            return mRenderPassCommands->finalizeImageLayout(this, image);
+        }
+        return false;
+    }
 
     angle::Result getOutsideRenderPassCommandBuffer(
         const vk::CommandResources &resources,

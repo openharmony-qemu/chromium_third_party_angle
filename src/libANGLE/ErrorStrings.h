@@ -17,7 +17,7 @@ namespace err
 // clang-format off
 inline constexpr const char *k3DDepthStencil = "Format cannot be GL_DEPTH_COMPONENT or GL_DEPTH_STENCIL if target is GL_TEXTURE_3D.";
 inline constexpr const char *kANGLECopyTextureMissingRequiredExtension = "Copy*TextureCHROMIUM from EXTERNAL_OES to integer format requires OES_EGL_image_external_essl3.";
-inline constexpr const char *kAdvancedBlendEquationWithMRT = "Advanced blend equation can only be used when only one draw buffer is not NONE.";
+inline constexpr const char *kAdvancedBlendEquationWithMRT = "Advanced blend equations are used with a draw buffer other than draw buffer zero or with multiple draw buffers.";
 inline constexpr const char *kAtomicCounterResourceName = "Active atomic counter resources are not assigned name strings.";
 inline constexpr const char *kAttributeListNotNull = "Attribute list must be NULL or GL_NONE.";
 inline constexpr const char *kAttributeNameNull = "Attribute name is null.";
@@ -394,6 +394,7 @@ inline constexpr const char *kInvalidShadingCombinerOp = "Invalid shading Combin
 inline constexpr const char *kInvalidShadingModel = "Invalid shading model.";
 inline constexpr const char *kInvalidShadingRate = "Invalid shading rate.";
 inline constexpr const char *kInvalidSourceTexture = "Source texture is not a valid texture object.";
+inline constexpr const char *kInvalidSourceTextureSameAsDestTexture = "Source texture and destination texture are the same.";
 inline constexpr const char *kInvalidSourceTextureInternalFormat = "Source texture internal format is invalid.";
 inline constexpr const char *kInvalidSourceTextureLevel = "Invalid source texture level.";
 inline constexpr const char *kInvalidSourceTextureSize = "Invalid source texture height or width.";
@@ -682,6 +683,7 @@ inline constexpr const char *kProtectedTexturesExtensionRequired = "GL_EXT_prote
 inline constexpr const char *kTextureCompressionASTCDecodeModeExtensionRequired = "GL_EXT_texture_compression_astc_decode_mode not enabled.";
 inline constexpr const char *kTextureCompressionASTCDecodeModeRGB9E5ExtensionRequired = "GL_EXT_texture_compression_astc_decode_mode_rgb9e5 not enabled.";
 inline constexpr const char *kProgramNotValid = "Program is not a program object.";
+inline constexpr const char *kWebGLBufferTypeMismatch = "Invalid operation between WebGL buffer types.";
 // clang-format on
 
 }  // namespace err

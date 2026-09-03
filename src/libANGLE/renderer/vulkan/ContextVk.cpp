@@ -386,18 +386,17 @@ bool IsStencilSamplerBinding(const gl::ProgramExecutable &executable, size_t tex
     return isStencilTexture;
 }
 
-vk::ImageAccess GetDepthStencilAttachmentImageReadLayout(const vk::ImageHelper &image,
-                                                         gl::ShaderType firstShader)
+vk::ImageAccess GetDepthStencilAttachmentImageReadLayout(
+    const vk::RenderPassUsageFlags renderPassUsageFlags,
+    gl::ShaderType firstShader)
 {
-    const bool isDepthTexture =
-        image.hasRenderPassUsageFlag(vk::RenderPassUsage::DepthTextureSampler);
-    const bool isStencilTexture =
-        image.hasRenderPassUsageFlag(vk::RenderPassUsage::StencilTextureSampler);
+    const bool isDepthTexture   = renderPassUsageFlags[vk::RenderPassUsage::DepthTextureSampler];
+    const bool isStencilTexture = renderPassUsageFlags[vk::RenderPassUsage::StencilTextureSampler];
 
     const bool isDepthReadOnlyAttachment =
-        image.hasRenderPassUsageFlag(vk::RenderPassUsage::DepthReadOnlyAttachment);
+        renderPassUsageFlags[vk::RenderPassUsage::DepthReadOnlyAttachment];
     const bool isStencilReadOnlyAttachment =
-        image.hasRenderPassUsageFlag(vk::RenderPassUsage::StencilReadOnlyAttachment);
+        renderPassUsageFlags[vk::RenderPassUsage::StencilReadOnlyAttachment];
 
     const bool isFS = firstShader == gl::ShaderType::Fragment;
 
@@ -445,7 +444,8 @@ vk::ImageAccess GetDepthStencilAttachmentImageReadLayout(const vk::ImageHelper &
     }
 }
 
-vk::ImageAccess GetImageReadAccess(TextureVk *textureVk,
+vk::ImageAccess GetImageReadAccess(vk::RenderPassCommandBufferHelper *renderPassCommands,
+                                   TextureVk *textureVk,
                                    const gl::ProgramExecutable &executable,
                                    size_t textureUnit,
                                    PipelineType pipelineType)
@@ -474,7 +474,9 @@ vk::ImageAccess GetImageReadAccess(TextureVk *textureVk,
         ASSERT(remainingShaderBits.none() && lastShader == firstShader);
     }
 
-    if (image.hasRenderPassUsageFlag(vk::RenderPassUsage::RenderTargetAttachment))
+    vk::RenderPassUsageFlags &renderPassUsageFlags =
+        image.getRenderPassUsage().flags(renderPassCommands);
+    if (renderPassUsageFlags[vk::RenderPassUsage::RenderTargetAttachment])
     {
         // Right now we set the *TextureSampler flag only when RenderTargetAttachment is set since
         // we do not track all textures in the render pass.
@@ -483,17 +485,17 @@ vk::ImageAccess GetImageReadAccess(TextureVk *textureVk,
         {
             if (IsStencilSamplerBinding(executable, textureUnit))
             {
-                image.setRenderPassUsageFlag(vk::RenderPassUsage::StencilTextureSampler);
+                renderPassUsageFlags.set(vk::RenderPassUsage::StencilTextureSampler);
             }
             else
             {
-                image.setRenderPassUsageFlag(vk::RenderPassUsage::DepthTextureSampler);
+                renderPassUsageFlags.set(vk::RenderPassUsage::DepthTextureSampler);
             }
 
-            return GetDepthStencilAttachmentImageReadLayout(image, firstShader);
+            return GetDepthStencilAttachmentImageReadLayout(renderPassUsageFlags, firstShader);
         }
 
-        image.setRenderPassUsageFlag(vk::RenderPassUsage::ColorTextureSampler);
+        renderPassUsageFlags.set(vk::RenderPassUsage::ColorTextureSampler);
 
         return isFragmentShaderOnly ? vk::ImageAccess::ColorWriteFragmentShaderFeedback
                                     : vk::ImageAccess::ColorWriteAllShadersFeedback;
@@ -1700,32 +1702,37 @@ angle::Result ContextVk::setupIndexedDraw(const gl::Context *context,
             vertexArrayVk->updateCurrentElementArrayBuffer();
         }
 
-        if (shouldConvertUint8VkIndexType(indexType) && mGraphicsDirtyBits[DIRTY_BIT_INDEX_BUFFER])
+        if (shouldConvertUint8VkIndexType(indexType))
         {
-            ANGLE_VK_PERF_WARNING(this, GL_DEBUG_SEVERITY_LOW,
-                                  "Potential inefficiency emulating uint8 vertex attributes due to "
-                                  "lack of hardware support");
-
-            BufferVk *bufferVk             = vk::GetImpl(elementArrayBuffer);
-            vk::BufferHelper &bufferHelper = bufferVk->getBuffer();
-
-            if (bufferHelper.isHostVisible() &&
-                mRenderer->hasResourceUseFinished(bufferHelper.getResourceUse()))
+            if (mGraphicsDirtyBits[DIRTY_BIT_INDEX_BUFFER])
             {
-                uint8_t *src = nullptr;
-                ANGLE_TRY(bufferVk->mapForReadAccessOnly(this, reinterpret_cast<void **>(&src)));
-                // Note: bufferOffset is not added here because mapImpl already adds it.
-                src += reinterpret_cast<uintptr_t>(indices);
-                const size_t byteCount = static_cast<size_t>(elementArrayBuffer->getSize()) -
-                                         reinterpret_cast<uintptr_t>(indices);
-                BufferBindingDirty bindingDirty;
-                ANGLE_TRY(vertexArrayVk->convertIndexBufferCPU(this, indexType, byteCount, src,
-                                                               &bindingDirty));
-                ANGLE_TRY(bufferVk->unmapReadAccessOnly(this));
-            }
-            else
-            {
-                ANGLE_TRY(vertexArrayVk->convertIndexBufferGPU(this, bufferVk, indices));
+                ANGLE_VK_PERF_WARNING(
+                    this, GL_DEBUG_SEVERITY_LOW,
+                    "Potential inefficiency emulating uint8 vertex attributes due to "
+                    "lack of hardware support");
+
+                BufferVk *bufferVk             = vk::GetImpl(elementArrayBuffer);
+                vk::BufferHelper &bufferHelper = bufferVk->getBuffer();
+
+                if (bufferHelper.isHostVisible() &&
+                    mRenderer->hasResourceUseFinished(bufferHelper.getResourceUse()))
+                {
+                    uint8_t *src = nullptr;
+                    ANGLE_TRY(
+                        bufferVk->mapForReadAccessOnly(this, reinterpret_cast<void **>(&src)));
+                    // Note: bufferOffset is not added here because mapImpl already adds it.
+                    src += reinterpret_cast<uintptr_t>(indices);
+                    const size_t byteCount = static_cast<size_t>(elementArrayBuffer->getSize()) -
+                                             reinterpret_cast<uintptr_t>(indices);
+                    BufferBindingDirty bindingDirty;
+                    ANGLE_TRY(vertexArrayVk->convertIndexBufferCPU(this, indexType, byteCount, src,
+                                                                   &bindingDirty));
+                    ANGLE_TRY(bufferVk->unmapReadAccessOnly(this));
+                }
+                else
+                {
+                    ANGLE_TRY(vertexArrayVk->convertIndexBufferGPU(this, bufferVk, indices));
+                }
             }
 
             mCurrentIndexBufferOffset = 0;
@@ -2578,8 +2585,8 @@ ANGLE_INLINE angle::Result ContextVk::handleDirtyTexturesImpl(
         // layers. Therefore we can't verify it has no staged updates right here.
         vk::ImageHelper &image = textureVk->getImage();
 
-        const vk::ImageAccess imageAccess =
-            GetImageReadAccess(textureVk, *executable, textureUnit, pipelineType);
+        const vk::ImageAccess imageAccess = GetImageReadAccess(
+            mRenderPassCommands, textureVk, *executable, textureUnit, pipelineType);
 
         // Ensure the image is in the desired layout
         commandBufferHelper->imageRead(this, image.getAspectFlags(), imageAccess, &image);
@@ -4681,7 +4688,7 @@ angle::Result ContextVk::optimizeRenderPassForPresent(vk::ImageViewHelper *color
                                                              0, &resolveImageView));
 
         mRenderPassCommands->addColorResolveAttachment(0, colorImage, resolveImageView->getHandle(),
-                                                       gl::LevelIndex(0), 0, 1, {});
+                                                       gl::LevelIndex(0), 0, 1);
         onImageRenderPassWrite(gl::LevelIndex(0), 0, 1, VK_IMAGE_ASPECT_COLOR_BIT,
                                vk::ImageAccess::ColorWrite, colorImage);
 
@@ -4976,6 +4983,18 @@ void ContextVk::updateColorMasks()
     invalidateCurrentGraphicsPipeline();
 
     onColorAccessChange();
+}
+
+void ContextVk::updateBlendEnabled()
+{
+    const gl::DrawBufferMask framebufferMask = mState.getDrawFramebuffer()->getDrawBufferMask();
+    const gl::DrawBufferMask enabledBlend    = mState.getBlendStateExt().getEnabledMask();
+
+    // Filter out blend for disabled attachments.  If advanced blend is enabled, Vulkan
+    // forbids blend from being specified on the other attachments (same as GL, but GL
+    // ignores blend on disabled attachments).
+    mGraphicsPipelineDesc->updateBlendEnabled(&mGraphicsPipelineTransition,
+                                              enabledBlend & framebufferMask);
 }
 
 void ContextVk::updateMissingAttachments()
@@ -5615,8 +5634,7 @@ angle::Result ContextVk::syncState(const gl::Context *context,
                 updateDepthRange(glState.getNearPlane(), glState.getFarPlane());
                 break;
             case gl::state::DIRTY_BIT_BLEND_ENABLED:
-                mGraphicsPipelineDesc->updateBlendEnabled(
-                    &mGraphicsPipelineTransition, glState.getBlendStateExt().getEnabledMask());
+                updateBlendEnabled();
                 updateDither();
                 updateAdvancedBlendEquations(programExecutable);
                 break;
@@ -5879,6 +5897,7 @@ angle::Result ContextVk::syncState(const gl::Context *context,
                                glState.getFarPlane());
                 updateColorMasks();
                 updateMissingAttachments();
+                updateBlendEnabled();
                 updateRasterizationSamples(drawFramebufferVk->getSamples());
                 updateRasterizerDiscardEnabled(
                     mState.isQueryActive(gl::QueryType::PrimitivesGenerated));
@@ -5915,6 +5934,7 @@ angle::Result ContextVk::syncState(const gl::Context *context,
                 invalidateDefaultAttributes(context->getActiveDefaultAttribsMask());
                 ANGLE_TRY(onVertexArrayChange(vertexArrayVk->getCurrentEnabledAttribsMask()));
                 ANGLE_TRY(onIndexBufferChange(vertexArrayVk->getCurrentElementArrayBuffer()));
+                vertexArrayVk->resetInactiveStreamedAttribs(context);
                 break;
             }
             case gl::state::DIRTY_BIT_DRAW_INDIRECT_BUFFER_BINDING:
@@ -6594,6 +6614,7 @@ angle::Result ContextVk::onFramebufferChange(FramebufferVk *framebufferVk, gl::C
 
     // Attachments might have changed.
     updateMissingAttachments();
+    updateBlendEnabled();
 
     if (mState.getProgramExecutable())
     {
@@ -7286,10 +7307,15 @@ angle::Result ContextVk::initBufferAllocation(vk::BufferHelper *bufferHelper,
                                                            alignment, bufferUsageType, pool);
     if (ANGLE_LIKELY(result == VK_SUCCESS))
     {
-        if (mRenderer->getFeatures().allocateNonZeroMemory.enabled)
+        if (isRobustResourceInitEnabled())
+        {
+            ANGLE_TRY(bufferHelper->initializeRobustMemory(
+                this, GetDefaultBufferUsageFlags(mRenderer), bufferHelper->getSize()));
+        }
+        else if (mRenderer->getFeatures().allocateNonZeroMemory.enabled)
         {
             ANGLE_TRY(bufferHelper->initializeNonZeroMemory(
-                this, GetDefaultBufferUsageFlags(mRenderer), allocationSize));
+                this, GetDefaultBufferUsageFlags(mRenderer), bufferHelper->getSize()));
         }
 
         return angle::Result::Continue;
@@ -7335,11 +7361,16 @@ angle::Result ContextVk::initBufferAllocation(vk::BufferHelper *bufferHelper,
     // returned.
     ANGLE_VK_CHECK(this, result == VK_SUCCESS, result);
 
-    // Initialize with non-zero value if needed.
-    if (mRenderer->getFeatures().allocateNonZeroMemory.enabled)
+    // Initialize with value if needed.
+    if (isRobustResourceInitEnabled())
+    {
+        ANGLE_TRY(bufferHelper->initializeRobustMemory(this, GetDefaultBufferUsageFlags(mRenderer),
+                                                       bufferHelper->getSize()));
+    }
+    else if (mRenderer->getFeatures().allocateNonZeroMemory.enabled)
     {
         ANGLE_TRY(bufferHelper->initializeNonZeroMemory(this, GetDefaultBufferUsageFlags(mRenderer),
-                                                        allocationSize));
+                                                        bufferHelper->getSize()));
     }
 
     return angle::Result::Continue;
@@ -8071,25 +8102,6 @@ angle::Result ContextVk::onImageReleaseToExternal(const vk::ImageHelper &image)
     return angle::Result::Continue;
 }
 
-void ContextVk::finalizeImageLayout(vk::ImageHelper *image, UniqueSerial imageSiblingSerial)
-{
-    if (mRenderPassCommands->started())
-    {
-        mRenderPassCommands->finalizeImageLayout(this, image, imageSiblingSerial);
-    }
-
-    if (image->isForeignImage() && !image->isReleasedToForeign())
-    {
-        // Note: Foreign images may be shared between different textures.  If another texture starts
-        // to use the image while the barrier-to-foreign is cached in the context, it will attempt
-        // to acquire the image from foreign while the release is still cached.  A submission is
-        // made to finalize the queue family ownership transfer back to foreign.
-        (void)flushAndSubmitCommands(nullptr, nullptr,
-                                     RenderPassClosureReason::ForeignImageRelease);
-        ASSERT(!hasForeignImagesToTransition());
-    }
-}
-
 angle::Result ContextVk::beginNewRenderPass(
     vk::RenderPassFramebuffer &&framebuffer,
     const gl::Rectangle &renderArea,
@@ -8803,6 +8815,7 @@ angle::Result ContextVk::switchToReadOnlyDepthStencilMode(gl::Texture *texture,
         return angle::Result::Continue;
     }
 
+    // Switch to read-only depth or stencil feedback loop if not already
     if (isStencilTexture)
     {
         if (mState.isStencilWriteEnabled(mState.getDrawFramebuffer()->getStencilBitCount()))
@@ -8817,18 +8830,19 @@ angle::Result ContextVk::switchToReadOnlyDepthStencilMode(gl::Texture *texture,
             mDepthStencilAttachmentFlags.set(vk::RenderPassUsage::StencilReadOnlyAttachment);
         }
     }
-
-    // Switch to read-only depth feedback loop if not already
-    if (mState.isDepthWriteEnabled())
+    else
     {
-        // This looks like a feedback loop, but we don't issue a warning because the application
-        // may have correctly used BASE and MAX levels to avoid it.  ANGLE doesn't track that.
-        mDepthStencilAttachmentFlags.set(vk::RenderPassUsage::DepthFeedbackLoop);
-    }
-    else if (!mDepthStencilAttachmentFlags[vk::RenderPassUsage::DepthFeedbackLoop])
-    {
-        // If we are not in the actual feedback loop mode, switch to read-only depth mode
-        mDepthStencilAttachmentFlags.set(vk::RenderPassUsage::DepthReadOnlyAttachment);
+        if (mState.isDepthWriteEnabled())
+        {
+            // This looks like a feedback loop, but we don't issue a warning because the application
+            // may have correctly used BASE and MAX levels to avoid it.  ANGLE doesn't track that.
+            mDepthStencilAttachmentFlags.set(vk::RenderPassUsage::DepthFeedbackLoop);
+        }
+        else if (!mDepthStencilAttachmentFlags[vk::RenderPassUsage::DepthFeedbackLoop])
+        {
+            // If we are not in the actual feedback loop mode, switch to read-only depth mode
+            mDepthStencilAttachmentFlags.set(vk::RenderPassUsage::DepthReadOnlyAttachment);
+        }
     }
 
     if ((mDepthStencilAttachmentFlags & vk::kDepthStencilReadOnlyBits).none())
@@ -8851,12 +8865,14 @@ angle::Result ContextVk::switchToReadOnlyDepthStencilMode(gl::Texture *texture,
     // pending through a deferred clear.
     if (hasActiveRenderPass())
     {
-        const vk::RenderPassUsage readOnlyAttachmentUsage =
-            isStencilTexture ? vk::RenderPassUsage::StencilReadOnlyAttachment
-                             : vk::RenderPassUsage::DepthReadOnlyAttachment;
         TextureVk *textureVk = vk::GetImpl(texture);
-
-        if (!textureVk->getImage().hasRenderPassUsageFlag(readOnlyAttachmentUsage))
+        const vk::RenderPassUsageFlags imageRenderPassUsageFlags =
+            textureVk->getImage().getRenderPassUsage().getFlags(mRenderPassCommands);
+        bool readOnlyAttachment =
+            isStencilTexture
+                ? imageRenderPassUsageFlags[vk::RenderPassUsage::StencilReadOnlyAttachment]
+                : imageRenderPassUsageFlags[vk::RenderPassUsage::DepthReadOnlyAttachment];
+        if (!readOnlyAttachment)
         {
             // If the render pass has written to this aspect, it needs to be closed.
             if ((!isStencilTexture && getStartedRenderPassCommands().hasDepthWriteOrClear()) ||
@@ -9125,9 +9141,11 @@ angle::Result ContextVk::endRenderPassIfComputeAccessAfterGraphicsImageAccess()
         // Similar to flushCommandBuffersIfNecessary(), but using textures currently bound and used
         // by the current (compute) program.  This is to handle read-after-write hazards where the
         // write originates from a framebuffer attachment.
-        if (image.hasRenderPassUsageFlag(vk::RenderPassUsage::RenderTargetAttachment) &&
-            isRenderPassStartedAndUsesImage(image))
+        const vk::RenderPassUsageFlags imageRenderPassUsageFlags =
+            image.getRenderPassUsage().getFlags(mRenderPassCommands);
+        if (imageRenderPassUsageFlags[vk::RenderPassUsage::RenderTargetAttachment])
         {
+            ASSERT(isRenderPassStartedAndUsesImage(image));
             return flushCommandsAndEndRenderPass(
                 RenderPassClosureReason::ImageAttachmentThenComputeRead);
         }

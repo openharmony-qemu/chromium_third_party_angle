@@ -576,8 +576,8 @@ class Renderer : angle::NonCopyable
     }
 
     void addBufferBlockToOrphanList(vk::BufferBlock *block) { mOrphanedBufferBlockList.add(block); }
-    void addSamplerToOrphanList(SharedSamplerPtr sampler);
-    void addSamplerYcbcrConversionToOrphanList(VkSamplerYcbcrConversion conversion);
+    SamplerCache &getSamplerCache() { return mSamplerCache; }
+    SamplerYcbcrConversionCache &getYuvConversionCache() { return mYuvConversionCache; }
 
     VkDeviceSize getSuballocationDestroyedSize() const
     {
@@ -650,10 +650,7 @@ class Renderer : angle::NonCopyable
 
     void requestAsyncCommandsAndGarbageCleanup(vk::ErrorContext *context);
 
-    VkDeviceSize getMaxMemoryAllocationSize() const
-    {
-        return mMaintenance3Properties.maxMemoryAllocationSize;
-    }
+    VkDeviceSize getMaxMemoryAllocationSize() const { return mMaxMemoryAllocationSize; }
 
     // Cleanup garbage and finish command batches from the queue if necessary in the event of an OOM
     // error.
@@ -798,8 +795,6 @@ class Renderer : angle::NonCopyable
     // Find the threshold for pending suballocation and image garbage sizes before the context
     // should be flushed.
     void calculatePendingGarbageSizeLimit();
-
-    bool cleanupOrphanedSamplers();
 
     template <typename CommandBufferHelperT, typename RecyclerT>
     angle::Result getCommandBufferImpl(vk::ErrorContext *context,
@@ -953,10 +948,8 @@ class Renderer : angle::NonCopyable
     // Holds RefCountedEvent that are free and ready to reuse
     vk::RefCountedEventRecycler mRefCountedEventRecycler;
 
-    // Holds orphaned VkSampler and VkSamplerYcbcrConversion objects when ShareGroup gets destroyed
-    angle::SimpleMutex mOrphanedSamplerMutex;
-    std::vector<SharedSamplerPtr> mOrphanedSamplers;
-    std::vector<VkSamplerYcbcrConversion> mOrphanedSamplerYcbcrConversions;
+    SamplerCache mSamplerCache;
+    SamplerYcbcrConversionCache mYuvConversionCache;
 
     VkDeviceSize mPendingGarbageSizeLimit;
 
@@ -1105,6 +1098,9 @@ class Renderer : angle::NonCopyable
 
     // A placeholder descriptor set layout handle for layouts with no bindings.
     vk::DescriptorSetLayoutPtr mPlaceHolderDescriptorSetLayout;
+
+    // Allocation size limit for a single object.
+    VkDeviceSize mMaxMemoryAllocationSize;
 
     // Cached value for the buffer memory size limit.
     VkDeviceSize mMaxBufferMemorySizeLimit;

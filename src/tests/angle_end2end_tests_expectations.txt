@@ -123,6 +123,7 @@
 448658624 WIN INTEL VULKAN : GLSLTestLoops.ForContinueInSwitchComplex/* = SKIP
 448658624 WIN INTEL VULKAN : GLSLTest_ES31.ConstantPrecisionPropagation/* = SKIP
 452159379 WIN INTEL VULKAN : ProgramBinaryTest.ReturnedBinaryTwiceShouldMatch/* = SKIP
+519062400 WIN INTEL OPENGL : CopyTextureTestES3.ChangeBaseLevel/* = SKIP
 
 42266241 PIXEL6 VULKAN : VertexAttributeTestES31.MismatchingSignsChangingAttributeType/* = SKIP
 42266241 PIXEL6 VULKAN : VertexAttributeTestES31.MismatchingSignsChangingProgramType/* = SKIP
@@ -371,7 +372,7 @@
 42265138 MAC AMD OPENGL : TransformFeedbackTest.TransformFeedbackQueryPausedDrawThenResume/* = SKIP
 42265138 MAC AMD OPENGL : TransformFeedbackTest.TransformFeedbackPausedDrawThenResume/* = SKIP
 40050013 MAC AMD OPENGL : Texture3DTestES3.PixelUnpackStateTex* = SKIP
-1296467 MAC OPENGL : VertexAttributeTestES3.emptyBuffer/* = SKIP
+1296467 MAC OPENGL : VertexAttributeTestES3.EmptyBuffer/* = SKIP
 42265677 MAC INTEL OPENGL : CopyTextureTest.CopyToMipmap/* = SKIP
 42265680 MAC NVIDIA OPENGL : CopyTextureTest.CubeMap*/* = SKIP
 42265680 MAC NVIDIA OPENGL : CopyTextureTest.CopyToMipmap/* = SKIP
@@ -405,6 +406,7 @@
 448658625 MAC OPENGL : GLSLTest_ES3.SwitchConstantFoldWithVariables/* = SKIP
 448658630 MAC OPENGL : GLSLTestLoops.ForContinueInConstSwitch/* = SKIP
 448658630 MAC OPENGL : GLSLTestLoops.ForContinueInSwitchComplex/* = SKIP
+519471062 MAC OPENGL : GLSLTest_ES3.SamplerInStructRHSOfCommaWithSideEffect/* = SKIP
 
 // BlitFramebufferTest.ScissoredMultisampleStencil failures
 42262159 MAC INTEL OPENGL : BlitFramebufferTest.ScissoredMultisampleStencil/* = SKIP
@@ -521,6 +523,7 @@
 1456243 WIN D3D11 : WebGL2CompatibilityTest.DrawWithZeroSizedBuffer/* = SKIP
 42266836 WIN D3D9 : GLSLValidationTest.VectorScalarArithmeticWithSideEffectInLoop/* = SKIP
 42267092 WIN D3D11 : BlitFramebufferTest.FlippedBlits/* = SKIP
+520277980 WIN D3D11 : TextureCubeTestES3.CubeMapRedefinedWithBaseLevelChange/* = SKIP
 432303915 WIN D3D11 : GLSLTest.VerifyMaxFragmentUniformVectorsWithSamplers/* = SKIP
 432303915 WIN D3D11 : GLSLTest.VerifyMaxVertexUniformVectors/* = SKIP
 432303915 WIN D3D11 : GLSLTest.VerifyMaxVertexUniformVectorsWithSamplers/* = SKIP
@@ -653,6 +656,8 @@
 42264513 PIXEL4ORXL GLES : SimpleUniformTestES3.TernarySelectAnArrayThenIndex/* = SKIP
 458082809 PIXEL4ORXL GLES : GLSLValidationExtensionDirectiveTest_ES3.Sampler2DShadow/* = SKIP
 458082810 PIXEL4ORXL GLES : GLSLValidationExtensionDirectiveTest_ES31.TextureCubeMapArray/* = SKIP
+522247737 PIXEL4ORXL GLES : MSRTTES3Test.DrawDisabled/* = SKIP
+522247737 PIXEL4ORXL GLES : MSRTTES3Test.DrawThenDrawDisabled/* = SKIP
 
 42267082 PIXEL4ORXL GLES : BlobCacheTest.FragmentOutputLocationKey/* = SKIP
 42267082 PIXEL4ORXL GLES : EGLBlobCacheTest.FragmentOutputLocationKey/* = SKIP
@@ -745,7 +750,7 @@
 42264692 PIXEL4ORXL GLES : DepthStencilTestES3.FramebufferClearThenStencilAttachedThenStencilTestState/* = SKIP
 42264692 PIXEL4ORXL GLES : DepthStencilTestES3.FramebufferClearThenStencilTestStateThenStencilAttached/* = SKIP
 42264692 PIXEL4ORXL GLES : DepthStencilTestES3.StencilTestStateThenFramebufferClearThenStencilAttached/* = SKIP
-1296467 PIXEL4ORXL GLES : VertexAttributeTestES3.emptyBuffer/* = SKIP
+1296467 PIXEL4ORXL GLES : VertexAttributeTestES3.EmptyBuffer/* = SKIP
 
 42265757 PIXEL4ORXL GLES : TextureBufferTestES31.TextureBufferThenBufferData/* = SKIP
 
@@ -882,6 +887,9 @@
 378404998 PIXEL6 VULKAN : VulkanPerformanceCounterTest_ES31.ColorMaskedFramebufferFetchDrawThenClear/* = SKIP
 330697097 PIXEL6 VULKAN : FramebufferTest_ES31.MultisampleResolveBothAttachments/* = SKIP
 42266019 PIXEL6 VULKAN : VulkanPerformanceCounterTest_DepthStencilLoadStoreOps.MultisampleDepthStencilResolveSeparately/* = SKIP
+
+// Blocked on preferBGR565ToRGB565 availability
+519580088 PIXEL6 VULKAN : VulkanImageTest.ImportRGB565/ES3_Vulkan_ForceFallbackFormat = SKIP
 
 // Some Metal tests fail on iOS Intel simulator
 40096874 IOS METAL : CubeMapTextureTest.SampleCoordinateTransformGrad/* = SKIP
@@ -2159,6 +2167,8 @@
 
 // WebGPU does not support BGRA
 42267264 WGPU : ClearTest.*BGRA* = SKIP
+// WebGPU error BufferOffset (5242862) is not a multiple of 4.
+496503799 WGPU : BufferDataTest.UnalignedVertexAttribPointer/* = SKIP
 
 // Fails on Mac & OpenGL & NVIDIA
 406807990 MAC NVIDIA OPENGL : TextureUploadFormatTest_ES3.AllWithPBO/* = SKIP
@@ -2269,6 +2279,10 @@
 // Fails test on Metal
 499091328 MAC AMD METAL : Texture2DArrayTestES3.ReformatStagedBufferUpdatesLayerCountOOB_2DArray/* = SKIP
 512995370 MAC AMD METAL : Texture2DArrayTestES3.ReformatStagedBufferUpdatesLayerCountOOB_3D/* = SKIP
+
+529867799 METAL : ReadPixelsPBOTest.PackLargeRowLength/* = SKIP
+529867799 VULKAN : ReadPixelsPBOTest.PackLargeRowLength/* = SKIP
+529867799 INTEL OPENGL : ReadPixelsPBOTest.PackLargeRowLength/* = SKIP
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // Slow tests, should appear last in this file

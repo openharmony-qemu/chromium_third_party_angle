@@ -857,12 +857,22 @@
             "issue": "https://crbug.com/451796659"
         },
         {
+
             "name": "split_level_0_pbo_full_sub_image_2D",
             "category": "Workarounds",
             "description": [
                 "Split full-image level 0 PBO uploads via TexSubImage2D into two calls to work around driver bugs."
             ],
             "issue": "http://crbug.com/496807874"
+        },
+        {
+            "name": "flush_queries_before_deleting_or_unbinding_fbo",
+            "category": "Workarounds",
+            "description": [
+                "Flush pending GPU jobs/queries before unbinding or deleting a user framebuffer ",
+                "object on ARM Mali Valhall/Avalon GPUs to avoid driver crash."
+            ],
+            "issue": "http://crbug.com/534468209"
         }
     ]
 }

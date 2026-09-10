@@ -218,6 +218,7 @@ class TParseContext : angle::NonCopyable
                                             TQualifier qualifier,
                                             const char *message);
     void functionCallClipCullDistanceCheck(const TFunction *fnCandidate, TIntermAggregate *fnCall);
+    void functionCallFragDataCheck(const TFunction *fnCandidate, TIntermAggregate *fnCall);
     void checkInvariantVariableQualifier(bool invariant,
                                          const TQualifier qualifier,
                                          const TSourceLoc &invariantLocation);

@@ -2493,6 +2493,8 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
     //
     // Note that this feature is only set here in order to advertise this workaround
     // externally. GPU switching support must be enabled or disabled early, during display
+    ANGLE_FEATURE_CONDITION(features, recreateImmutableTextureOnBaseLevelIncrease,
+                            IsPowerVR(vendor));
     // initialization, before these features are set up.
     bool isDualGPUMacWithNVIDIA = false;
     if (IsApple() && functions->standard == STANDARD_GL_DESKTOP)
@@ -2566,6 +2568,9 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
     // Imagination drivers are buggy with context switching. It needs to unbind fbo before context
     // switching to workadround the driver issues.
     ANGLE_FEATURE_CONDITION(features, unbindFBOBeforeSwitchingContext, IsPowerVR(vendor));
+
+    ANGLE_FEATURE_CONDITION(features, useTempForNonZeroBaseLevelGenMipmapUsingCopyImageSubData,
+                            IsPowerVR(vendor));
 
     // http://crbug.com/1181068 and http://crbug.com/783979
     ANGLE_FEATURE_CONDITION(features, flushOnFramebufferChange,

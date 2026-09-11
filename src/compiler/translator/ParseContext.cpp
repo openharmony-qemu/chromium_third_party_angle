@@ -2828,10 +2828,10 @@ void TParseContext::functionCallRValueLValueErrorCheck(const TFunction *fnCandid
 }
 
 void TParseContext::checkClipCullDistanceWholeArrayUse(const TSourceLoc &location,
-                                                       TQualifier qualifier,
+                                                       TIntermTyped *node,
                                                        const char *message)
 {
-    switch (qualifier)
+    switch (node->getQualifier())
     {
         case EvqClipDistance:
             if (mClipDistanceInfo.size == 0)
@@ -2848,6 +2848,22 @@ void TParseContext::checkClipCullDistanceWholeArrayUse(const TSourceLoc &locatio
             }
             break;
         default:
+        {
+            TIntermBinary *asBinary = node->getAsBinaryNode();
+            if (asBinary != nullptr && asBinary->getOp() == EOpComma)
+            {
+                checkClipCullDistanceWholeArrayUse(location, asBinary->getRight(), message);
+                return;
+            }
+            TIntermTernary *asTernary = node->getAsTernaryNode();
+            if (asTernary != nullptr)
+            {
+                checkClipCullDistanceWholeArrayUse(location, asTernary->getTrueExpression(),
+                                                   message);
+                checkClipCullDistanceWholeArrayUse(location, asTernary->getFalseExpression(),
+                                                   message);
+            }
+        }
             break;
     }
 }
@@ -2861,7 +2877,7 @@ void TParseContext::functionCallClipCullDistanceCheck(const TFunction *fnCandida
     for (size_t i = 0; i < fnCandidate->getParamCount(); ++i)
     {
         TIntermTyped *argument = (*fnCall->getSequence())[i]->getAsTyped();
-        checkClipCullDistanceWholeArrayUse(argument->getLine(), argument->getQualifier(),
+        checkClipCullDistanceWholeArrayUse(argument->getLine(), argument,
                                            "Cannot pass to function unless it is explicitly sized");
     }
 }
@@ -8441,10 +8457,9 @@ bool TParseContext::binaryOpCommonCheck(TOperator op,
         // Per EXT_clip_cull_distance, only indexing with constants can implicitly size the
         // built-ins, using them in whole-array assignment shouldn't try to size them.
         checkClipCullDistanceWholeArrayUse(
-            loc, left->getType().getQualifier(),
-            "Cannot use as left-hand side of assignment unless it is explicitly sized");
+            loc, left, "Cannot use as left-hand side of assignment unless it is explicitly sized");
         checkClipCullDistanceWholeArrayUse(
-            loc, right->getType().getQualifier(),
+            loc, right,
             "Cannot use as right-hand side of assignment unless it is explicitly sized");
     }
 

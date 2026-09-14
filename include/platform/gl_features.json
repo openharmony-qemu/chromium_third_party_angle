@@ -841,6 +841,15 @@
             "issue": "https://anglebug.com/42267098"
         },
         {
+            "name": "finish_before_blit_framebuffer_multi_attachment",
+            "category": "Workarounds",
+            "description": [
+                "Issue a glFinish before calling glBlitFramebuffer if the draw framebuffer has ",
+                "multiple color attachments or any color attachment's texture has base_level > 0."
+            ],
+            "issue": "http://crbug.com/546252753"
+        },
+        {
             "name": "reset_sample_coverage_on_FBO_change",
             "category": "Workarounds",
             "description": [

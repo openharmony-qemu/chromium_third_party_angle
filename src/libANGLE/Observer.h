@@ -87,6 +87,9 @@ enum class SubjectMessage
 
     // Indicates a change in foveated rendering state in the subject.
     FoveatedRenderingStateChanged,
+
+    // Indicates the subject's storage was reallocated.
+    ObjectReallocated,
 };
 
 inline bool IsProgramUniformBlockBindingUpdatedMessage(SubjectMessage message)

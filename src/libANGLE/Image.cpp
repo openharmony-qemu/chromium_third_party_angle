@@ -80,24 +80,26 @@ angle::Result ImageSibling::orphanImages(const gl::Context *context,
 {
     ASSERT(outReleaseImage != nullptr);
 
+    angle::ResultAccumulator result = angle::Result::Continue;
+
     if (mTargetOf.get() != nullptr)
     {
         // Can't be a target and have sources.
         ASSERT(mSourcesOf.empty());
 
-        ANGLE_TRY(mTargetOf->orphanSibling(context, this));
+        result           = mTargetOf->orphanSibling(context, this);
         *outReleaseImage = mTargetOf.set(DisplayFromContext(context), nullptr);
     }
     else
     {
         for (Image *sourceImage : mSourcesOf)
         {
-            ANGLE_TRY(sourceImage->orphanSibling(context, this));
+            result = sourceImage->orphanSibling(context, this);
         }
         mSourcesOf.clear();
     }
 
-    return angle::Result::Continue;
+    return result;
 }
 
 void ImageSibling::addImageSource(egl::Image *imageSource)
@@ -407,8 +409,7 @@ angle::Result Image::orphanSibling(const gl::Context *context, ImageSibling *sib
 {
     ASSERT(sibling != nullptr);
 
-    // notify impl
-    ANGLE_TRY(mImplementation->orphan(context, sibling));
+    angle::Result result = mImplementation->orphan(context, sibling);
 
     if (mState.source == sibling)
     {
@@ -430,7 +431,7 @@ angle::Result Image::orphanSibling(const gl::Context *context, ImageSibling *sib
         mState.targets.erase(sibling);
     }
 
-    return angle::Result::Continue;
+    return result;
 }
 
 const gl::Format &Image::getFormat() const

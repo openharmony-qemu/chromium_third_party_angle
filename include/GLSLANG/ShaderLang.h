@@ -999,6 +999,10 @@ enum class MetadataFlags
     EnumCount = InvalidEnum,
 };
 
+// If samplers are extracted from structs, their names will be <prefix><N>, where <N> is a
+// zero-based index assigned in DFS-order of declaration.
+extern const char kExtractedSamplerNamePrefix[];
+
 namespace vk
 {
 

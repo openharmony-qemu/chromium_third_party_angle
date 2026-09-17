@@ -674,6 +674,12 @@ struct FeaturesGL : FeatureSetBase
         &members,
     };
 
+    FeatureInfo reattachTextureToFboAfterLayerIncrease = {
+        "reattachTextureToFboAfterLayerIncrease",
+        FeatureCategory::OpenGLWorkarounds,
+        &members,
+    };
+
     FeatureInfo disablePassthroughShaders = {
         "disablePassthroughShaders",
         FeatureCategory::OpenGLWorkarounds,

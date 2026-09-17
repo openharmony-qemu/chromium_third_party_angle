@@ -875,6 +875,14 @@
             "issue": "https://crbug.com/408364831"
         },
         {
+            "name": "reattach_texture_to_fbo_after_layer_increase",
+            "category": "Workarounds",
+            "description": [
+                "Reattach texture to FBO after increasing layer count in TexStorage3D to work around driver bugs."
+            ],
+            "issue": "http://crbug.com/544163112"
+        },
+        {
             "name": "disable_passthrough_shaders",
             "category": "Workarounds",
             "description": [

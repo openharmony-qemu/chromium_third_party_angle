@@ -90,6 +90,9 @@ enum class SubjectMessage
 
     // Indicates the subject's storage was reallocated.
     ObjectReallocated,
+
+    // Indicates the texture's layer count has increased.
+    TextureLayerCountIncreased,
 };
 
 inline bool IsProgramUniformBlockBindingUpdatedMessage(SubjectMessage message)

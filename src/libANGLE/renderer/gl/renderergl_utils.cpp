@@ -2411,6 +2411,8 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
     // driver version.
     ANGLE_FEATURE_CONDITION(features, uploadOversizedMipLevelsViaUnpackBuffer, isPowerVRDriver);
 
+    ANGLE_FEATURE_CONDITION(features, reattachTextureToFboAfterLayerIncrease, isPowerVRDriver);
+
     ANGLE_FEATURE_CONDITION(features, initializeCurrentVertexAttributes, isNvidia);
 
     ANGLE_FEATURE_CONDITION(features, unpackLastRowSeparatelyForPaddingInclusion,

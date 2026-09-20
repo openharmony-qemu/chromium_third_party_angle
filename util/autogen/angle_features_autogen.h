@@ -173,6 +173,7 @@ enum class Feature
     ExposeES32ForTesting,
     ExposeNonConformantExtensionsAndVersions,
     ExternallySynchronizePipelineCacheAccess,
+    FinishBeforeBlitFramebufferMultiAttachment,
     FinishDoesNotCauseQueriesToBeAvailable,
     FlushAfterEndingTransformFeedback,
     FlushAfterStreamVertexData,

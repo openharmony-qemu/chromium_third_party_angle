@@ -2730,6 +2730,9 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
     // https://anglebug.com/42266811
     ANGLE_FEATURE_CONDITION(features, resyncDepthRangeOnClipControl, !isMesa && isQualcomm);
 
+    // http://crbug.com/546252753
+    ANGLE_FEATURE_CONDITION(features, finishBeforeBlitFramebufferMultiAttachment, isMali);
+
     // https://anglebug.com/42266745
     ANGLE_FEATURE_CONDITION(features, disableRenderSnorm,
                             isMesa && (mesaVersion < (std::array<int, 3>{21, 3, 0}) ||

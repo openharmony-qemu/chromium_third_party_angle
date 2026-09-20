@@ -833,6 +833,23 @@
             "issue": "http://skbug.com/9491 https://github.com/flutter/flutter/issues/47164 https://github.com/flutter/flutter/issues/47804"
         },
         {
+            "name": "upload_oversized_mip_levels_via_unpack_buffer",
+            "category": "Workarounds",
+            "description": [
+                "Stage oversized nonzero-level texture definitions through a scratch pixel unpack buffer ",
+                "to work around driver bugs."
+            ],
+            "issue": "http://crbug.com/548127218"
+        },
+        {
+            "name": "reattach_fbo_depth_stencil_on_reallocation",
+            "category": "Workarounds",
+            "description": [
+                "Reattach FBO depth/stencil when texture storage is reallocated."
+            ],
+            "issue": "http://crbug.com/548127218"
+        },
+        {
             "name": "disable_blend_equation_advanced",
             "category": "Workarounds",
             "description": [

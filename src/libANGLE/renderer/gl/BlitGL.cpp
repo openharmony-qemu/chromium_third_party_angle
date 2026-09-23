@@ -76,12 +76,15 @@ class [[nodiscard]] ScopedGLState : angle::NonCopyable
 
     ScopedGLState() {}
 
-    ~ScopedGLState() { ASSERT(mExited); }
+    ~ScopedGLState() { (void)exit(); }
 
     angle::Result enter(const gl::Context *context, gl::Rectangle viewport, int keepState = 0)
     {
+        ASSERT(mContext == nullptr);
         ContextGL *contextGL         = GetImplAs<ContextGL>(context);
         StateManagerGL *stateManager = contextGL->getStateManager();
+
+        mContext = context;
 
         if (!(keepState & KEEP_SCISSOR))
         {
@@ -111,9 +114,15 @@ class [[nodiscard]] ScopedGLState : angle::NonCopyable
         return stateManager->pauseAllQueries(context);
     }
 
-    angle::Result exit(const gl::Context *context)
+    angle::Result exit()
     {
-        mExited = true;
+        if (mContext == nullptr)
+        {
+            return angle::Result::Continue;
+        }
+
+        const gl::Context *context = mContext;
+        mContext                   = nullptr;
 
         ContextGL *contextGL         = GetImplAs<ContextGL>(context);
         StateManagerGL *stateManager = contextGL->getStateManager();
@@ -122,9 +131,10 @@ class [[nodiscard]] ScopedGLState : angle::NonCopyable
         return stateManager->resumeAllQueries(context);
     }
 
-    void willUseTextureUnit(const gl::Context *context, int unit)
+    void willUseTextureUnit(int unit)
     {
-        ContextGL *contextGL = GetImplAs<ContextGL>(context);
+        ASSERT(mContext != nullptr);
+        ContextGL *contextGL = GetImplAs<ContextGL>(mContext);
 
         if (contextGL->getFunctions()->bindSampler)
         {
@@ -133,7 +143,7 @@ class [[nodiscard]] ScopedGLState : angle::NonCopyable
     }
 
   private:
-    bool mExited = false;
+    const gl::Context *mContext = nullptr;
 };
 
 angle::Result SetClearState(StateManagerGL *stateManager,
@@ -415,7 +425,7 @@ angle::Result BlitGL::copySubImageToLUMAWorkaroundTexture(const gl::Context *con
     // Render to the destination texture, sampling from the scratch texture
     ScopedGLState scopedState;
     ANGLE_TRY(scopedState.enter(context, gl::Rectangle(0, 0, sourceArea.width, sourceArea.height)));
-    scopedState.willUseTextureUnit(context, 0);
+    scopedState.willUseTextureUnit(0);
 
     ANGLE_TRY(setScratchTextureParameter(context, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
     ANGLE_TRY(setScratchTextureParameter(context, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
@@ -456,7 +466,7 @@ angle::Result BlitGL::copySubImageToLUMAWorkaroundTexture(const gl::Context *con
     ANGLE_TRY(orphanScratchTextures(context));
     ANGLE_TRY(UnbindAttachment(context, mFunctions, GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0));
 
-    ANGLE_TRY(scopedState.exit(context));
+    ANGLE_TRY(scopedState.exit());
     return angle::Result::Continue;
 }
 
@@ -594,7 +604,7 @@ angle::Result BlitGL::blitColorBufferWithShader(const gl::Context *context,
     // rectangle
     ScopedGLState scopedState;
     ANGLE_TRY(scopedState.enter(context, destArea, ScopedGLState::KEEP_SCISSOR));
-    scopedState.willUseTextureUnit(context, 0);
+    scopedState.willUseTextureUnit(0);
 
     // Set the write color mask to potentially not write alpha
     mStateManager->setColorMask(true, true, true, writeAlpha);
@@ -618,7 +628,7 @@ angle::Result BlitGL::blitColorBufferWithShader(const gl::Context *context,
     ANGLE_TRY(setVAOState(context));
     ANGLE_GL_TRY(context, mFunctions->drawArrays(GL_TRIANGLES, 0, 3));
 
-    ANGLE_TRY(scopedState.exit(context));
+    ANGLE_TRY(scopedState.exit());
     return angle::Result::Continue;
 }
 
@@ -693,7 +703,7 @@ angle::Result BlitGL::copySubTexture(const gl::Context *context,
     ScopedGLState scopedState;
     ANGLE_TRY(scopedState.enter(
         context, gl::Rectangle(destOffset.x, destOffset.y, sourceArea.width, sourceArea.height)));
-    scopedState.willUseTextureUnit(context, 0);
+    scopedState.willUseTextureUnit(0);
 
     mStateManager->activeTexture(0);
     mStateManager->bindTexture(source->getType(), source->getTextureID());
@@ -738,7 +748,7 @@ angle::Result BlitGL::copySubTexture(const gl::Context *context,
     ANGLE_TRY(UnbindAttachment(context, mFunctions, GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0));
 
     *copySucceededOut = true;
-    ANGLE_TRY(scopedState.exit(context));
+    ANGLE_TRY(scopedState.exit());
     return angle::Result::Continue;
 }
 
@@ -1237,7 +1247,7 @@ angle::Result BlitGL::generateMipmap(const gl::Context *context,
     ScopedGLState scopedState;
     ANGLE_TRY(scopedState.enter(
         context, gl::Rectangle(0, 0, sourceBaseLevelSize.width, sourceBaseLevelSize.height)));
-    scopedState.willUseTextureUnit(context, 0);
+    scopedState.willUseTextureUnit(0);
     mStateManager->activeTexture(0);
 
     // Copy source to an intermediate texture.
@@ -1307,7 +1317,7 @@ angle::Result BlitGL::generateMipmap(const gl::Context *context,
     ANGLE_TRY(orphanScratchTextures(context));
     ANGLE_TRY(UnbindAttachment(context, mFunctions, GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0));
 
-    ANGLE_TRY(scopedState.exit(context));
+    ANGLE_TRY(scopedState.exit());
     return angle::Result::Continue;
 }
 

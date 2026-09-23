@@ -2555,6 +2555,8 @@ angle::Result Texture::ensureInitialized(const Context *context, EnsureInitializ
     }
 
     bool anyDirty = false;
+    bool allInitialized = (levels == EnsureInitializedLevels::AllEnabledLevels &&
+                           mState.getEffectiveBaseLevel() == 0);
 
     ImageIndexIterator it =
         ImageIndexIterator::MakeGeneric(mState.mType, 0, IMPLEMENTATION_MAX_TEXTURE_LEVELS + 1,
@@ -2576,12 +2578,19 @@ angle::Result Texture::ensureInitialized(const Context *context, EnsureInitializ
             desc.initState = InitState::Initialized;
             anyDirty       = true;
         }
+        if (desc.initState != InitState::Initialized)
+        {
+            allInitialized = false;
+        }
     }
     if (anyDirty)
     {
         signalDirtyStorage(InitState::Initialized);
     }
-    mState.mInitState = InitState::Initialized;
+    if (allInitialized)
+    {
+        mState.mInitState = InitState::Initialized;
+    }
 
     return angle::Result::Continue;
 }

@@ -2090,6 +2090,12 @@ angle::Result Texture::clearSubImage(Context *context,
 
     onStateChange(angle::SubjectMessage::ContentsChanged);
 
+    ImageIndexIterator setImagesIterator = allImagesIterator;
+    while (setImagesIterator.hasNext())
+    {
+        setInitState(GL_NONE, setImagesIterator.next(), InitState::Initialized);
+    }
+
     return angle::Result::Continue;
 }
 

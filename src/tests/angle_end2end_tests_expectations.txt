@@ -1911,6 +1911,7 @@
 42267100 WGPU : GLSLTest.StructsWithSamplersAsFunctionArgWithPrototype/* = SKIP
 42267100 WGPU : GLSLTest.ArrayOfStructsWithSamplersAsFunctionArg/* = SKIP
 42267100 WGPU : GLSLTest.StructWithSamplerArrayAsFunctionArg/* = SKIP
+42267100 WGPU : GLSLTest.SamplersInStructNoNameCollision2/* = SKIP
 42267100 WGPU : GLSLTest.VectorScalarDivideAndAddInLoop/* = SKIP
 42267100 WGPU : GLSLTest.PointCoordConsistency/* = SKIP
 42267100 WGPU : GLSLTest.ScreenFlipCauseStandardDerivativesWrong/* = SKIP

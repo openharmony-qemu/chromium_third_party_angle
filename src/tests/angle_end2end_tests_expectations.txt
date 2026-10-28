@@ -266,6 +266,9 @@
 42264645 NVIDIA GLES : GLSLTestLoops.DoWhileUnconditionalContinue/* = SKIP
 42264645 NVIDIA GLES : GLSLTestLoops.DoWhileContinueInSwitch/* = SKIP
 42264645 NVIDIA GLES : GLSLTestLoops.WhileBreak/* = SKIP
+// NVIDIA is prone to losing data outside the BASE/MAX range.
+553117511 NVIDIA OPENGL : CopyTextureTestES3.ImmutableSourceLevelOutsideBaseMaxRange/* = SKIP
+553117511 NVIDIA GLES : CopyTextureTestES3.ImmutableSourceLevelOutsideBaseMaxRange/* = SKIP
 // Generates invalid errors when compiling the shader in the GL backend
 42264698 NVIDIA OpenGL : GLSLTest_ES31.TypesUsedInDifferentBlockStorages/* = SKIP
 42264698 NVIDIA GLES : GLSLTest_ES31.TypesUsedInDifferentBlockStorages/* = SKIP

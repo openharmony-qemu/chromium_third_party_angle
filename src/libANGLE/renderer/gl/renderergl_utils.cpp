@@ -2407,6 +2407,10 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
     ANGLE_FEATURE_CONDITION(features, packLargeRowLengthSeparatelyPackBuffer,
                             isMali || IsPowerVR(vendor));
 
+    // TODO(crbug.com/548127218): conditionalize this workaround on PowerVR
+    // driver version.
+    ANGLE_FEATURE_CONDITION(features, uploadOversizedMipLevelsViaUnpackBuffer, isPowerVRDriver);
+
     ANGLE_FEATURE_CONDITION(features, initializeCurrentVertexAttributes, isNvidia);
 
     ANGLE_FEATURE_CONDITION(features, unpackLastRowSeparatelyForPaddingInclusion,

@@ -638,6 +638,18 @@ struct FeaturesGL : FeatureSetBase
         &members,
     };
 
+    FeatureInfo uploadOversizedMipLevelsViaUnpackBuffer = {
+        "uploadOversizedMipLevelsViaUnpackBuffer",
+        FeatureCategory::OpenGLWorkarounds,
+        &members,
+    };
+
+    FeatureInfo reattachFboDepthStencilOnReallocation = {
+        "reattachFboDepthStencilOnReallocation",
+        FeatureCategory::OpenGLWorkarounds,
+        &members,
+    };
+
     FeatureInfo disableBlendEquationAdvanced = {
         "disableBlendEquationAdvanced",
         FeatureCategory::OpenGLWorkarounds,

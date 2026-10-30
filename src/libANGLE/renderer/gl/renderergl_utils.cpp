@@ -2560,6 +2560,8 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
     // externally. GPU switching support must be enabled or disabled early, during display
     ANGLE_FEATURE_CONDITION(features, recreateImmutableTextureOnBaseLevelIncrease,
                             IsPowerVR(vendor));
+    ANGLE_FEATURE_CONDITION(features, recreateTextureOnTexImage3dDepthIncrease,
+                            isQualcomm && IsAndroid());
     // initialization, before these features are set up.
     bool isDualGPUMacWithNVIDIA = false;
     if (IsApple() && functions->standard == STANDARD_GL_DESKTOP)

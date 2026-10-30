@@ -294,6 +294,7 @@ enum class Feature
     RetainSPIRVDebugInfo,
     RewriteRepeatedAssignToSwizzled,
     RecreateImmutableTextureOnBaseLevelIncrease,
+    RecreateTextureOnTexImage3dDepthIncrease,
     RewriteRowMajorMatrices,
     RewriteUnaryMinusOperator,
     RGBA4IsNotSupportedForColorRendering,

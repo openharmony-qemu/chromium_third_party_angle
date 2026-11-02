@@ -2554,18 +2554,24 @@ angle::Result Texture::ensureInitialized(const Context *context, EnsureInitializ
         return angle::Result::Continue;
     }
 
-    bool anyDirty = false;
-    bool allInitialized = (levels == EnsureInitializedLevels::AllEnabledLevels &&
-                           mState.getEffectiveBaseLevel() == 0);
+    const bool initializeBaseOnly = levels == EnsureInitializedLevels::BaseOnly;
+    const GLint baseLevel         = mState.getEffectiveBaseLevel();
+    // Start initializing from baseLevel if specifically requested or if the texture is mutable.  If
+    // the texture is immutable, initialize all the levels because framebuffers outside [BASE, MAX]
+    // range are complete for immutable textures.
+    const GLint initFirstLevel = (initializeBaseOnly || !getImmutableFormat()) ? baseLevel : 0;
 
-    ImageIndexIterator it =
-        ImageIndexIterator::MakeGeneric(mState.mType, 0, IMPLEMENTATION_MAX_TEXTURE_LEVELS + 1,
-                                        ImageIndex::kEntireLevel, ImageIndex::kEntireLevel);
+    bool anyDirty = false;
+    bool allInitialized =
+        levels == EnsureInitializedLevels::AllEnabledLevels && initFirstLevel == 0;
+
+    ImageIndexIterator it = ImageIndexIterator::MakeGeneric(
+        mState.mType, initFirstLevel, IMPLEMENTATION_MAX_TEXTURE_LEVELS + 1,
+        ImageIndex::kEntireLevel, ImageIndex::kEntireLevel);
     while (it.hasNext())
     {
         const ImageIndex index = it.next();
-        if (levels == EnsureInitializedLevels::BaseOnly &&
-            index.getLevelIndex() != static_cast<GLint>(mState.getEffectiveBaseLevel()))
+        if (initializeBaseOnly && index.getLevelIndex() != baseLevel)
         {
             break;
         }

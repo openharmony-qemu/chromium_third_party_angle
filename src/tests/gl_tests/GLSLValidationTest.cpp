@@ -7460,6 +7460,39 @@ ANGLE_INSTANTIATE_TEST(
     ES3_VULKAN_SWIFTSHADER().enable(Feature::AlwaysEnableEmulatedMultidrawExtensions),
     ES3_METAL().enable(Feature::AlwaysEnableEmulatedMultidrawExtensions));
 
+// Test using a large constant that is declared inline. Construction of such a large object, even if
+// it may be constant folded is not allowed.
+TEST_P(WebGL2GLSLValidationTest, InlineLargeConstant2)
+{
+    // Make a constant that's exactly 2GB.
+    std::ostringstream vs;
+    vs << R"(#version 300 es
+struct S { float a[16384]; };
+struct S2 { S s[32768]; };
+in vec4 position;
+out float v;
+void main() {
+  const float A[16384] = float[16384])";
+    for (uint32_t i = 0; i < 16384; ++i)
+    {
+        vs << (i == 0 ? "(" : ",") << "123.0";
+    }
+    vs << R"();
+  const S s = S(A);
+  v = S2(S[32768])";
+    for (uint32_t i = 0; i < 32768; ++i)
+    {
+        vs << (i == 0 ? "(" : ",") << "s";
+    }
+    vs << R"()).s[0].a[0];
+  gl_Position = position;
+})";
+
+    validateError(GL_VERTEX_SHADER, vs.str().c_str(),
+                  "'' : Size of declared variable exceeds implementation-defined limit");
+}
+
+
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(GLSLValidationExtensionDirectiveTest_ES3);
 ANGLE_INSTANTIATE_TEST_ES3(GLSLValidationExtensionDirectiveTest_ES3);
 

@@ -134,7 +134,7 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
             }
         }
 
-        if (variableSize > kMaxVariableSizeInBytes)
+        if (variableSize >= kMaxVariableSizeInBytes)
         {
             error(location, "Size of declared variable exceeds implementation-defined limit",
                   variable.name());
@@ -195,7 +195,7 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
             case EvqTessEvaluationIn:
             case EvqTessEvaluationOut:
 
-                if (variableSize > kMaxPrivateVariableSizeInBytes)
+                if (variableSize >= kMaxPrivateVariableSizeInBytes)
                 {
                     error(location,
                           "Size of declared private variable exceeds implementation-defined limit",

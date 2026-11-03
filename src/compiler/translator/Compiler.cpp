@@ -38,6 +38,7 @@
 #include "compiler/translator/tree_ops/DeferGlobalInitializers.h"
 #include "compiler/translator/tree_ops/EmulateGLFragColorBroadcast.h"
 #include "compiler/translator/tree_ops/EmulateMultiDrawShaderBuiltins.h"
+#include "compiler/translator/tree_ops/FoldConstantSwitch.h"
 #include "compiler/translator/tree_ops/FoldExpressions.h"
 #include "compiler/translator/tree_ops/ForcePrecisionQualifier.h"
 #include "compiler/translator/tree_ops/InitializeVariables.h"
@@ -899,8 +900,8 @@ bool TCompiler::checkAndSimplifyAST(TIntermBlock *root,
 
     if (!useIR)
     {
-        // Fold expressions that could not be folded before validation that was done as a part of
-        // parsing.
+        // Fold expressions that could not be folded before validation or otherwise that was done as a
+        // part of parsing.
         if (!FoldExpressions(this, root, &mDiagnostics))
         {
             return false;
@@ -1212,6 +1213,20 @@ bool TCompiler::checkAndSimplifyAST(TIntermBlock *root,
         {
             return false;
         }
+
+        // Fold switch statements with constant expression.  Run after FoldExpressions because the
+        // switch selector may need folding.  This pass may leave dead code, so prune it again
+        // afterwards.
+        mValidateASTOptions.validateNoStatementsAfterBranch = false;
+        if (!FoldConstantSwitch(this, root, &mSymbolTable))
+        {
+            return false;
+        }
+        if (!PruneNoOps(this, root, &mSymbolTable))
+        {
+            return false;
+        }
+        mValidateASTOptions.validateNoStatementsAfterBranch = true;
 
         if (!RemoveUnreferencedVariables(this, root, &mSymbolTable))
         {

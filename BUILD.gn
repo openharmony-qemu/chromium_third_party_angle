@@ -97,6 +97,9 @@ declare_args() {
   install_prefix = ""
 
   angle_use_crypto_hasher = build_with_chromium
+
+  angle_commit_id = ""
+  angle_commit_position = "0"
 }
 
 declare_args() {
@@ -956,6 +959,8 @@ action("angle_commit_id") {
     "gen",
     rebase_path(_commit_id_header, root_build_dir),
     rebase_path(depfile, root_build_dir),
+    angle_commit_position,
+    angle_commit_id,
   ]
 
   public_configs = [ ":angle_commit_id_config" ]

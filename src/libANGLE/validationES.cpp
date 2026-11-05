@@ -5150,6 +5150,18 @@ bool ValidateEGLImageTargetTexture2DOES(const Context *context,
             return false;
     }
 
+    Texture *texture = context->getTextureByType(type);
+    if (texture == nullptr)
+    {
+        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kTextureNotBound);
+        return false;
+    }
+
+    if (!ValidateNoActivePLSConflict(context, entryPoint, texture->id()))
+    {
+        return false;
+    }
+
     return ValidateEGLImageObject(context, entryPoint, type, image);
 }
 
@@ -5193,6 +5205,11 @@ bool ValidateEGLImageTargetRenderbufferStorageOES(const Context *context,
     if (renderbuffer == nullptr)
     {
         ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kRenderbufferNotBound);
+        return false;
+    }
+
+    if (!ValidateNoActivePLSConflict(context, entryPoint, renderbuffer->id()))
+    {
         return false;
     }
 

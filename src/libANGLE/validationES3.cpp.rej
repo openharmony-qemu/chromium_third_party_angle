@@ -1,0 +1,70 @@
+diff a/src/libANGLE/validationES3.cpp b/src/libANGLE/validationES3.cpp	(rejected hunks)
+@@ -748,6 +748,15 @@ bool ValidateES3TexImageParametersBase(const Context *context,
+             return false;
+         }
+ 
++        if (gl::IsYuvFormat(actualInternalFormat))
++        {
++            if ((xoffset % 2) != 0 || (yoffset % 2) != 0 || (width % 2) != 0 || (height % 2) != 0)
++            {
++                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kYuvTexSubImage2DOddOffsetOrDimension);
++                return false;
++            }
++        }
++
+         if (width > 0 && height > 0 && depth > 0 && pixels == nullptr &&
+             context->getState().getTargetBuffer(BufferBinding::PixelUnpack) == nullptr)
+         {
+@@ -771,9 +780,10 @@ bool ValidateES3TexImageParametersBase(const Context *context,
+             pixelUnpackBuffer->hasTFBBindingConflict())
+         {
+             ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION,
+-                                    kPixelUnpackBufferBoundForTransformFeedback);
++                                   kPixelUnpackBufferBoundForTransformFeedback);
+             return false;
+         }
++
+         // ...data is not evenly divisible into the number of bytes needed to store in memory a
+         // datum
+         // indicated by type.
+@@ -3688,8 +3705,19 @@ bool ValidateDrawArraysInstancedBaseInstanceANGLE(const Context *context,
+                                                   GLsizei instanceCount,
+                                                   GLuint baseInstance)
+ {
+-    return ValidateDrawArraysInstancedBase(context, entryPoint, mode, first, count, instanceCount,
+-                                           baseInstance);
++    if (!ValidateDrawArraysInstancedBase(context, entryPoint, mode, first, count, instanceCount,
++                                         baseInstance))
++    {
++        return false;
++    }
++
++    if (!ValidateDrawArraysTransformFeedbackBufferSize(context, entryPoint, &count, &instanceCount,
++                                                       1))
++    {
++        return false;
++    }
++
++    return true;
+ }
+ 
+ bool ValidateDrawElementsInstancedBaseVertexBaseInstanceANGLE(const Context *context,
+@@ -4486,7 +4521,17 @@ bool ValidateDrawArraysInstanced(const Context *context,
+                                  GLsizei count,
+                                  GLsizei primcount)
+ {
+-    return ValidateDrawArraysInstancedBase(context, entryPoint, mode, first, count, primcount, 0);
++    if (!ValidateDrawArraysInstancedBase(context, entryPoint, mode, first, count, primcount, 0))
++    {
++        return false;
++    }
++
++    if (!ValidateDrawArraysTransformFeedbackBufferSize(context, entryPoint, &count, &primcount, 1))
++    {
++        return false;
++    }
++
++    return true;
+ }
+ 
+ bool ValidateFenceSync(const Context *context,

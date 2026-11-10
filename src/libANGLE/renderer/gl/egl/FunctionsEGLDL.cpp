@@ -64,12 +64,20 @@ egl::Error FunctionsEGLDL::initialize(EGLAttrib platformType,
 
 void *FunctionsEGLDL::getProcAddress(const char *name) const
 {
-    void *f = reinterpret_cast<void *>(mGetProcAddressPtr(name));
+    // When using /system/lib64/libEGL.so, use dlsym on the loaded library handle over eglGetProcAddress.
+    // This avoids eglGetProcAddress returning ANGLE's own functions, which would cause
+    // recursion instead of dispatching to the vendor GPU driver.
+    void *f = dlsym(nativeEGLHandle, name);
     if (f)
     {
         return f;
     }
-    return dlsym(nativeEGLHandle, name);
+    // Fall back to eglGetProcAddress for extension functions
+    if (mGetProcAddressPtr)
+    {
+        return reinterpret_cast<void *>(mGetProcAddressPtr(name));
+    }
+    return nullptr;
 }
 
 }  // namespace rx

@@ -1,0 +1,13 @@
+diff --git a/src/libANGLE/renderer/d3d/d3d9/Renderer9.cpp b/src/libANGLE/renderer/d3d/d3d9/Renderer9.cpp
+index c81d071a801cef09b38528e781bf804277a0c6a6..ebffbd7e0eea98e6fedee5e2f00e9bfe182df97c 100644
+--- a/src/libANGLE/renderer/d3d/d3d9/Renderer9.cpp
++++ b/src/libANGLE/renderer/d3d/d3d9/Renderer9.cpp
+@@ -1508,7 +1508,7 @@ angle::Result Renderer9::drawElementsImpl(const gl::Context *context,
+         context, type, count, indices, context->getState().isPrimitiveRestartEnabled(),
+         &indexRange));
+ 
+-    size_t vertexCount = indexRange.vertexCount();
++    uint64_t vertexCount = indexRange.vertexCount();
+     ANGLE_TRY(applyVertexBuffer(context, mode, static_cast<GLsizei>(indexRange.start()),
+                                 static_cast<GLsizei>(vertexCount), instances, &indexInfo));
+ 

@@ -1,0 +1,15 @@
+diff a/include/platform/vk_features.json b/include/platform/vk_features.json	(rejected hunks)
+@@ -44,6 +44,13 @@
+                 "Force a fallback format for angle_end2end_tests"
+             ]
+         },
++        {
++            "name": "force_renderable_fallback_format",
++            "category": "Workarounds",
++            "description": [
++                "Force a fallback renderable format for angle_end2end_tests"
++            ]
++        },
+         {
+             "name": "clamp_point_size",
+             "category": "Workarounds",

@@ -1,5 +1,7 @@
 diff a/src/libANGLE/validationES3.cpp b/src/libANGLE/validationES3.cpp	(rejected hunks)
-@@ -748,6 +748,15 @@ bool ValidateES3TexImageParametersBase(const Context *context,
+@@ -746,10 +746,19 @@ bool ValidateES3TexImageParametersBase(const Context *context,
+         {
+             ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kOffsetOverflow);
              return false;
          }
  
@@ -15,7 +17,11 @@ diff a/src/libANGLE/validationES3.cpp b/src/libANGLE/validationES3.cpp	(rejected
          if (width > 0 && height > 0 && depth > 0 && pixels == nullptr &&
              context->getState().getTargetBuffer(BufferBinding::PixelUnpack) == nullptr)
          {
-@@ -771,9 +780,10 @@ bool ValidateES3TexImageParametersBase(const Context *context,
+             ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kPixelDataNull);
+             return false;
+@@ -769,13 +778,14 @@ bool ValidateES3TexImageParametersBase(const Context *context,
+     {
+         if ((context->isWebGL()) &&
              pixelUnpackBuffer->hasTFBBindingConflict())
          {
              ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION,
@@ -27,7 +33,11 @@ diff a/src/libANGLE/validationES3.cpp b/src/libANGLE/validationES3.cpp	(rejected
          // ...data is not evenly divisible into the number of bytes needed to store in memory a
          // datum
          // indicated by type.
-@@ -3688,8 +3705,19 @@ bool ValidateDrawArraysInstancedBaseInstanceANGLE(const Context *context,
+         if (!isCompressed)
+         {
+@@ -3686,12 +3703,23 @@ bool ValidateDrawArraysInstancedBaseInstanceANGLE(const Context *context,
+                                                   GLint first,
+                                                   GLsizei count,
                                                    GLsizei instanceCount,
                                                    GLuint baseInstance)
  {
@@ -49,7 +59,11 @@ diff a/src/libANGLE/validationES3.cpp b/src/libANGLE/validationES3.cpp	(rejected
  }
  
  bool ValidateDrawElementsInstancedBaseVertexBaseInstanceANGLE(const Context *context,
-@@ -4486,7 +4521,17 @@ bool ValidateDrawArraysInstanced(const Context *context,
+                                                               angle::EntryPoint entryPoint,
+                                                               PrimitiveMode mode,
+@@ -4484,11 +4519,21 @@ bool ValidateDrawArraysInstanced(const Context *context,
+                                  PrimitiveMode mode,
+                                  GLint first,
                                   GLsizei count,
                                   GLsizei primcount)
  {
@@ -68,3 +82,5 @@ diff a/src/libANGLE/validationES3.cpp b/src/libANGLE/validationES3.cpp	(rejected
  }
  
  bool ValidateFenceSync(const Context *context,
+                        angle::EntryPoint entryPoint,
+                        GLenum condition,

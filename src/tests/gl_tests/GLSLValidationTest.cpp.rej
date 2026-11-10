@@ -1,5 +1,7 @@
 diff a/src/tests/gl_tests/GLSLValidationTest.cpp b/src/tests/gl_tests/GLSLValidationTest.cpp	(rejected hunks)
-@@ -200,6 +200,83 @@ TEST_P(GLSLValidationTest, RedeclaringFunctionWithDifferentQualifiers)
+@@ -198,10 +198,87 @@ TEST_P(GLSLValidationTest, RedeclaringFunctionWithDifferentQualifiers)
+     validateError(
+         GL_FRAGMENT_SHADER, kFS,
          "'in' : function must have the same parameter qualifiers in all of its declarations");
  }
  
@@ -83,7 +85,11 @@ diff a/src/tests/gl_tests/GLSLValidationTest.cpp b/src/tests/gl_tests/GLSLValida
  // Assignment and equality are undefined for structures containing arrays (ESSL 1.00 section 5.7)
  TEST_P(GLSLValidationTest, CompareStructsContainingArrays)
  {
-@@ -1032,6 +1128,25 @@ TEST_P(GLSLValidationTest, SamplerInConstructorArguments)
+     constexpr char kFS[] = R"(
+         precision mediump float;
+@@ -1030,10 +1126,29 @@ TEST_P(GLSLValidationTest, SamplerInConstructorArguments)
+ 
+     validateError(GL_FRAGMENT_SHADER, kFS,
                    "'constructor' : cannot convert a variable with type sampler2D");
  }
  
@@ -109,7 +115,11 @@ diff a/src/tests/gl_tests/GLSLValidationTest.cpp b/src/tests/gl_tests/GLSLValida
  // Test that void can't be used in constructor argument list
  TEST_P(GLSLValidationTest, VoidInConstructorArguments)
  {
-@@ -1955,7 +2070,7 @@ TEST_P(GLSLValidationTest_ES31, InvalidInStorageQualifier)
+     constexpr char kFS[] = R"(precision mediump float;
+         void foo() {}
+@@ -1953,11 +2068,11 @@ TEST_P(GLSLValidationTest_ES31, InvalidInStorageQualifier)
+     in vec4 myInput;
+     void main() {
      })";
  
      validateError(GL_COMPUTE_SHADER, kCS,
@@ -118,7 +128,11 @@ diff a/src/tests/gl_tests/GLSLValidationTest.cpp b/src/tests/gl_tests/GLSLValida
  }
  
  // Invalid use of the in storage qualifier. Can be only used to describe the local block size.
-@@ -4208,8 +4323,8 @@ void main() {
+ // The test checks a different part of the GLSL grammar than what InvalidInStorageQualifier
+ // checks.
+@@ -4206,12 +4321,12 @@ void main() {
+ void main() {
+     gl_SecondaryFragDataEXT[0] = vec4(1.0);
      gl_FragData[gl_MaxDualSourceDrawBuffersEXT] = vec4(0.1);
  })";
      validateError(GL_FRAGMENT_SHADER, kFS,
@@ -129,7 +143,11 @@ diff a/src/tests/gl_tests/GLSLValidationTest.cpp b/src/tests/gl_tests/GLSLValida
  }
  
  // Shader that writes to FragData at an index >= than gl_MaxDualSourceDrawBuffersEXT is fine if
-@@ -4853,69 +4968,6 @@ void main()
+ // SecondaryFragData is not used.
+ TEST_P(GLSLValidationTest, BlendFuncExtendedDataArrayOnly)
+@@ -4851,73 +4966,10 @@ void main()
+         validateError(GL_VERTEX_SHADER, kVS,
+                       "'GL_EXT_clip_cull_distance' : extension is not supported");
      }
  }
  
@@ -199,7 +217,11 @@ diff a/src/tests/gl_tests/GLSLValidationTest.cpp b/src/tests/gl_tests/GLSLValida
  class GLSLValidationClipDistanceTest_ES3 : public GLSLValidationTest_ES3
  {
    protected:
-@@ -6931,9 +6983,6 @@ ANGLE_INSTANTIATE_TEST_ES2(WebGLGLSLValidationTest);
+     void validateErrorWithExt(GLenum shaderType,
+                               const char *extension,
+@@ -6929,13 +6981,10 @@ ANGLE_INSTANTIATE_TEST_ES2(WebGLGLSLValidationTest);
+ ANGLE_INSTANTIATE_TEST_ES2(WebGLGLSLValidationTest);
+ 
  GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(WebGL2GLSLValidationTest);
  ANGLE_INSTANTIATE_TEST_ES3(WebGL2GLSLValidationTest);
  
@@ -209,3 +231,5 @@ diff a/src/tests/gl_tests/GLSLValidationTest.cpp b/src/tests/gl_tests/GLSLValida
  GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(GLSLValidationClipDistanceTest_ES3);
  ANGLE_INSTANTIATE_TEST_ES3_AND(GLSLValidationClipDistanceTest_ES3,
                                 ES3_VULKAN().disable(Feature::SupportsAppleClipDistance));
+ 
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(GLSLValidationClipDistanceTest_ES31);

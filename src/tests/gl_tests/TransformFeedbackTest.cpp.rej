@@ -1,5 +1,7 @@
 diff a/src/tests/gl_tests/TransformFeedbackTest.cpp b/src/tests/gl_tests/TransformFeedbackTest.cpp	(rejected hunks)
-@@ -4736,6 +4736,124 @@ TEST_P(WebGLTransformFeedbackTest, TooSmallBuffers)
+@@ -4734,10 +4734,128 @@ TEST_P(WebGLTransformFeedbackTest, TooSmallBuffers)
+     glDrawArrays(GL_POINTS, 0, verticesToDraw);
+     EXPECT_GL_ERROR(GL_INVALID_OPERATION);
      glEndTransformFeedback();
  }
  
@@ -124,3 +126,5 @@ diff a/src/tests/gl_tests/TransformFeedbackTest.cpp b/src/tests/gl_tests/Transfo
  GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TransformFeedbackTest);
  ANGLE_INSTANTIATE_TEST_ES3_AND(TransformFeedbackTest,
                                 ES3_VULKAN().disable(Feature::SupportsTransformFeedbackExtension),
+                                ES3_VULKAN()
+                                    .disable(Feature::SupportsTransformFeedbackExtension)

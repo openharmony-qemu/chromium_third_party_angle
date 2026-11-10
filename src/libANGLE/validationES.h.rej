@@ -1,5 +1,7 @@
 diff a/src/libANGLE/validationES.h b/src/libANGLE/validationES.h	(rejected hunks)
-@@ -98,6 +98,15 @@ bool ValidateWebGLVertexAttribPointer(const Context *context,
+@@ -96,10 +96,19 @@ bool ValidateWebGLVertexAttribPointer(const Context *context,
+                                       GLboolean normalized,
+                                       GLsizei stride,
                                        const void *ptr,
                                        bool pureInteger);
  
@@ -15,7 +17,11 @@ diff a/src/libANGLE/validationES.h b/src/libANGLE/validationES.h	(rejected hunks
  // Returns valid program if id is a valid program name
  // Errors INVALID_OPERATION if valid shader is given and returns NULL
  // Errors INVALID_VALUE otherwise and returns NULL
-@@ -943,18 +952,6 @@ ANGLE_INLINE bool ValidateDrawArraysCommon(const Context *context,
+ Program *GetValidProgram(const Context *context, angle::EntryPoint entryPoint, ShaderProgramID id);
+ 
+@@ -941,22 +950,10 @@ ANGLE_INLINE bool ValidateDrawArraysCommon(const Context *context,
+     if (ANGLE_UNLIKELY(!ValidateDrawBase(context, entryPoint, mode)))
+     {
          return false;
      }
  
@@ -34,7 +40,11 @@ diff a/src/libANGLE/validationES.h b/src/libANGLE/validationES.h	(rejected hunks
      return ValidateDrawArraysAttribs(context, entryPoint, first, count);
  }
  
-@@ -1126,7 +1123,7 @@ ANGLE_INLINE bool ValidateDrawElementsCommon(const Context *context,
+ ANGLE_INLINE bool ValidateDrawElementsBase(const Context *context,
+                                            angle::EntryPoint entryPoint,
+@@ -1124,11 +1121,11 @@ ANGLE_INLINE bool ValidateDrawElementsCommon(const Context *context,
+             {
+                 ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, err::kExceedsMaxElement);
                  return false;
              }
  
@@ -43,3 +53,5 @@ diff a/src/libANGLE/validationES.h b/src/libANGLE/validationES.h	(rejected hunks
              {
                  return false;
              }
+         }
+     }

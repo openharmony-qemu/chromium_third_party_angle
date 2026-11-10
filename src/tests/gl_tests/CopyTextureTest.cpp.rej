@@ -1,5 +1,7 @@
 diff a/src/tests/gl_tests/CopyTextureTest.cpp b/src/tests/gl_tests/CopyTextureTest.cpp	(rejected hunks)
-@@ -1988,6 +1988,50 @@ TEST_P(CopyTextureTestDest, AlphaCopyWithRGB)
+@@ -1986,10 +1986,54 @@ TEST_P(CopyTextureTestDest, AlphaCopyWithRGB)
+     EXPECT_GL_NO_ERROR();
+ 
      EXPECT_PIXEL_COLOR_EQ(0, 0, expectedPixels);
  }
  
@@ -50,7 +52,11 @@ diff a/src/tests/gl_tests/CopyTextureTest.cpp b/src/tests/gl_tests/CopyTextureTe
  // Bug where TEXTURE_SWIZZLE_RGBA was not reset after the Luminance workaround. (crbug.com/1022080)
  TEST_P(CopyTextureTestES3, LuminanceWorkaroundTextureSwizzleBug)
  {
-@@ -2677,6 +2721,59 @@ TEST_P(CopyTextureTestES3, SwizzleOnSource)
+     ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_texture_sRGB"));
+ 
+@@ -2675,10 +2719,63 @@ TEST_P(CopyTextureTestES3, SwizzleOnSource)
+     ASSERT_GL_NO_ERROR();
+ 
      EXPECT_PIXEL_COLOR_EQ(0, 0, kSourceColor);
  }
  
@@ -110,3 +116,5 @@ diff a/src/tests/gl_tests/CopyTextureTest.cpp b/src/tests/gl_tests/CopyTextureTe
  // Test that the right error type is triggered when
  // OES_EGL_image_external_essl3 is required but not supported
  TEST_P(CopyTextureTestES3, CopySubTextureMissingRequiredExtension)
+ {
+     if (!checkExtensions())

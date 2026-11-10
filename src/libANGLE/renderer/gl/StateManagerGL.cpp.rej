@@ -1,5 +1,7 @@
 diff a/src/libANGLE/renderer/gl/StateManagerGL.cpp b/src/libANGLE/renderer/gl/StateManagerGL.cpp	(rejected hunks)
-@@ -472,6 +472,7 @@ void StateManagerGL::bindBuffer(gl::BufferBinding target, GLuint buffer)
+@@ -470,10 +470,11 @@ void StateManagerGL::bindBuffer(gl::BufferBinding target, GLuint buffer)
+     ASSERT(target != gl::BufferBinding::TransformFeedback);
+     if (mBuffers[target] != buffer)
      {
          mBuffers[target] = buffer;
          mFunctions->bindBuffer(gl::ToGLenum(target), buffer);
@@ -7,7 +9,11 @@ diff a/src/libANGLE/renderer/gl/StateManagerGL.cpp b/src/libANGLE/renderer/gl/St
      }
  }
  
-@@ -490,6 +491,7 @@ void StateManagerGL::bindBufferBase(gl::BufferBinding target, size_t index, GLui
+ void StateManagerGL::bindBufferBase(gl::BufferBinding target, size_t index, GLuint buffer)
+ {
+@@ -488,10 +489,11 @@ void StateManagerGL::bindBufferBase(gl::BufferBinding target, size_t index, GLui
+         binding.buffer   = buffer;
+         binding.offset   = static_cast<size_t>(-1);
          binding.size     = static_cast<size_t>(-1);
          mBuffers[target] = buffer;
          mFunctions->bindBufferBase(gl::ToGLenum(target), static_cast<GLuint>(index), buffer);
@@ -15,7 +21,11 @@ diff a/src/libANGLE/renderer/gl/StateManagerGL.cpp b/src/libANGLE/renderer/gl/St
      }
  }
  
-@@ -2949,6 +2951,56 @@ void StateManagerGL::validateState() const
+ void StateManagerGL::bindBufferRange(gl::BufferBinding target,
+                                      size_t index,
+@@ -2947,10 +2949,60 @@ void StateManagerGL::validateState() const
+     // Vertex array object
+     ValidateStateHelper(mFunctions, mVAO, GL_VERTEX_ARRAY_BINDING, "mVAO",
                          "GL_VERTEX_ARRAY_BINDING");
  }
  
@@ -72,3 +82,5 @@ diff a/src/libANGLE/renderer/gl/StateManagerGL.cpp b/src/libANGLE/renderer/gl/St
  template <>
  void StateManagerGL::get(GLenum name, GLboolean *value)
  {
+     mFunctions->getBooleanv(name, value);
+     ASSERT(mFunctions->getError() == GL_NO_ERROR);

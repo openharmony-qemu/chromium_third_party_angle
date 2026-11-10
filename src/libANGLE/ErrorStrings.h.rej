@@ -1,5 +1,7 @@
 diff a/src/libANGLE/ErrorStrings.h b/src/libANGLE/ErrorStrings.h	(rejected hunks)
-@@ -669,6 +669,7 @@ inline constexpr const char *kViewsExceedMaxArrayLayers = "baseViewIndex+numView
+@@ -667,10 +667,11 @@ inline constexpr const char *kViewsExceedMaxArrayLayers = "baseViewIndex+numView
+ inline constexpr const char *kViewportNegativeSize = "Negative viewport size.";
+ inline constexpr const char *kViewsExceedMaxArrayLayers = "baseViewIndex+numViews cannot be greater than GL_MAX_ARRAY_TEXTURE_LAYERS.";
  inline constexpr const char *kWebGLNameLengthLimitExceeded = "Name is longer than %d characters.";
  inline constexpr const char *kYUVOutputMissmatch = "Program and framebuffer YUV output state does not match.";
  inline constexpr const char *kYUVTargetExtensionRequired = "GL_EXT_YUV_target not enabled.";
@@ -7,3 +9,5 @@ diff a/src/libANGLE/ErrorStrings.h b/src/libANGLE/ErrorStrings.h	(rejected hunks
  inline constexpr const char *kZeroBoundToTarget = "Zero is bound to target.";
  inline constexpr const char *kUnrecognizedShaderStageBit = "Unrecognized shader stage bit.";
  inline constexpr const char *kProgramNotSeparable = "Program object was not linked with its PROGRAM_SEPARABLE status set.";
+ inline constexpr const char *kProgramPipelineDoesNotExist = "Program pipeline does not exist.";
+ inline constexpr const char *kNotAllStagesOfSeparableProgramUsed = "A program object is active for at least one, but not all of the shader stages that were present when the program was linked.";

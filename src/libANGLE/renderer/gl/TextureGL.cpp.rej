@@ -1,5 +1,7 @@
 diff a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp	(rejected hunks)
-@@ -550,7 +550,7 @@ angle::Result TextureGL::setSubImagePaddingWorkaround(const gl::Context *context
+@@ -548,11 +548,11 @@ angle::Result TextureGL::setSubImagePaddingWorkaround(const gl::Context *context
+         // Upload the last slice but its last row
+         if (area.height > 1)
          {
              // Do not include skipBytes in the last image pixel start offset as it will be done by
              // the driver
@@ -8,7 +10,11 @@ diff a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/Texture
              const GLubyte *lastImagePixels = pixels + lastImageOffset;
              ANGLE_GL_TRY(context, functions->texSubImage3D(
                                        ToGLenum(target), static_cast<GLint>(level), area.x, area.y,
-@@ -561,7 +561,7 @@ angle::Result TextureGL::setSubImagePaddingWorkaround(const gl::Context *context
+                                       area.z + area.depth - 1, area.width, area.height - 1, 1,
+                                       format, type, lastImagePixels));
+@@ -559,11 +559,11 @@ angle::Result TextureGL::setSubImagePaddingWorkaround(const gl::Context *context
+         }
+ 
          // Upload the last row of the last slice "manually"
          ANGLE_TRY(stateManager->setPixelUnpackState(context, directUnpack));
  
@@ -17,7 +23,11 @@ diff a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/Texture
              skipBytes + (area.depth - 1) * imageBytes + (area.height - 1) * rowBytes;
          const GLubyte *lastRowPixels = pixels + lastRowOffset;
          ANGLE_GL_TRY(context,
-@@ -584,7 +584,7 @@ angle::Result TextureGL::setSubImagePaddingWorkaround(const gl::Context *context
+                      functions->texSubImage3D(ToGLenum(target), static_cast<GLint>(level), area.x,
+                                               area.y + area.height - 1, area.z + area.depth - 1,
+@@ -582,11 +582,11 @@ angle::Result TextureGL::setSubImagePaddingWorkaround(const gl::Context *context
+         }
+ 
          // Upload the last row "manually"
          ANGLE_TRY(stateManager->setPixelUnpackState(context, directUnpack));
  
@@ -26,7 +36,11 @@ diff a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/Texture
          const GLubyte *lastRowPixels = pixels + lastRowOffset;
          ANGLE_GL_TRY(context, functions->texSubImage2D(ToGLenum(target), static_cast<GLint>(level),
                                                         area.x, area.y + area.height - 1, area.width,
-@@ -739,13 +739,13 @@ angle::Result TextureGL::copyImage(const gl::Context *context,
+                                                        1, format, type, lastRowPixels));
+     }
+@@ -737,17 +737,17 @@ angle::Result TextureGL::copyImage(const gl::Context *context,
+     if (requiresInitialization)
+     {
          GLuint pixelBytes =
              gl::GetInternalFormatInfo(copyTexImageFormat.internalFormat, type).pixelBytes;
          // TODO(b/495363705): Validate if this CheckedNumeric is required, remove either this TODO
@@ -45,7 +59,11 @@ diff a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/Texture
  
          gl::PixelUnpackState unpack;
          unpack.alignment = 1;
-@@ -2301,7 +2301,8 @@ angle::Result TextureGL::initializeContents(const gl::Context *context,
+         ANGLE_TRY(stateManager->setPixelUnpackState(context, unpack));
+         ANGLE_TRY(stateManager->setPixelUnpackBuffer(context, nullptr));
+@@ -2299,11 +2299,12 @@ angle::Result TextureGL::initializeContents(const gl::Context *context,
+     StateManagerGL *stateManager      = GetStateManagerGL(context);
+     const angle::FeaturesGL &features = GetFeaturesGL(context);
  
      GLenum nativeInternalFormat =
          getLevelInfo(imageIndex.getTarget(), imageIndex.getLevelIndex()).nativeInternalFormat;
@@ -55,3 +73,5 @@ diff a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/Texture
          nativegl::SupportsNativeRendering(functions, mState.getType(), nativeInternalFormat))
      {
          BlitGL *blitter = GetBlitGL(context);
+ 
+         int levelDepth = mState.getImageDesc(imageIndex).size.depth;

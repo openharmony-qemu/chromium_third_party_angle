@@ -1,5 +1,7 @@
 diff a/src/libANGLE/renderer/renderer_utils.cpp b/src/libANGLE/renderer/renderer_utils.cpp	(rejected hunks)
-@@ -914,6 +914,8 @@ angle::Result IncompleteTextureSet::getIncompleteTexture(
+@@ -912,10 +912,12 @@ angle::Result IncompleteTextureSet::getIncompleteTexture(
+     }
+     else if (type == gl::TextureType::_2DMultisample)
      {
          // Call a specialized clear function to init a multisample texture.
          ANGLE_TRY(multisampleInitializer->initializeMultisampleTextureToBlack(context, t.get()));
@@ -8,7 +10,11 @@ diff a/src/libANGLE/renderer/renderer_utils.cpp b/src/libANGLE/renderer/renderer
      }
      else if (type == gl::TextureType::Buffer)
      {
-@@ -1614,7 +1616,15 @@ angle::Result GetVertexRangeInfo(const gl::Context *context,
+         ASSERT(incompleteTextureBufferAttachment != nullptr);
+         ANGLE_TRY(t->setBuffer(context, incompleteTextureBufferAttachment,
+@@ -1612,11 +1614,19 @@ angle::Result GetVertexRangeInfo(const gl::Context *context,
+         ANGLE_TRY(context->getState().getVertexArray()->getIndexRange(
+             context, indexTypeOrInvalid, vertexOrIndexCount, indices,
              context->getState().isPrimitiveRestartEnabled(), &indexRange));
          ANGLE_TRY(ComputeStartVertex(context->getImplementation(), indexRange, baseVertex,
                                       startVertexOut));
@@ -25,7 +31,11 @@ diff a/src/libANGLE/renderer/renderer_utils.cpp b/src/libANGLE/renderer/renderer
      }
      else
      {
-@@ -2405,9 +2415,20 @@ bool TextureRedefineLevel(const TextureLevelAllocation levelAllocation,
+         *startVertexOut = firstVertex;
+         *vertexCountOut = vertexOrIndexCount;
+@@ -2403,13 +2413,24 @@ bool TextureRedefineLevel(const TextureLevelAllocation levelAllocation,
+ 
+     // If incompatible, and redefining the single-level image, the caller will release the texture
      // so it can be recreated immediately.  This is needed so that the texture can be reallocated
      // with the correct format/size.
      //
@@ -49,3 +59,5 @@ diff a/src/libANGLE/renderer/renderer_utils.cpp b/src/libANGLE/renderer/renderer
      return shouldReleaseImage;
  }
  
+ void TextureRedefineGenerateMipmapLevels(gl::LevelIndex baseLevel,
+                                          gl::LevelIndex maxLevel,

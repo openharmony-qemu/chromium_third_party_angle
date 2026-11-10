@@ -1,5 +1,7 @@
 diff a/src/common/angleutils.h b/src/common/angleutils.h	(rejected hunks)
-@@ -9,10 +9,6 @@
+@@ -7,14 +7,10 @@
+ // angleutils.h: Common ANGLE utilities.
+ 
  #ifndef COMMON_ANGLEUTILS_H_
  #define COMMON_ANGLEUTILS_H_
  
@@ -10,7 +12,11 @@ diff a/src/common/angleutils.h b/src/common/angleutils.h	(rejected hunks)
  #include "common/platform.h"
  
  #if defined(ANGLE_WITH_LSAN)
-@@ -33,6 +29,8 @@
+ #    include <sanitizer/lsan_interface.h>
+ #endif  // defined(ANGLE_WITH_LSAN)
+@@ -31,10 +27,12 @@
+ #include <sstream>
+ #include <string>
  #include <thread>
  #include <vector>
  
@@ -19,7 +25,11 @@ diff a/src/common/angleutils.h b/src/common/angleutils.h	(rejected hunks)
  namespace angle
  {
  
-@@ -187,11 +185,7 @@ template <typename T>
+ #if defined(ANGLE_ENABLE_D3D9) || defined(ANGLE_ENABLE_D3D11)
+ using Microsoft::WRL::ComPtr;
+@@ -185,15 +183,11 @@ template <typename T>
+ 
+ template <typename T>
  class WrappedArray final : angle::NonCopyable
  {
    public:
@@ -32,7 +42,11 @@ diff a/src/common/angleutils.h b/src/common/angleutils.h	(rejected hunks)
      constexpr WrappedArray(const T *data, size_t size) : mArray(data), mSize(size) {}
  
      WrappedArray(WrappedArray &&other) : WrappedArray()
-@@ -200,14 +194,18 @@ class WrappedArray final : angle::NonCopyable
+     {
+         std::swap(mArray, other.mArray);
+@@ -198,18 +192,22 @@ class WrappedArray final : angle::NonCopyable
+     {
+         std::swap(mArray, other.mArray);
          std::swap(mSize, other.mSize);
      }
  
@@ -53,7 +67,11 @@ diff a/src/common/angleutils.h b/src/common/angleutils.h	(rejected hunks)
  };
  
  template <typename T, unsigned int N>
-@@ -215,7 +213,8 @@ void SafeRelease(T (&resourceBlock)[N])
+ void SafeRelease(T (&resourceBlock)[N])
+ {
+@@ -213,11 +211,12 @@ void SafeRelease(T (&resourceBlock)[N])
+ template <typename T, unsigned int N>
+ void SafeRelease(T (&resourceBlock)[N])
  {
      for (unsigned int i = 0; i < N; i++)
      {
@@ -63,7 +81,11 @@ diff a/src/common/angleutils.h b/src/common/angleutils.h	(rejected hunks)
      }
  }
  
-@@ -258,7 +257,8 @@ void SafeDeleteArray(T *&resource)
+ template <typename T>
+ void SafeRelease(T &resource)
+@@ -256,11 +255,12 @@ void SafeDeleteArray(T *&resource)
+ // Provide a less-than function for comparing structs
+ // Note: struct memory must be initialized to zero, because of packing gaps
  template <typename T>
  inline bool StructLessThan(const T &a, const T &b)
  {
@@ -73,7 +95,11 @@ diff a/src/common/angleutils.h b/src/common/angleutils.h	(rejected hunks)
  }
  
  // Provide a less-than function for comparing structs
-@@ -266,13 +266,22 @@ inline bool StructLessThan(const T &a, const T &b)
+ // Note: struct memory must be initialized to zero, because of packing gaps
+ template <typename T>
+@@ -264,17 +264,26 @@ inline bool StructLessThan(const T &a, const T &b)
+ // Provide a less-than function for comparing structs
+ // Note: struct memory must be initialized to zero, because of packing gaps
  template <typename T>
  inline bool StructEquals(const T &a, const T &b)
  {
@@ -98,3 +124,5 @@ diff a/src/common/angleutils.h b/src/common/angleutils.h	(rejected hunks)
  }
  
  template <typename T>
+ inline bool IsMaskFlagSet(T mask, T flag)
+ {

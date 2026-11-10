@@ -1,5 +1,7 @@
 diff a/src/libANGLE/Program.cpp b/src/libANGLE/Program.cpp	(rejected hunks)
-@@ -632,9 +632,10 @@ class Program::MainLinkTask final : public Program::MainLinkLoadTask
+@@ -630,13 +630,14 @@ class Program::MainLinkTask final : public Program::MainLinkLoadTask
+     void operator()() override { mResult = linkImpl(); }
+ 
    private:
      angle::Result linkImpl();
  
@@ -13,3 +15,5 @@ diff a/src/libANGLE/Program.cpp b/src/libANGLE/Program.cpp	(rejected hunks)
      const Version mClientVersion;
      const bool mIsWebGL;
      Program *mProgram;
+     LinkingVariables *mLinkingVariables;
+     ProgramLinkedResources *mResources;

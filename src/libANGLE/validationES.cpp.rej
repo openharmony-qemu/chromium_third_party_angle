@@ -1,5 +1,7 @@
 diff a/src/libANGLE/validationES.cpp b/src/libANGLE/validationES.cpp	(rejected hunks)
-@@ -1396,7 +1396,8 @@ bool ValidImageDataSize(const Context *context,
+@@ -1394,11 +1394,12 @@ bool ValidImageDataSize(const Context *context,
+         return false;
+     }
      const Extents size(width, height, depth);
      const auto &unpack = context->getState().getUnpackState();
  
@@ -9,3 +11,5 @@ diff a/src/libANGLE/validationES.cpp b/src/libANGLE/validationES.cpp	(rejected h
      GLuint endByte  = 0;
      if (!formatInfo.computePackUnpackEndByte(type, size, unpack, targetIs3D, &endByte))
      {
+         ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kIntegerOverflow);
+         return false;

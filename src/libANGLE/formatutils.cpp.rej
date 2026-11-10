@@ -1,5 +1,7 @@
 diff a/src/libANGLE/formatutils.cpp b/src/libANGLE/formatutils.cpp	(rejected hunks)
-@@ -1459,8 +1459,8 @@ static InternalFormatInfoMap BuildInternalFormatInfoMap()
+@@ -1457,12 +1457,12 @@ static InternalFormatInfoMap BuildInternalFormatInfoMap()
+     AddDepthStencilFormat(&map, GL_DEPTH_STENCIL,   false, 32, 8, 24, GL_DEPTH_STENCIL,   GL_FLOAT_32_UNSIGNED_INT_24_8_REV, GL_FLOAT,               RequireESOrExt<3, 0, &Extensions::packedDepthStencilOES>, AlwaysSupported, RequireExt<&Extensions::packedDepthStencilOES>,                                       RequireExt<&Extensions::packedDepthStencilOES>,                                       RequireExt<&Extensions::packedDepthStencilOES>);
+     AddDepthStencilFormat(&map, GL_STENCIL_INDEX,   false,  0, 8,  0, GL_STENCIL_INDEX,   GL_UNSIGNED_BYTE,                  GL_UNSIGNED_NORMALIZED, NeverSupported,                                           NeverSupported , NeverSupported,                                                                       NeverSupported,                                                                       NeverSupported);
  
      // Non-standard YUV formats
      //                 | Internal format                             | sized | Cr | Y | Cb | A | S | Format                              | Type            | Comp                  | SRGB | Texture supported                                       | Filterable                                              | Texture attachment                                      | Renderbuffer  | Blend
@@ -10,3 +12,5 @@ diff a/src/libANGLE/formatutils.cpp b/src/libANGLE/formatutils.cpp	(rejected hun
  
      // clang-format on
  
+     return map;
+ }

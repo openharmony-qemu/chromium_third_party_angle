@@ -1,5 +1,7 @@
 diff a/src/libANGLE/validationESEXT.cpp b/src/libANGLE/validationESEXT.cpp	(rejected hunks)
-@@ -679,8 +679,19 @@ bool ValidateDrawArraysInstancedBaseInstanceEXT(const Context *context,
+@@ -677,12 +677,23 @@ bool ValidateDrawArraysInstancedBaseInstanceEXT(const Context *context,
+                                                 GLint first,
+                                                 GLsizei count,
                                                  GLsizei instanceCount,
                                                  GLuint baseInstance)
  {
@@ -21,3 +23,5 @@ diff a/src/libANGLE/validationESEXT.cpp b/src/libANGLE/validationESEXT.cpp	(reje
  }
  
  bool ValidateDrawElementsInstancedBaseInstanceEXT(const Context *context,
+                                                   angle::EntryPoint entryPoint,
+                                                   PrimitiveMode mode,

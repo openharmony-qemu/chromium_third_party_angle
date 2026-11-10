@@ -1,5 +1,7 @@
 diff a/src/compiler/translator/tree_ops/MonomorphizeUnsupportedFunctions.cpp b/src/compiler/translator/tree_ops/MonomorphizeUnsupportedFunctions.cpp	(rejected hunks)
-@@ -78,7 +78,7 @@ const TVariable *GetBaseUniform(TIntermTyped *node, bool *isSamplerInStructOut)
+@@ -76,11 +76,11 @@ const TVariable *GetBaseUniform(TIntermTyped *node, bool *isSamplerInStructOut)
+         if (op == EOpIndexDirectStruct)
+         {
              *isSamplerInStructOut = true;
          }
  
@@ -8,7 +10,11 @@ diff a/src/compiler/translator/tree_ops/MonomorphizeUnsupportedFunctions.cpp b/s
      }
  
      // Only interested in uniform opaque types.  If a function call within another function uses
-@@ -102,6 +102,13 @@ TIntermTyped *ExtractSideEffects(TSymbolTable *symbolTable,
+     // opaque uniforms in an unsupported way, it will be replaced in a follow up pass after the
+     // calling function is monomorphized.
+@@ -100,10 +100,17 @@ TIntermTyped *ExtractSideEffects(TSymbolTable *symbolTable,
+ 
+ TIntermTyped *ExtractSideEffects(TSymbolTable *symbolTable,
                                   TIntermTyped *node,
                                   TIntermSequence *replacementIndices)
  {
@@ -22,3 +28,5 @@ diff a/src/compiler/translator/tree_ops/MonomorphizeUnsupportedFunctions.cpp b/s
      TIntermTyped *withoutSideEffects = node->deepCopy();
  
      for (TIntermBinary *asBinary = withoutSideEffects->getAsBinaryNode(); asBinary;
+          asBinary                = asBinary->getLeft()->getAsBinaryNode())
+     {

@@ -1,5 +1,7 @@
 diff a/src/libANGLE/Texture.cpp b/src/libANGLE/Texture.cpp	(rejected hunks)
-@@ -1976,24 +1976,6 @@ angle::Result Texture::generateMipmap(Context *context)
+@@ -1974,28 +1974,10 @@ angle::Result Texture::generateMipmap(Context *context)
+     if (baseImageInfo.size.empty())
+     {
          return angle::Result::Continue;
      }
  
@@ -24,7 +26,11 @@ diff a/src/libANGLE/Texture.cpp b/src/libANGLE/Texture.cpp	(rejected hunks)
      ANGLE_TRY(syncState(context, Command::GenerateMipmap));
      ANGLE_TRY(mTexture->generateMipmap(context));
  
-@@ -2451,9 +2433,9 @@ GLuint Texture::getNativeID() const
+     // Propagate the format and size of the base mip to the smaller ones. Cube maps are guaranteed
+     // to have faces of the same size and format so any faces can be picked.
+@@ -2449,13 +2431,13 @@ GLuint Texture::getNativeID() const
+ }
+ 
  angle::Result Texture::syncState(const Context *context, Command source)
  {
      ASSERT(hasAnyDirtyBit() || source == Command::GenerateMipmap);
@@ -35,7 +41,11 @@ diff a/src/libANGLE/Texture.cpp b/src/libANGLE/Texture.cpp	(rejected hunks)
      return angle::Result::Continue;
  }
  
-@@ -2729,6 +2711,10 @@ void Texture::onBufferContentsChange()
+ rx::FramebufferAttachmentObjectImpl *Texture::getAttachmentImpl() const
+ {
+@@ -2727,10 +2709,14 @@ void Texture::onBufferContentsChange()
+     onStateChange(angle::SubjectMessage::ContentsChanged);
+ }
  
  void Texture::onBindToMSRTTFramebuffer()
  {
@@ -46,7 +56,11 @@ diff a/src/libANGLE/Texture.cpp b/src/libANGLE/Texture.cpp	(rejected hunks)
      mState.mHasBeenBoundToMSRTTFramebuffer = true;
  }
  
-@@ -2783,6 +2769,7 @@ void Texture::onBindAsImageTexture()
+ GLenum Texture::getImplementationColorReadFormat(const Context *context) const
+ {
+@@ -2781,10 +2767,11 @@ void Texture::onBindAsImageTexture()
+ {
+     if (!mState.mHasBeenBoundAsImage)
      {
          mDirtyBits.set(DIRTY_BIT_BOUND_AS_IMAGE);
          mState.mHasBeenBoundAsImage = true;
@@ -54,3 +68,5 @@ diff a/src/libANGLE/Texture.cpp b/src/libANGLE/Texture.cpp	(rejected hunks)
      }
  }
  
+ void Texture::onBindAsEglImageSource()
+ {

@@ -1,5 +1,7 @@
 diff a/src/libANGLE/validationES2.cpp b/src/libANGLE/validationES2.cpp	(rejected hunks)
-@@ -5964,11 +5964,18 @@ bool ValidateMultiDrawArraysANGLE(const Context *context,
+@@ -5962,15 +5962,22 @@ bool ValidateMultiDrawArraysANGLE(const Context *context,
+         ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kNegativeDrawcount);
+         return false;
      }
      for (GLsizei drawID = 0; drawID < drawcount; ++drawID)
      {
@@ -19,3 +21,5 @@ diff a/src/libANGLE/validationES2.cpp b/src/libANGLE/validationES2.cpp	(rejected
      return true;
  }
  
+ bool ValidateMultiDrawElementsANGLE(const Context *context,
+                                     angle::EntryPoint entryPoint,

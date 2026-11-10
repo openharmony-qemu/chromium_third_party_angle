@@ -1,5 +1,7 @@
 diff a/src/libANGLE/validationES2.h b/src/libANGLE/validationES2.h	(rejected hunks)
-@@ -24,7 +24,17 @@ ANGLE_INLINE bool ValidateDrawArrays(const Context *context,
+@@ -22,11 +22,21 @@ ANGLE_INLINE bool ValidateDrawArrays(const Context *context,
+                                      angle::EntryPoint entryPoint,
+                                      PrimitiveMode mode,
                                       GLint first,
                                       GLsizei count)
  {
@@ -18,3 +20,5 @@ diff a/src/libANGLE/validationES2.h b/src/libANGLE/validationES2.h	(rejected hun
  }
  
  ANGLE_INLINE bool ValidateUniform1f(const Context *context,
+                                     angle::EntryPoint entryPoint,
+                                     UniformLocation location,

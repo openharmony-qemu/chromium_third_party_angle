@@ -1,5 +1,7 @@
 diff a/src/libANGLE/TransformFeedback.h b/src/libANGLE/TransformFeedback.h	(rejected hunks)
-@@ -77,8 +77,10 @@ class TransformFeedback final : public RefCountObject<TransformFeedbackID>, publ
+@@ -75,12 +75,14 @@ class TransformFeedback final : public RefCountObject<TransformFeedbackID>, publ
+     bool isActive() const { return mState.mActive; }
+ 
      bool isPaused() const;
      PrimitiveMode getPrimitiveMode() const;
      // Validates that the vertices produced by a draw call will fit in the bound transform feedback
@@ -12,3 +14,5 @@ diff a/src/libANGLE/TransformFeedback.h b/src/libANGLE/TransformFeedback.h	(reje
      // This must be called after each draw call when transform feedback is enabled to keep track of
      // how many vertices have been written to the buffers. This information is needed by
      // checkBufferSpaceForDraw because each draw call appends vertices to the buffers starting just
+     // after the last vertex of the previous draw call.
+     void onVerticesDrawn(const Context *context, GLsizei count, GLsizei primcount);

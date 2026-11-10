@@ -1,5 +1,7 @@
 diff a/src/libANGLE/Shader.cpp b/src/libANGLE/Shader.cpp	(rejected hunks)
-@@ -647,14 +647,14 @@ void Shader::compile(const Context *context, angle::JobResultExpectancy resultEx
+@@ -645,18 +645,18 @@ void Shader::compile(const Context *context, angle::JobResultExpectancy resultEx
+         options.limitCallStackDepth        = true;
+         options.limitExpressionComplexity  = true;
          options.enforcePackingRestrictions = true;
          options.initSharedVariables        = true;
  
@@ -18,3 +20,5 @@ diff a/src/libANGLE/Shader.cpp b/src/libANGLE/Shader.cpp	(rejected hunks)
          }
      }
      else
+     {
+         // Per https://github.com/KhronosGroup/WebGL/pull/3278 gl_BaseVertex/gl_BaseInstance are

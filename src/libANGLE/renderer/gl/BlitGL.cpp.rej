@@ -1,5 +1,7 @@
 diff a/src/libANGLE/renderer/gl/BlitGL.cpp b/src/libANGLE/renderer/gl/BlitGL.cpp	(rejected hunks)
-@@ -853,10 +853,10 @@ angle::Result BlitGL::copySubTextureCPUReadback(const gl::Context *context,
+@@ -851,14 +851,14 @@ angle::Result BlitGL::copySubTextureCPUReadback(const gl::Context *context,
+         ASSERT(sourceInternalFormatInfo.componentType != GL_INT);
+         readPixelsFormat = GL_RGBA;
          readFunction     = angle::ReadColor<angle::R8G8B8A8, GLfloat>;
      }
  
@@ -14,7 +16,11 @@ diff a/src/libANGLE/renderer/gl/BlitGL.cpp b/src/libANGLE/renderer/gl/BlitGL.cpp
      ANGLE_GL_TRY(context, mFunctions->readPixels(readPixelsArea.x, readPixelsArea.y,
                                                   readPixelsArea.width, readPixelsArea.height,
                                                   readPixelsFormat, GL_UNSIGNED_BYTE, sourceMemory));
-@@ -871,10 +871,10 @@ angle::Result BlitGL::copySubTextureCPUReadback(const gl::Context *context,
+ 
+     angle::FormatID destFormatID =
+@@ -869,14 +869,14 @@ angle::Result BlitGL::copySubTextureCPUReadback(const gl::Context *context,
+         destMemory, readPixelsArea.width * destInternalFormatInfo.pixelBytes,
+         destInternalFormatInfo.pixelBytes, 0, destFormatInfo.pixelWriteFunction,
          destInternalFormatInfo.format, destInternalFormatInfo.componentType, readPixelsArea.width,
          readPixelsArea.height, 1, unpackFlipY, unpackPremultiplyAlpha, unpackUnmultiplyAlpha);
  
@@ -29,3 +35,5 @@ diff a/src/libANGLE/renderer/gl/BlitGL.cpp b/src/libANGLE/renderer/gl/BlitGL.cpp
  
      nativegl::TexSubImageFormat texSubImageFormat =
          nativegl::GetTexSubImageFormat(mFunctions, mFeatures, destFormat, destType);
+ 
+     mStateManager->bindTexture(dest->getType(), dest->getTextureID());

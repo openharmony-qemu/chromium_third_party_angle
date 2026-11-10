@@ -1,5 +1,7 @@
 diff a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp	(rejected hunks)
-@@ -395,6 +395,7 @@ class Texture2DTestES3 : public Texture2DTest
+@@ -393,10 +393,11 @@ class Texture2DTestES3 : public Texture2DTest
+ 
+ class Texture2DTestES3 : public Texture2DTest
  {
    protected:
      Texture2DTestES3() : Texture2DTest() {}
@@ -7,7 +9,11 @@ diff a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp	(
  
      const char *getVertexShaderSource() override
      {
-@@ -2370,7 +2371,7 @@ TEST_P(Texture2DTest, DefineMultipleLevelsWithoutMipmapping)
+         return R"(#version 300 es
+ out vec2 texcoord;
+@@ -2368,11 +2369,11 @@ TEST_P(Texture2DTest, DefineMultipleLevelsWithoutMipmapping)
+     // Draw again.
+     drawQuad(mProgram, "position", 0.5f);
      EXPECT_PIXEL_COLOR_EQ(0, 0, kMipColors[0][0]);
  }
  
@@ -16,7 +22,11 @@ diff a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp	(
  TEST_P(TextureCubeTest, CubeMapBug)
  {
      glActiveTexture(GL_TEXTURE0);
-@@ -2386,7 +2387,8 @@ TEST_P(TextureCubeTest, CubeMapBug)
+     glBindTexture(GL_TEXTURE_2D, mTexture2D);
+     glActiveTexture(GL_TEXTURE1);
+@@ -2384,11 +2385,12 @@ TEST_P(TextureCubeTest, CubeMapBug)
+     glUniform1i(mTextureCubeUniformLocation, 1);
+     drawQuad(mProgram, "position", 0.5f);
      EXPECT_GL_NO_ERROR();
  }
  
@@ -26,7 +36,11 @@ diff a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp	(
  TEST_P(TextureCubeTest, CubeMapBug2)
  {
      const char *vertexShaderSource   = getVertexShaderSource();
-@@ -2555,8 +2557,8 @@ TEST_P(Texture2DTestWithDrawScale, MipmapsTwice)
+     const char *fragmentShaderSource = R"(precision highp float;
+             uniform sampler2D tex2D;
+@@ -2553,12 +2555,12 @@ TEST_P(Texture2DTestWithDrawScale, MipmapsTwice)
+ 
+     EXPECT_GL_NO_ERROR();
      EXPECT_PIXEL_COLOR_EQ(px, py, GLColor::green);
  }
  
@@ -37,7 +51,11 @@ diff a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp	(
  TEST_P(TextureCubeTest, CubeMapFBO)
  {
      // http://anglebug.com/42261821
-@@ -2640,6 +2642,237 @@ TEST_P(TextureCubeTest, CubeMapFBOScissoredClear)
+     ANGLE_SKIP_TEST_IF(IsFuchsia() && IsIntel() && IsVulkan());
+ 
+@@ -2638,10 +2640,241 @@ TEST_P(TextureCubeTest, CubeMapFBOScissoredClear)
+     EXPECT_PIXEL_COLOR_EQ(kSize / 2 + 1, 0, GLColor::green);
+ 
      ASSERT_GL_NO_ERROR();
  }
  
@@ -275,7 +293,11 @@ diff a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp	(
  // Test that glTexSubImage2D works properly when glTexStorage2DEXT has initialized the image with a
  // default color.
  TEST_P(Texture2DTest, TexStorage)
-@@ -4879,6 +5112,138 @@ void main()
+ {
+     ANGLE_SKIP_TEST_IF(getClientMajorVersion() < 3 &&
+@@ -4877,10 +5110,142 @@ void main()
+     EXPECT_PIXEL_NEAR(0, 0, expectedRgbColor[0], expectedRgbColor[1], expectedRgbColor[2],
+                       expectedRgbColor[3], 1);
      ASSERT_GL_NO_ERROR();
  }
  
@@ -414,7 +436,11 @@ diff a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp	(
  // Test functionality of GL_ANGLE_yuv_internal_format glCopyTextureCHROMIUM
  TEST_P(Texture2DTestES3YUV, CopyTextureChromium)
  {
-@@ -4905,6 +5270,87 @@ TEST_P(Texture2DTestES3YUV, CopyTextureChromium)
+     ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_ANGLE_yuv_internal_format"));
+     ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_CHROMIUM_copy_texture"));
+@@ -4903,10 +5268,91 @@ TEST_P(Texture2DTestES3YUV, CopyTextureChromium)
+                           GL_FALSE, GL_FALSE, GL_FALSE);
+     verifyResults2D(rgbTexture, expectedRgbColor);
  
      ASSERT_GL_NO_ERROR();
  }
@@ -502,7 +528,11 @@ diff a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp	(
  // Tests CopySubImage for float formats
  TEST_P(Texture2DTest, CopySubImageFloat_R_R)
  {
-@@ -8588,6 +9034,87 @@ TEST_P(Texture2DArrayTestES3, RedefineInittableArray)
+     testFloatCopySubImage(1, 1);
+ }
+@@ -8586,10 +9032,91 @@ TEST_P(Texture2DArrayTestES3, RedefineInittableArray)
+     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
+ 
      ASSERT_GL_NO_ERROR();
  }
  
@@ -590,7 +620,11 @@ diff a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp	(
  // Test shadow sampler and regular non-shadow sampler coexisting in the same shader.
  // This test is needed especially to confirm that sampler registers get assigned correctly on
  // the HLSL backend even when there's a mix of different HLSL sampler and texture types.
-@@ -14354,6 +14936,28 @@ TEST_P(TextureCubeTestES32, ValidateCubeMapArrayTexStorageInvalidInputs)
+ TEST_P(ShadowSamplerPlusSampler3DTestES3, ShadowSamplerPlusSampler3DDraw)
+ {
+@@ -14352,10 +14934,32 @@ TEST_P(TextureCubeTestES32, ValidateCubeMapArrayTexStorageInvalidInputs)
+     GLint maxLevelCount256 = 1 + static_cast<GLint>(std::log2(256));
+     glTexStorage3D(GL_TEXTURE_CUBE_MAP_ARRAY, maxLevelCount256 + 1, GL_RGBA8, 256, 256, 6);
      EXPECT_GL_ERROR(GL_INVALID_OPERATION);
  }
  
@@ -619,3 +653,5 @@ diff a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp	(
  // Verify that using negative texture base level and max level generates GL_INVALID_VALUE.
  TEST_P(Texture2DTestES3, NegativeTextureBaseLevelAndMaxLevel)
  {
+     GLuint texture = create2DTexture();
+ 

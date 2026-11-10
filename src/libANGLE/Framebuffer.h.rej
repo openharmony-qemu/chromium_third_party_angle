@@ -1,5 +1,7 @@
 diff a/src/libANGLE/Framebuffer.h b/src/libANGLE/Framebuffer.h	(rejected hunks)
-@@ -536,8 +536,15 @@ class Framebuffer final : public angle::ObserverInterface,
+@@ -534,12 +534,19 @@ class Framebuffer final : public angle::ObserverInterface,
+ 
+     // Checks that we have a partially masked clear:
      // * some color channels are masked out
      // * some stencil values are masked out
      // * scissor test partially overlaps the framebuffer
@@ -17,3 +19,5 @@ diff a/src/libANGLE/Framebuffer.h b/src/libANGLE/Framebuffer.h	(rejected hunks)
  
      FramebufferAttachment *getAttachmentFromSubjectIndex(angle::SubjectIndex index);
  
+     ANGLE_INLINE void updateFloat32AndSharedExponentColorAttachmentBits(
+         size_t index,

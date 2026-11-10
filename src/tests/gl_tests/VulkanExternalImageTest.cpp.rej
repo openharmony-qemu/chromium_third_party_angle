@@ -1,5 +1,7 @@
 diff a/src/tests/gl_tests/VulkanExternalImageTest.cpp b/src/tests/gl_tests/VulkanExternalImageTest.cpp	(rejected hunks)
-@@ -1417,127 +1416,6 @@ TEST_P(VulkanExternalImageTest, PreInitializedOnGLImportLinearWithFlags)
+@@ -1415,131 +1414,10 @@ TEST_P(VulkanExternalImageTest, PreInitializedOnGLImportLinearWithFlags)
+ 
+     RunPreInitializedOnGLImportTest<OpaqueFdTraits>(true, VK_IMAGE_TILING_LINEAR, isSwiftshader(),
                                                      enableDebugLayers());
  }
  
@@ -127,7 +129,11 @@ diff a/src/tests/gl_tests/VulkanExternalImageTest.cpp b/src/tests/gl_tests/Vulka
  template <typename Traits>
  void RunUninitializedOnGLImportTest(bool useMemoryObjectFlags,
                                      std::function<GLenum(GLuint)> useTexture,
-@@ -1804,6 +1682,8 @@ void main()
+                                     const uint32_t *expectInVulkan,
+                                     bool isSwiftshader,
+@@ -1802,8 +1680,10 @@ void main()
+ 
+     RunUninitializedOnGLImportTest<OpaqueFdTraits>(false, storageWrite, &kExpect, isSwiftshader(),
                                                     enableDebugLayers());
  }
  

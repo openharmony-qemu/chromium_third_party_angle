@@ -1,5 +1,7 @@
 diff a/src/libANGLE/TransformFeedback.cpp b/src/libANGLE/TransformFeedback.cpp	(rejected hunks)
-@@ -150,7 +150,7 @@ angle::Result TransformFeedback::begin(const Context *context,
+@@ -148,11 +148,11 @@ angle::Result TransformFeedback::begin(const Context *context,
+     mState.mPrimitiveMode = primitiveMode;
+     mState.mPaused        = false;
      mState.mVerticesDrawn = 0;
      bindProgram(context, program);
      recomputeVertexCapacity(context);
@@ -8,7 +10,11 @@ diff a/src/libANGLE/TransformFeedback.cpp b/src/libANGLE/TransformFeedback.cpp	(
      for (auto &buffer : mState.mIndexedBuffers)
      {
          if (buffer.get())
-@@ -210,10 +210,17 @@ PrimitiveMode TransformFeedback::getPrimitiveMode() const
+         {
+             buffer->onTFActiveChanged(context, true);
+@@ -208,14 +208,21 @@ PrimitiveMode TransformFeedback::getPrimitiveMode() const
+ PrimitiveMode TransformFeedback::getPrimitiveMode() const
+ {
      return mState.mPrimitiveMode;
  }
  
@@ -29,3 +35,5 @@ diff a/src/libANGLE/TransformFeedback.cpp b/src/libANGLE/TransformFeedback.cpp	(
      return vertices.IsValid() && vertices.ValueOrDie() <= mState.mVertexCapacity;
  }
  
+ void TransformFeedback::onVerticesDrawn(const Context *context, GLsizei count, GLsizei primcount)
+ {

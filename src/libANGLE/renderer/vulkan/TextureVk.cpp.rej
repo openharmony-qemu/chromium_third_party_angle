@@ -1,5 +1,7 @@
 diff a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan/TextureVk.cpp	(rejected hunks)
-@@ -1886,8 +1886,8 @@ angle::Result TextureVk::copySubImageImplWithTransfer(ContextVk *contextVk,
+@@ -1884,12 +1884,12 @@ angle::Result TextureVk::copySubImageImplWithTransfer(ContextVk *contextVk,
+         // Stage the copy for when the image storage is actually created.
+         VkImageType imageType = gl_vk::GetImageType(mState.getType());
          const gl::ImageIndex stagingIndex =
              gl::ImageIndex::Make2DArrayRange(level.get(), baseLayer, layerCount);
          mImage->stageSubresourceUpdateFromImage(stagingImage.release(), stagingIndex,
@@ -10,7 +12,11 @@ diff a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan
      }
  
      return angle::Result::Continue;
-@@ -2062,8 +2062,8 @@ angle::Result TextureVk::copySubImageImplWithDraw(ContextVk *contextVk,
+ }
+ 
+@@ -2060,12 +2060,12 @@ angle::Result TextureVk::copySubImageImplWithDraw(ContextVk *contextVk,
+         // Stage the copy for when the image storage is actually created.
+         VkImageType imageType = gl_vk::GetImageType(mState.getType());
          const gl::ImageIndex stagingIndex =
              gl::ImageIndex::Make2DArrayRange(level.get(), baseLayer, layerCount);
          mImage->stageSubresourceUpdateFromImage(stagingImage.release(), stagingIndex,
@@ -21,7 +27,11 @@ diff a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan
      }
  
      return angle::Result::Continue;
-@@ -2155,7 +2155,8 @@ angle::Result TextureVk::setStorageExternalMemory(const gl::Context *context,
+ }
+ 
+@@ -2153,11 +2153,12 @@ angle::Result TextureVk::setStorageExternalMemory(const gl::Context *context,
+     ContextVk *contextVk           = vk::GetImpl(context);
+     MemoryObjectVk *memoryObjectVk = vk::GetImpl(memoryObject);
      vk::Renderer *renderer         = contextVk->getRenderer();
  
      const vk::Format &vkFormat     = renderer->getFormat(internalFormat);
@@ -31,7 +41,11 @@ diff a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan
  
      releaseAndDeleteImageAndViews(contextVk);
  
-@@ -4805,7 +4806,7 @@ angle::Result TextureVk::ensureRenderableWithFormat(ContextVk *contextVk,
+     setImageHelper(contextVk, new vk::ImageHelper(), gl::TextureType::InvalidEnum, 0, 0, true, {});
+ 
+@@ -4803,11 +4804,11 @@ angle::Result TextureVk::ensureRenderableWithFormat(ContextVk *contextVk,
+         else
+         {
              // First try to convert any staged buffer updates from old format to new format using
              // CPU.
              ANGLE_TRY(mImage->reformatStagedBufferUpdates(contextVk, previousActualFormatID,
@@ -40,3 +54,5 @@ diff a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan
          }
      }
  
+     // Make sure we update mImageUsage bits
+     const bool imageWasInitialized = mImage->valid();

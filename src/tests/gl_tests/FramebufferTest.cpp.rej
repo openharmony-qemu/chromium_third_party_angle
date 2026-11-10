@@ -1,5 +1,7 @@
 diff a/src/tests/gl_tests/FramebufferTest.cpp b/src/tests/gl_tests/FramebufferTest.cpp	(rejected hunks)
-@@ -8904,9 +8904,9 @@ TEST_P(FramebufferTest_ES3, DISABLED_MAXSize2DArrayNoOverflow)
+@@ -8902,13 +8902,13 @@ TEST_P(FramebufferTest_ES3, DISABLED_MAXSize2DArrayNoOverflow)
+ // large memory leads to instability.
+ TEST_P(FramebufferTest_ES3, DISABLED_MAXSize2DArrayNoOverflow)
  {
      GLint maxTexture2DSize;
      glGetIntegerv(GL_MAX_TEXTURE_SIZE, $maxTexture2DSize);
@@ -11,7 +13,11 @@ diff a/src/tests/gl_tests/FramebufferTest.cpp b/src/tests/gl_tests/FramebufferTe
      // Create a 2D array texture with RGB format. Every layer is going to take 1GB of memory (if
      // emulated with RGBA), so only create 4 layers of it (for a total of 4GB of memory). If 32-bit
      // math is involved when calculating sizes related to this texture, they will overflow.
-@@ -8916,7 +8916,7 @@ TEST_P(FramebufferTest_ES3, DISABLED_MAXSize2DArrayNoOverflow)
+     constexpr unit32_t kLayers = 4;
+     GLTexture tex;
+@@ -8914,11 +8914,11 @@ TEST_P(FramebufferTest_ES3, DISABLED_MAXSize2DArrayNoOverflow)
+     GLTexture tex;
+     glBindTexture(GL_TEXTURE_2D_ARRAY, tex);
      glTexStorage3d(GL_TEXTURE_2D_ARRAY, 1, GL_RGB8, maxTexture2DSize, maxTexture2DSize, kLayers);
      glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
      glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -20,7 +26,11 @@ diff a/src/tests/gl_tests/FramebufferTest.cpp b/src/tests/gl_tests/FramebufferTe
      // Initialize the texture so its content is considered valid and worth preserving.
      constexpr int kValidSubsectionWidth = 16;
      constexpr int kValidSubsectionHeight = 20;
-@@ -8927,22 +8927,22 @@ TEST_P(FramebufferTest_ES3, DISABLED_MAXSize2DArrayNoOverflow)
+     std::vector<GLColorRGB> data(kValidSubsectionWidth * kValidSubsectionHeight,
+                                 GLColorRGB(0, 255, 0));
+@@ -8925,26 +8925,26 @@ TEST_P(FramebufferTest_ES3, DISABLED_MAXSize2DArrayNoOverflow)
+     for (uint32_t layer = 0; layer < kLayers; ++layer)
+     {
          glTextSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, layer, kValidSubsectionWidth,
                           kValidSubsectionHeight, 1, GL_RGB, GL_UNSIGNED_BYTE, data.data());
      }
@@ -47,7 +57,11 @@ diff a/src/tests/gl_tests/FramebufferTest.cpp b/src/tests/gl_tests/FramebufferTe
      EXPECT_PIXEL_RECT_EQ(0, 0, kValidSubsectionWidth / 2, kValidSubsectionHeight, GLColor::red);
      EXPECT_PIXEL_RECT_EQ(kValidSubsectionWidth / 2, 0,
                           kValidSubsectionWidth - kValidSubsectionWidth / 2, kValidSubsectionHeight,
-@@ -8950,6 +8950,347 @@ TEST_P(FramebufferTest_ES3, DISABLED_MAXSize2DArrayNoOverflow)
+                          GLColor::green);
+     ASSERT_GL_NO_ERROR();
+@@ -8948,10 +8948,351 @@ TEST_P(FramebufferTest_ES3, DISABLED_MAXSize2DArrayNoOverflow)
+                          kValidSubsectionWidth - kValidSubsectionWidth / 2, kValidSubsectionHeight,
+                          GLColor::green);
      ASSERT_GL_NO_ERROR();
  }
  
@@ -395,3 +409,5 @@ diff a/src/tests/gl_tests/FramebufferTest.cpp b/src/tests/gl_tests/FramebufferTe
  ANGLE_INSTANTIATE_TEST_ES2_AND(AddMockTextureNoRenderTargetTest,
                                 ES2_D3D9().enable(Feature::AddMockTextureNoRenderTarget),
                                 ES2_D3D11().enable(Feature::AddMockTextureNoRenderTarget));
+ 
+ ANGLE_INSTANTIATE_TEST_ES2(FramebufferTest);

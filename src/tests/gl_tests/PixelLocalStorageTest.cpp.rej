@@ -1,5 +1,7 @@
 diff a/src/tests/gl_tests/PixelLocalStorageTest.cpp b/src/tests/gl_tests/PixelLocalStorageTest.cpp	(rejected hunks)
-@@ -845,6 +845,92 @@ TEST_P(PixelLocalStorageTest, R32_noncoherent)
+@@ -843,10 +843,96 @@ TEST_P(PixelLocalStorageTest, R32_noncoherent)
+ {
+     ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_ANGLE_shader_pixel_local_storage"));
      doR32Test(/*noncoherent=*/true);
  }
  
@@ -92,3 +94,5 @@ diff a/src/tests/gl_tests/PixelLocalStorageTest.cpp b/src/tests/gl_tests/PixelLo
  // Check proper functioning of the clear value state.
  TEST_P(PixelLocalStorageTest, ClearValues_rgba8)
  {
+     ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_ANGLE_shader_pixel_local_storage"));
+ 

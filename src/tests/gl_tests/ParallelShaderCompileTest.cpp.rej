@@ -1,5 +1,7 @@
 diff a/src/tests/gl_tests/ParallelShaderCompileTest.cpp b/src/tests/gl_tests/ParallelShaderCompileTest.cpp	(rejected hunks)
-@@ -38,20 +38,6 @@ class ParallelShaderCompileTest : public ANGLETest<>
+@@ -36,24 +36,10 @@ class ParallelShaderCompileTest : public ANGLETest<>
+         setConfigGreenBits(8);
+         setConfigBlueBits(8);
          setConfigAlphaBits(8);
      }
  
@@ -20,7 +22,11 @@ diff a/src/tests/gl_tests/ParallelShaderCompileTest.cpp b/src/tests/gl_tests/Par
      class Task
      {
        public:
-@@ -388,7 +374,7 @@ void main()
+         Task(int id) : mID(id) {}
+         virtual ~Task() {}
+@@ -386,11 +372,11 @@ void main()
+ };
+ 
  // Test basic functionality of GL_KHR_parallel_shader_compile
  TEST_P(ParallelShaderCompileTest, Basic)
  {
@@ -29,7 +35,11 @@ diff a/src/tests/gl_tests/ParallelShaderCompileTest.cpp b/src/tests/gl_tests/Par
  
      GLint count = 0;
      glMaxShaderCompilerThreadsKHR(8);
-@@ -401,7 +387,7 @@ TEST_P(ParallelShaderCompileTest, Basic)
+     EXPECT_GL_NO_ERROR();
+     glGetIntegerv(GL_MAX_SHADER_COMPILER_THREADS_KHR, &count);
+@@ -399,11 +385,11 @@ TEST_P(ParallelShaderCompileTest, Basic)
+ }
+ 
  // Test to compile and link many programs in parallel.
  TEST_P(ParallelShaderCompileTest, LinkAndDrawManyPrograms)
  {
@@ -38,7 +48,11 @@ diff a/src/tests/gl_tests/ParallelShaderCompileTest.cpp b/src/tests/gl_tests/Par
  
      TaskRunner<ClearColorWithDraw> runner;
      runner.run(this, kPollInterval);
-@@ -412,12 +398,86 @@ TEST_P(ParallelShaderCompileTest, LinkAndDrawManyPrograms)
+ }
+ 
+@@ -410,16 +396,90 @@ TEST_P(ParallelShaderCompileTest, LinkAndDrawManyPrograms)
+ // Tests no crash in case that the Shader starts another compile while the Program being attached
+ // to is still linking.
  // crbug.com/1317673
  TEST_P(ParallelShaderCompileTest, LinkProgramAndRecompileShader)
  {
@@ -126,7 +140,11 @@ diff a/src/tests/gl_tests/ParallelShaderCompileTest.cpp b/src/tests/gl_tests/Par
  class ParallelShaderCompileTestES31 : public ParallelShaderCompileTest
  {};
  
-@@ -431,7 +491,7 @@ TEST_P(ParallelShaderCompileTestES31, LinkAndDispatchManyPrograms)
+ // Test to compile and link many computing programs in parallel.
+ TEST_P(ParallelShaderCompileTestES31, LinkAndDispatchManyPrograms)
+@@ -429,11 +489,11 @@ TEST_P(ParallelShaderCompileTestES31, LinkAndDispatchManyPrograms)
+     ANGLE_SKIP_TEST_IF(IsWindows() && IsD3D11());
+ 
      // TODO(http://anglebug.com/42264192): Fails on Linux+Intel+OpenGL
      ANGLE_SKIP_TEST_IF(IsLinux() && IsIntel() && IsOpenGL());
  
@@ -135,3 +153,5 @@ diff a/src/tests/gl_tests/ParallelShaderCompileTest.cpp b/src/tests/gl_tests/Par
  
      TaskRunner<ImageLoadStore> runner;
      runner.run(this, kPollInterval);
+ }
+ 

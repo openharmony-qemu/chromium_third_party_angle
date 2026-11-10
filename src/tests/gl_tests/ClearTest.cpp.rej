@@ -1,5 +1,7 @@
 diff a/src/tests/gl_tests/ClearTest.cpp b/src/tests/gl_tests/ClearTest.cpp	(rejected hunks)
-@@ -1659,6 +1659,74 @@ TEST_P(ClearTest, TextureUploadAndRGBA8Framebuffer)
+@@ -1657,10 +1657,78 @@ TEST_P(ClearTest, TextureUploadAndRGBA8Framebuffer)
+ 
+     glClearColor(0.5f, 0.5f, 0.5f, 0.5f);
      glClear(GL_COLOR_BUFFER_BIT);
  
      EXPECT_PIXEL_NEAR(0, 0, 128, 128, 128, 128, 1.0);
@@ -74,3 +76,5 @@ diff a/src/tests/gl_tests/ClearTest.cpp b/src/tests/gl_tests/ClearTest.cpp	(reje
  }
  
  // Test to validate that we can go from an RGBA framebuffer attachment, to an RGB one and still
+ // have a correct behavior after.
+ TEST_P(ClearTest, ChangeFramebufferAttachmentFromRGBAtoRGB)

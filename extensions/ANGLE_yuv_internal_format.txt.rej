@@ -1,5 +1,7 @@
 diff a/extensions/ANGLE_yuv_internal_format.txt b/extensions/ANGLE_yuv_internal_format.txt	(rejected hunks)
-@@ -26,7 +26,7 @@ Status
+@@ -24,11 +24,11 @@ Status
+ 
+     Draft.
  
  Version
  
@@ -8,7 +10,11 @@ diff a/extensions/ANGLE_yuv_internal_format.txt b/extensions/ANGLE_yuv_internal_
  
  Number
  
-@@ -36,6 +36,8 @@ Dependencies
+     OpenGL ES Extension ###
+ 
+@@ -34,10 +34,12 @@ Dependencies
+ 
+ Dependencies
  
      OpenGL ES 3.0 is required.
  
@@ -17,7 +23,11 @@ diff a/extensions/ANGLE_yuv_internal_format.txt b/extensions/ANGLE_yuv_internal_
  Overview
  
      This extension introduces a few sized internal YUV texture formats
-@@ -96,8 +98,43 @@ Issues
+     that can be used to create immutable textures using the TexStorage2D API.
+     The only valid texture target supported is TEXTURE_2D, an INVALID_ENUM
+@@ -94,12 +96,47 @@ Issues
+        The texture or sampler parameter APIs can be expanded to indicate the colorspace
+        in a layered extension and is outside the scope of this extension. The colorspace
         for textures with the above YUV formats is assumed to be ITU-R BT.601 with YUV
         values in limited range. Refer to ITU-R BT.601 spec for further details.
  
@@ -61,3 +71,5 @@ diff a/extensions/ANGLE_yuv_internal_format.txt b/extensions/ANGLE_yuv_internal_
      #5 - (June 23, 2021) Mohan Maiya
           Renamed format enums from *_ANGLEX to *_ANGLE
  
+     #4 - (June 23, 2021) Mohan Maiya
+          Removed references to GL_OES_EGL_image_external

@@ -1,5 +1,7 @@
 diff a/src/libANGLE/Framebuffer.cpp b/src/libANGLE/Framebuffer.cpp	(rejected hunks)
-@@ -1656,7 +1656,7 @@ angle::Result Framebuffer::invalidate(const Context *context,
+@@ -1654,11 +1654,11 @@ angle::Result Framebuffer::invalidate(const Context *context,
+ 
+     return mImpl->invalidate(context, count, attachments);
  }
  
  bool Framebuffer::partialClearNeedsInit(const Context *context,
@@ -8,7 +10,11 @@ diff a/src/libANGLE/Framebuffer.cpp b/src/libANGLE/Framebuffer.cpp	(rejected hun
                                          bool depth,
                                          bool stencil)
  {
-@@ -1681,7 +1681,7 @@ bool Framebuffer::partialClearNeedsInit(const Context *context,
+     const auto &glState = context->getState();
+ 
+@@ -1679,11 +1679,11 @@ bool Framebuffer::partialClearNeedsInit(const Context *context,
+         return true;
+     }
  
      // If colors masked, we must clear before we clear. Do a simple check.
      // TODO(jmadill): Filter out unused color channels from the test.
@@ -17,7 +23,11 @@ diff a/src/libANGLE/Framebuffer.cpp b/src/libANGLE/Framebuffer.cpp	(rejected hun
      {
          return true;
      }
-@@ -2495,7 +2513,13 @@ angle::Result Framebuffer::ensureClearAttachmentsInitialized(const Context *cont
+ 
+     if (stencil)
+@@ -2493,11 +2511,17 @@ angle::Result Framebuffer::ensureClearAttachmentsInitialized(const Context *cont
+     if (!color && !depth && !stencil)
+     {
          return angle::Result::Continue;
      }
  
@@ -32,7 +42,11 @@ diff a/src/libANGLE/Framebuffer.cpp b/src/libANGLE/Framebuffer.cpp	(rejected hun
      {
          ANGLE_TRY(ensureDrawAttachmentsInitialized(context));
      }
-@@ -2570,7 +2594,7 @@ angle::Result Framebuffer::ensureClearBufferAttachmentsInitialized(const Context
+ 
+     // If the impl encounters an error during a a full (non-partial) clear, the attachments will
+@@ -2568,11 +2592,11 @@ angle::Result Framebuffer::ensureClearBufferAttachmentsInitialized(const Context
+         default:
+             UNREACHABLE();
              break;
      }
  
@@ -41,7 +55,11 @@ diff a/src/libANGLE/Framebuffer.cpp b/src/libANGLE/Framebuffer.cpp	(rejected hun
          (clearColorAttachments.any() || clearDepth || clearStencil))
      {
          ANGLE_TRY(mImpl->ensureAttachmentsInitialized(context, clearColorAttachments, clearDepth,
-@@ -2760,7 +2784,9 @@ GLuint Framebuffer::getSupportedFoveationFeatures() const
+                                                       clearStencil));
+     }
+@@ -2758,11 +2782,13 @@ GLuint Framebuffer::getSupportedFoveationFeatures() const
+ GLuint Framebuffer::getSupportedFoveationFeatures() const
+ {
      return mState.mFoveationState.getSupportedFoveationFeatures();
  }
  
@@ -52,7 +70,11 @@ diff a/src/libANGLE/Framebuffer.cpp b/src/libANGLE/Framebuffer.cpp	(rejected hun
  {
      if (!context->isRobustResourceInitEnabled() || mState.mResourceNeedsInit.none())
      {
-@@ -2770,13 +2796,13 @@ bool Framebuffer::partialBufferClearNeedsInit(const Context *context, GLenum buf
+         return false;
+     }
+@@ -2768,17 +2794,17 @@ bool Framebuffer::partialBufferClearNeedsInit(const Context *context, GLenum buf
+     }
+ 
      switch (bufferType)
      {
          case GL_COLOR:
@@ -70,3 +92,5 @@ diff a/src/libANGLE/Framebuffer.cpp b/src/libANGLE/Framebuffer.cpp	(rejected hun
          default:
              UNREACHABLE();
              return false;
+     }
+ }

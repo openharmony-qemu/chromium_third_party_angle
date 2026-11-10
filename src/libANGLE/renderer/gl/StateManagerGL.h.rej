@@ -1,5 +1,7 @@
 diff a/src/libANGLE/renderer/gl/StateManagerGL.h b/src/libANGLE/renderer/gl/StateManagerGL.h	(rejected hunks)
-@@ -365,6 +365,8 @@ class StateManagerGL final : angle::NonCopyable
+@@ -363,10 +363,12 @@ class StateManagerGL final : angle::NonCopyable
+     void updateProgramImageBindings(const gl::Context *context);
+ 
      void updateDispatchIndirectBufferBinding(const gl::Context *context);
      void updateDrawIndirectBufferBinding(const gl::Context *context);
  
@@ -8,3 +10,5 @@ diff a/src/libANGLE/renderer/gl/StateManagerGL.h b/src/libANGLE/renderer/gl/Stat
      template <typename T>
      void get(GLenum name, T *value);
  
+     template <size_t n, typename T>
+     void get(GLenum name, std::array<T, n> *values);

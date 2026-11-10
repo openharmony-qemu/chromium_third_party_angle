@@ -1,5 +1,7 @@
 diff a/src/common/mathutil.h b/src/common/mathutil.h	(rejected hunks)
-@@ -872,9 +872,10 @@ struct IndexRange
+@@ -870,13 +870,14 @@ struct IndexRange
+ {
+     struct Undefined
      {};
      IndexRange(Undefined) {}
      IndexRange() = default;
@@ -12,7 +14,11 @@ diff a/src/common/mathutil.h b/src/common/mathutil.h	(rejected hunks)
      }
      bool isEmpty() const { return mCount == 0; }
      uint32_t start() const
-@@ -885,15 +886,18 @@ struct IndexRange
+     {
+         ASSERT(!isEmpty());
+@@ -883,19 +884,22 @@ struct IndexRange
+         return mStart;
+     }
      uint32_t end() const
      {
          ASSERT(!isEmpty());
@@ -34,3 +40,5 @@ diff a/src/common/mathutil.h b/src/common/mathutil.h	(rejected hunks)
  };
  
  inline bool operator==(const IndexRange &a, const IndexRange &b)
+ {
+     return a.vertexCount() == b.vertexCount() &&

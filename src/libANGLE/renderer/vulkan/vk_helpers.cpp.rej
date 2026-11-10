@@ -1,5 +1,7 @@
 diff a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulkan/vk_helpers.cpp	(rejected hunks)
-@@ -8048,6 +8048,10 @@ void ImageHelper::removeSingleSubresourceStagedUpdates(ContextVk *contextVk,
+@@ -8046,10 +8046,14 @@ void ImageHelper::removeSingleSubresourceStagedUpdates(ContextVk *contextVk,
+             update->release(contextVk->getRenderer());
+             levelUpdates->erase(update);
          }
          else
          {
@@ -10,7 +12,11 @@ diff a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulka
              index++;
          }
      }
-@@ -8295,15 +8299,25 @@ angle::Result ImageHelper::stageSubresourceUpdateImpl(ContextVk *contextVk,
+ }
+ 
+@@ -8293,19 +8297,29 @@ angle::Result ImageHelper::stageSubresourceUpdateImpl(ContextVk *contextVk,
+ 
+         // We only support mip level 0 and layerCount of 1 for YUV formats.
          ASSERT(index.getLevelIndex() == 0);
          ASSERT(index.getLayerCount() == 1);
  
@@ -37,7 +43,11 @@ diff a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulka
              gl_vk::GetExtent(yuvInfo.planeExtent[plane], &copy.imageExtent);
              copy.imageSubresource.baseArrayLayer = 0;
              copy.imageSubresource.aspectMask     = kPlaneAspectFlags[plane];
-@@ -8567,7 +8581,8 @@ angle::Result ImageHelper::updateSubresourceOnHost(ContextVk *contextVk,
+             appendSubresourceUpdate(
+                 gl::LevelIndex(0),
+@@ -8565,11 +8579,12 @@ angle::Result ImageHelper::updateSubresourceOnHost(ContextVk *contextVk,
+     return angle::Result::Continue;
+ }
  
  angle::Result ImageHelper::reformatStagedBufferUpdates(ContextVk *contextVk,
                                                         angle::FormatID srcFormatID,
@@ -47,7 +57,11 @@ diff a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulka
  {
      const angle::Format &srcFormat = angle::Format::Get(srcFormatID);
      const angle::Format &dstFormat = angle::Format::Get(dstFormatID);
-@@ -8594,6 +8609,10 @@ angle::Result ImageHelper::reformatStagedBufferUpdates(ContextVk *contextVk,
+     const gl::InternalFormat &dstFormatInfo =
+         gl::GetSizedInternalFormatInfo(dstFormat.glInternalFormat);
+@@ -8592,10 +8607,14 @@ angle::Result ImageHelper::reformatStagedBufferUpdates(ContextVk *contextVk,
+                 GLuint dstDataRowPitch = copy.imageExtent.width * dstFormat.pixelBytes;
+ 
                  GLuint srcDataDepthPitch = srcDataRowPitch * copy.imageExtent.height;
                  GLuint dstDataDepthPitch = dstDataRowPitch * copy.imageExtent.height;
  
@@ -58,7 +72,11 @@ diff a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulka
                  // Retrieve source buffer
                  vk::BufferHelper *srcBuffer = update.data.buffer.bufferHelper;
                  ASSERT(srcBuffer->isMapped());
-@@ -8608,7 +8627,7 @@ angle::Result ImageHelper::reformatStagedBufferUpdates(ContextVk *contextVk,
+                 // The bufferOffset is relative to the buffer block. We have to use the buffer
+                 // block's memory pointer to get the source data pointer.
+@@ -8606,11 +8625,11 @@ angle::Result ImageHelper::reformatStagedBufferUpdates(ContextVk *contextVk,
+                     std::make_unique<RefCounted<BufferHelper>>();
+                 BufferHelper *dstBuffer = &stagingBuffer->get();
  
                  uint8_t *dstData;
                  VkDeviceSize dstBufferOffset;
@@ -67,7 +85,11 @@ diff a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulka
                  ANGLE_TRY(contextVk->initBufferForImageCopy(
                      dstBuffer, dstBufferSize, MemoryCoherency::CachedNonCoherent, dstFormatID,
                      &dstBufferOffset, &dstData));
-@@ -8620,8 +8639,7 @@ angle::Result ImageHelper::reformatStagedBufferUpdates(ContextVk *contextVk,
+ 
+                 rx::PixelReadFunction pixelReadFunction   = srcFormat.pixelReadFunction;
+@@ -8618,12 +8637,11 @@ angle::Result ImageHelper::reformatStagedBufferUpdates(ContextVk *contextVk,
+ 
+                 CopyImageCHROMIUM(srcData, srcDataRowPitch, srcFormat.pixelBytes, srcDataDepthPitch,
                                    pixelReadFunction, dstData, dstDataRowPitch, dstFormat.pixelBytes,
                                    dstDataDepthPitch, pixelWriteFunction, dstFormatInfo.format,
                                    dstFormatInfo.componentType, copy.imageExtent.width,
@@ -77,7 +99,11 @@ diff a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulka
  
                  // Replace srcBuffer with dstBuffer
                  update.data.buffer.bufferHelper            = dstBuffer;
-@@ -9217,9 +9235,11 @@ angle::Result ImageHelper::stageSubresourceUpdateFromFramebuffer(
+                 update.data.buffer.formatID                = dstFormatID;
+                 update.data.buffer.copyRegion.bufferOffset = dstBufferOffset;
+@@ -9215,13 +9233,15 @@ angle::Result ImageHelper::stageSubresourceUpdateFromFramebuffer(
+ }
+ 
  void ImageHelper::stageSubresourceUpdateFromImage(RefCounted<ImageHelper> *image,
                                                    const gl::ImageIndex &index,
                                                    LevelIndex srcMipLevel,
@@ -90,7 +116,11 @@ diff a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulka
  {
      gl::LevelIndex updateLevelGL(index.getLevelIndex());
      VkImageAspectFlags imageAspectFlags = vk::GetFormatAspectFlags(image->get().getActualFormat());
-@@ -9227,26 +9247,31 @@ void ImageHelper::stageSubresourceUpdateFromImage(RefCounted<ImageHelper> *image
+ 
+     VkImageCopy copyToImage               = {};
+@@ -9225,30 +9245,35 @@ void ImageHelper::stageSubresourceUpdateFromImage(RefCounted<ImageHelper> *image
+     VkImageAspectFlags imageAspectFlags = vk::GetFormatAspectFlags(image->get().getActualFormat());
+ 
      VkImageCopy copyToImage               = {};
      copyToImage.srcSubresource.aspectMask = imageAspectFlags;
      copyToImage.srcSubresource.mipLevel   = srcMipLevel.get();
@@ -131,7 +161,11 @@ diff a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulka
      }
  
      gl_vk::GetOffset(destOffset, &copyToImage.dstOffset);
-@@ -9265,9 +9290,9 @@ void ImageHelper::stageSubresourceUpdatesFromAllImageLevels(RefCounted<ImageHelp
+     gl_vk::GetExtent(glExtents, &copyToImage.extent);
+ 
+@@ -9263,13 +9288,13 @@ void ImageHelper::stageSubresourceUpdatesFromAllImageLevels(RefCounted<ImageHelp
+     {
+         const gl::LevelIndex levelGL = vk_gl::GetLevelIndex(levelVk, baseLevel);
          const gl::ImageIndex index =
              gl::ImageIndex::Make2DArrayRange(levelGL.get(), 0, image->get().getLayerCount());
  
@@ -143,7 +177,11 @@ diff a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulka
      }
  }
  
-@@ -9528,15 +9553,7 @@ void ImageHelper::stageSelfAsSubresourceUpdates(
+ void ImageHelper::stageClear(const gl::ImageIndex &index,
+                              VkImageAspectFlags aspectFlags,
+@@ -9526,19 +9551,11 @@ void ImageHelper::stageSelfAsSubresourceUpdates(
+ 
+     // Stage updates from the previous image.
      for (LevelIndex levelVk(0); levelVk < LevelIndex(levelCount); ++levelVk)
      {
          gl::LevelIndex levelGL = toGLLevel(levelVk);
@@ -160,7 +198,11 @@ diff a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulka
          {
              for (uint32_t face = 0; face < gl::kCubeFaceCount; ++face)
              {
-@@ -9545,12 +9562,20 @@ void ImageHelper::stageSelfAsSubresourceUpdates(
+                 if (!skipLevels[face][levelGL.get()])
+                 {
+@@ -9543,16 +9560,24 @@ void ImageHelper::stageSelfAsSubresourceUpdates(
+                 if (!skipLevels[face][levelGL.get()])
+                 {
                      const gl::ImageIndex index =
                          gl::ImageIndex::Make2DArrayRange(levelGL.get(), face, 1);
  
@@ -183,7 +225,11 @@ diff a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulka
      }
  
      ASSERT(levelCount > 0);
-@@ -9579,7 +9604,7 @@ angle::Result ImageHelper::flushSingleSubresourceStagedUpdates(ContextVk *contex
+     prevImage.release();
+ }
+@@ -9577,11 +9602,11 @@ angle::Result ImageHelper::flushSingleSubresourceStagedUpdates(ContextVk *contex
+ 
+         for (size_t updateIndex = 0; updateIndex < levelUpdates->size(); ++updateIndex)
          {
              SubresourceUpdate &update = (*levelUpdates)[updateIndex];
  
@@ -192,7 +238,11 @@ diff a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulka
              {
                  // On any data update or the clear does not match exact layer range, we'll need to
                  // do a full upload.
-@@ -11503,10 +11528,11 @@ bool ImageHelper::SubresourceUpdate::matchesLayerRange(uint32_t layerIndex,
+                 const bool isClear = IsClearOfAllChannels(update.updateSource);
+                 if (isClear && update.matchesLayerRange(layer, layerCount))
+@@ -11501,14 +11526,15 @@ bool ImageHelper::SubresourceUpdate::matchesLayerRange(uint32_t layerIndex,
+     return updateBaseLayer == layerIndex &&
+            (updateLayerCount == layerCount || updateLayerCount == VK_REMAINING_ARRAY_LAYERS);
  }
  
  bool ImageHelper::SubresourceUpdate::intersectsLayerRange(uint32_t layerIndex,
@@ -206,3 +256,5 @@ diff a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulka
      uint32_t updateLayerEnd = updateBaseLayer + updateLayerCount;
  
      return updateBaseLayer < (layerIndex + layerCount) && updateLayerEnd > layerIndex;
+ }
+ 

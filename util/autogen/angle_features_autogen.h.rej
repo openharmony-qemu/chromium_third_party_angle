@@ -1,5 +1,7 @@
 diff a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h	(rejected hunks)
-@@ -199,6 +199,7 @@ enum class Feature
+@@ -197,10 +197,11 @@ enum class Feature
+     ForceMinimumMaxVertexAttributes,
+     ForceNearestFiltering,
      ForceNearestMipFiltering,
      ForceNonCSBaseMipmapGeneration,
      ForcePassthroughShaders,
@@ -7,3 +9,5 @@ diff a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autog
      ForceRobustResourceInit,
      ForceSampleUsageForAhbBackedImages,
      ForceSizePointerForBoundVertexBuffers,
+     ForceSubmitExceptionsAtFBOBoundary,
+     ForceSubmitImmutableTextureUpdates,

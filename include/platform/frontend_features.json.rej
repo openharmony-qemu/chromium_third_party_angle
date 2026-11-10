@@ -1,5 +1,7 @@
 diff a/include/platform/frontend_features.json b/include/platform/frontend_features.json	(rejected hunks)
-@@ -263,7 +263,7 @@
+@@ -261,9 +261,9 @@
+         {
+             "name": "allow_extension_disable_after_non_pp_tokens",
              "category": "Features",
              "description": [
                  "Allow #extension ... : disable after non preprocessor tokens in WebGL."

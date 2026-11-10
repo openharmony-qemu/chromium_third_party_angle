@@ -1,5 +1,7 @@
 diff a/src/tests/capture_replay_tests/capture_replay_expectations.txt b/src/tests/capture_replay_tests/capture_replay_expectations.txt	(rejected hunks)
-@@ -80,6 +80,8 @@
+@@ -78,10 +78,12 @@
+ 42264830 : CopyTextureTestES3.InvalidateBlitThenBlend1000Layers/* = SKIP_FOR_CAPTURE
+ 42264830 : CopyTextureTestES3.InvalidateBlitThenBlend3Layers/* = SKIP_FOR_CAPTURE
  42264831 : FramebufferTest_ES3.AttachmentsWithUnequalDimensions/* = SKIP_FOR_CAPTURE
  42264831 : FramebufferTest_ES3.ChangeAttachmentThenInvalidateAndDraw/* = SKIP_FOR_CAPTURE
  42264831 : FramebufferTest_ES3.RenderAndInvalidateImmutableTextureWithBeyondMaxLevel/* = SKIP_FOR_CAPTURE
@@ -8,7 +10,11 @@ diff a/src/tests/capture_replay_tests/capture_replay_expectations.txt b/src/test
  
  # The following tests fail with forceRobustResourceInit
  # They were accidentally passing until http://crrev/c/5588816
-@@ -246,7 +248,6 @@
+ 42264831 : FramebufferTest_ES3.RenderAndInvalidateImmutableTextureWithBellowBaseLevelLOD/* = SKIP_FOR_CAPTURE
+ 42264831 : FramebufferTest_ES3.RenderAndInvalidateImmutableTextureWithSubImageWithBeyondMaxLevel/* = SKIP_FOR_CAPTURE
+@@ -244,11 +246,10 @@
+ 433331119 : ValidationStateChangeTest.RebindBufferShouldPickupBufferChange/* = COMPILE_FAIL
+ 433331119 : ValidationStateChangeTestES31.RebindVertexBufferShouldPickupBufferChange/* = COMPILE_FAIL
  
  # VVL error
  42264614 LINUX : VulkanExternalImageTestES31.UninitializedOnGLImportAndStorageWrite/* = SKIP_FOR_CAPTURE
@@ -16,3 +22,5 @@ diff a/src/tests/capture_replay_tests/capture_replay_expectations.txt b/src/test
  
  # CoherentBufferTracker deadlocks and flaky crashes
  42266529 LINUX : BufferDataTestES3.* = SKIP_FOR_CAPTURE
+ 42266529 LINUX : BufferStorageTestES3.* = SKIP_FOR_CAPTURE
+ 382101118 : CopyImageTestES31.MultisampleRenderbufferCopyImageSubData/* = SKIP_FOR_CAPTURE

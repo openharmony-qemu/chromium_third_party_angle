@@ -1,5 +1,7 @@
 diff a/include/platform/vk_features.json b/include/platform/vk_features.json	(rejected hunks)
-@@ -44,6 +44,13 @@
+@@ -42,10 +42,17 @@
+             "category": "Workarounds",
+             "description": [
                  "Force a fallback format for angle_end2end_tests"
              ]
          },
@@ -13,3 +15,5 @@ diff a/include/platform/vk_features.json b/include/platform/vk_features.json	(re
          {
              "name": "clamp_point_size",
              "category": "Workarounds",
+             "description": [
+                 "The point size range reported from the API is inconsistent with the actual behavior"

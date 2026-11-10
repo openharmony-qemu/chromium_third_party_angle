@@ -1,5 +1,7 @@
 diff a/src/libANGLE/renderer/gl/BufferGL.cpp b/src/libANGLE/renderer/gl/BufferGL.cpp	(rejected hunks)
-@@ -95,10 +95,6 @@ angle::Result BufferGL::setData(const gl::Context *context,
+@@ -93,14 +93,10 @@ angle::Result BufferGL::setData(const gl::Context *context,
+ {
+     ContextGL *contextGL         = GetImplAs<ContextGL>(context);
      const FunctionsGL *functions = GetFunctionsGL(context);
      StateManagerGL *stateManager = GetStateManagerGL(context);
  
@@ -10,7 +12,11 @@ diff a/src/libANGLE/renderer/gl/BufferGL.cpp b/src/libANGLE/renderer/gl/BufferGL
      // Initialize the shadow buffer if needed. Don't delete existing shadow data. WebGL allows users
      // to bind as an element array buffer first and then copy source/dest later (but not the other
      // way around).
-@@ -107,6 +103,10 @@ angle::Result BufferGL::setData(const gl::Context *context,
+     if (KeepBufferShadowCopy(context, mState.getWebGLType()) && !mShadowCopy.has_value())
+     {
+@@ -105,10 +101,14 @@ angle::Result BufferGL::setData(const gl::Context *context,
+     if (KeepBufferShadowCopy(context, mState.getWebGLType()) && !mShadowCopy.has_value())
+     {
          mShadowCopy = angle::MemoryBuffer();
      }
  
@@ -21,7 +27,11 @@ diff a/src/libANGLE/renderer/gl/BufferGL.cpp b/src/libANGLE/renderer/gl/BufferGL
      if (mShadowCopy.has_value())
      {
          ANGLE_CHECK_GL_ALLOC(contextGL, mShadowCopy->resize(size));
-@@ -114,9 +114,13 @@ angle::Result BufferGL::setData(const gl::Context *context,
+ 
+         if (size > 0 && data != nullptr)
+@@ -112,13 +112,17 @@ angle::Result BufferGL::setData(const gl::Context *context,
+         ANGLE_CHECK_GL_ALLOC(contextGL, mShadowCopy->resize(size));
+ 
          if (size > 0 && data != nullptr)
          {
              memcpy(mShadowCopy->data(), data, size);
@@ -35,7 +45,11 @@ diff a/src/libANGLE/renderer/gl/BufferGL.cpp b/src/libANGLE/renderer/gl/BufferGL
      mBufferSize = size;
  
      contextGL->markWorkSubmitted();
-@@ -136,14 +140,21 @@ angle::Result BufferGL::setSubData(const gl::Context *context,
+ 
+     return angle::Result::Continue;
+@@ -134,18 +138,25 @@ angle::Result BufferGL::setSubData(const gl::Context *context,
+     ContextGL *contextGL         = GetImplAs<ContextGL>(context);
+     const FunctionsGL *functions = GetFunctionsGL(context);
      StateManagerGL *stateManager = GetStateManagerGL(context);
  
      stateManager->bindBuffer(DestBufferOperationTarget, mBufferID);
@@ -61,3 +75,5 @@ diff a/src/libANGLE/renderer/gl/BufferGL.cpp b/src/libANGLE/renderer/gl/BufferGL
      contextGL->markWorkSubmitted();
  
      return angle::Result::Continue;
+ }
+ 

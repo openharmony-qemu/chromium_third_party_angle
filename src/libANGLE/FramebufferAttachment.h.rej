@@ -1,5 +1,7 @@
 diff a/src/libANGLE/FramebufferAttachment.h b/src/libANGLE/FramebufferAttachment.h	(rejected hunks)
-@@ -110,6 +110,7 @@ class FramebufferAttachment final
+@@ -108,10 +108,11 @@ class FramebufferAttachment final
+     // These methods are only legal to call on Texture attachments
+     const ImageIndex &getTextureImageIndex() const;
      TextureTarget cubeMapFace() const;
      GLint mipLevel() const;
      GLint layer() const;
@@ -7,3 +9,5 @@ diff a/src/libANGLE/FramebufferAttachment.h b/src/libANGLE/FramebufferAttachment
      bool isLayered() const;
  
      GLsizei getNumViews() const { return mNumViews; }
+ 
+     bool isMultiview() const;

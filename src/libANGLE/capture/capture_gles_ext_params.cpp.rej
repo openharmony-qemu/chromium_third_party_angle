@@ -1,5 +1,7 @@
 diff a/src/libANGLE/capture/capture_gles_ext_params.cpp b/src/libANGLE/capture/capture_gles_ext_params.cpp	(rejected hunks)
-@@ -413,7 +413,7 @@ void CaptureMultiDrawArraysANGLE_firsts(const State &glState,
+@@ -411,11 +411,11 @@ void CaptureMultiDrawArraysANGLE_firsts(const State &glState,
+                                         const GLint *firsts,
+                                         const GLsizei *counts,
                                          GLsizei drawcount,
                                          ParamCapture *paramCapture)
  {
@@ -8,7 +10,11 @@ diff a/src/libANGLE/capture/capture_gles_ext_params.cpp b/src/libANGLE/capture/c
  }
  
  void CaptureMultiDrawArraysANGLE_counts(const State &glState,
-@@ -424,7 +424,7 @@ void CaptureMultiDrawArraysANGLE_counts(const State &glState,
+                                         bool isCallValid,
+                                         PrimitiveMode modePacked,
+@@ -422,11 +422,11 @@ void CaptureMultiDrawArraysANGLE_counts(const State &glState,
+                                         const GLint *firsts,
+                                         const GLsizei *counts,
                                          GLsizei drawcount,
                                          ParamCapture *paramCapture)
  {
@@ -17,7 +23,11 @@ diff a/src/libANGLE/capture/capture_gles_ext_params.cpp b/src/libANGLE/capture/c
  }
  
  void CaptureMultiDrawArraysInstancedANGLE_firsts(const State &glState,
-@@ -436,7 +436,7 @@ void CaptureMultiDrawArraysInstancedANGLE_firsts(const State &glState,
+                                                  bool isCallValid,
+                                                  PrimitiveMode modePacked,
+@@ -434,11 +434,11 @@ void CaptureMultiDrawArraysInstancedANGLE_firsts(const State &glState,
+                                                  const GLsizei *counts,
+                                                  const GLsizei *instanceCounts,
                                                   GLsizei drawcount,
                                                   ParamCapture *paramCapture)
  {
@@ -26,7 +36,11 @@ diff a/src/libANGLE/capture/capture_gles_ext_params.cpp b/src/libANGLE/capture/c
  }
  
  void CaptureMultiDrawArraysInstancedANGLE_counts(const State &glState,
-@@ -448,7 +448,7 @@ void CaptureMultiDrawArraysInstancedANGLE_counts(const State &glState,
+                                                  bool isCallValid,
+                                                  PrimitiveMode modePacked,
+@@ -446,11 +446,11 @@ void CaptureMultiDrawArraysInstancedANGLE_counts(const State &glState,
+                                                  const GLsizei *counts,
+                                                  const GLsizei *instanceCounts,
                                                   GLsizei drawcount,
                                                   ParamCapture *paramCapture)
  {
@@ -35,7 +49,11 @@ diff a/src/libANGLE/capture/capture_gles_ext_params.cpp b/src/libANGLE/capture/c
  }
  
  void CaptureMultiDrawArraysInstancedANGLE_instanceCounts(const State &glState,
-@@ -460,7 +460,7 @@ void CaptureMultiDrawArraysInstancedANGLE_instanceCounts(const State &glState,
+                                                          bool isCallValid,
+                                                          PrimitiveMode modePacked,
+@@ -458,11 +458,11 @@ void CaptureMultiDrawArraysInstancedANGLE_instanceCounts(const State &glState,
+                                                          const GLsizei *counts,
+                                                          const GLsizei *instanceCounts,
                                                           GLsizei drawcount,
                                                           ParamCapture *paramCapture)
  {
@@ -44,3 +62,5 @@ diff a/src/libANGLE/capture/capture_gles_ext_params.cpp b/src/libANGLE/capture/c
  }
  
  void CaptureMultiDrawElementsANGLE_counts(const State &glState,
+                                           bool isCallValid,
+                                           PrimitiveMode modePacked,

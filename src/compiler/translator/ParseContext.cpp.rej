@@ -1,5 +1,7 @@
 diff a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp	(rejected hunks)
-@@ -475,7 +475,7 @@ TParseContext::TParseContext(TSymbolTable &symt,
+@@ -473,11 +473,11 @@ TParseContext::TParseContext(TSymbolTable &symt,
+       mMainFunction(nullptr),
+       mIsReturnVisitedInMain(false),
        mValidateESSL100Limitations(
            ShouldEnforceESSL100LoopAndIndexingLimitations(spec, mShaderVersion, options)),
        mMaxFragDataArrayIndexUsed(0),
@@ -8,7 +10,11 @@ diff a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseC
        mGeometryShaderInputPrimitiveType(EptUndefined),
        mGeometryShaderOutputPrimitiveType(EptUndefined),
        mGeometryShaderInvocations(0),
-@@ -4000,11 +4006,28 @@ TPublicType TParseContext::addFullySpecifiedType(const TTypeQualifierBuilder &ty
+       mGeometryShaderMaxVertices(-1),
+       mMaxGeometryShaderInvocations(resources.MaxGeometryShaderInvocations),
+@@ -3998,15 +4004,32 @@ TPublicType TParseContext::addFullySpecifiedType(const TTypeQualifierBuilder &ty
+     checkWorkGroupSizeIsNotSpecified(typeSpecifier.getLine(), returnType.layoutQualifier);
+ 
      checkEarlyFragmentTestsIsNotSpecified(typeSpecifier.getLine(),
                                            returnType.layoutQualifier.earlyFragmentTests);
  
@@ -42,7 +48,11 @@ diff a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseC
      }
  
      if (mShaderVersion < 300)
-@@ -4043,7 +4066,7 @@ TPublicType TParseContext::addFullySpecifiedType(const TTypeQualifierBuilder &ty
+     {
+         if (typeSpecifier.isArray())
+@@ -4041,11 +4064,11 @@ TPublicType TParseContext::addFullySpecifiedType(const TTypeQualifierBuilder &ty
+             checkInputOutputTypeIsValidES3(returnType.qualifier, typeSpecifier,
+                                            typeSpecifier.getLine());
          }
          if (returnType.qualifier == EvqComputeIn)
          {
@@ -51,7 +61,11 @@ diff a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseC
                    "in");
          }
      }
-@@ -8360,8 +8383,10 @@ bool TParseContext::binaryOpCommonCheck(TOperator op,
+ 
+     return returnType;
+@@ -8358,12 +8381,14 @@ bool TParseContext::binaryOpCommonCheck(TOperator op,
+                 return false;
+             }
              // Samplers as l-values are disallowed also in ESSL 3.00, see section 4.1.7,
              // we interpret the spec so that this extends to structs containing samplers,
              // similarly to ESSL 1.00 spec.
@@ -64,3 +78,5 @@ diff a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseC
              {
                  error(loc, "undefined operation for structs containing samplers",
                        GetOperatorString(op));
+                 return false;
+             }

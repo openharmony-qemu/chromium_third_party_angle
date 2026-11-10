@@ -1,5 +1,7 @@
 diff a/src/libANGLE/VertexAttribute.cpp b/src/libANGLE/VertexAttribute.cpp	(rejected hunks)
-@@ -139,7 +139,7 @@ GLintptr ComputeVertexAttributeOffset(const VertexAttribute &attrib, const Verte
+@@ -137,11 +137,11 @@ GLintptr ComputeVertexAttributeOffset(const VertexAttribute &attrib, const Verte
+ GLintptr ComputeVertexAttributeOffset(const VertexAttribute &attrib, const VertexBinding &binding)
+ {
      return attrib.relativeOffset + binding.getOffset();
  }
  
@@ -8,7 +10,11 @@ diff a/src/libANGLE/VertexAttribute.cpp b/src/libANGLE/VertexAttribute.cpp	(reje
  {
      // For instanced rendering, we draw "instanceDrawCount" sets of "vertexDrawCount" vertices.
      //
-@@ -154,7 +154,9 @@ size_t ComputeVertexBindingElementCount(GLuint divisor, size_t drawCount, size_t
+     // A vertex attribute with a positive divisor loads one instanced vertex for every set of
+     // non-instanced vertices, and the instanced vertex index advances once every "mDivisor"
+@@ -152,9 +152,11 @@ size_t ComputeVertexBindingElementCount(GLuint divisor, size_t drawCount, size_t
+         // For instance, with 5 non-instanced vertices and a divisor equal to 3, we need 2 instanced
+         // vertices.
          return (instanceCount + divisor - 1u) / divisor;
      }
  

@@ -1,5 +1,7 @@
 diff a/src/libANGLE/renderer/vulkan/vk_helpers.h b/src/libANGLE/renderer/vulkan/vk_helpers.h	(rejected hunks)
-@@ -2546,9 +2546,11 @@ class ImageHelper final : public Resource, public angle::Subject
+@@ -2544,13 +2544,15 @@ class ImageHelper final : public Resource, public angle::Subject
+                                                         FramebufferVk *framebufferVk);
+ 
      void stageSubresourceUpdateFromImage(RefCounted<ImageHelper> *image,
                                           const gl::ImageIndex &index,
                                           LevelIndex srcMipLevel,
@@ -12,7 +14,11 @@ diff a/src/libANGLE/renderer/vulkan/vk_helpers.h b/src/libANGLE/renderer/vulkan/
  
      // Takes an image and stages a subresource update for each level of it, including its full
      // extent and all its layers, at the specified GL level.
-@@ -2851,7 +2853,8 @@ class ImageHelper final : public Resource, public angle::Subject
+     void stageSubresourceUpdatesFromAllImageLevels(RefCounted<ImageHelper> *image,
+                                                    gl::LevelIndex baseLevel);
+@@ -2849,11 +2851,12 @@ class ImageHelper final : public Resource, public angle::Subject
+     void restoreSubresourceStencilContent(gl::LevelIndex level,
+                                           uint32_t layerIndex,
                                            uint32_t layerCount);
      angle::Result reformatStagedBufferUpdates(ContextVk *contextVk,
                                                angle::FormatID srcFormatID,
@@ -22,7 +28,11 @@ diff a/src/libANGLE/renderer/vulkan/vk_helpers.h b/src/libANGLE/renderer/vulkan/
      bool hasStagedImageUpdatesWithMismatchedFormat(gl::LevelIndex levelStart,
                                                     gl::LevelIndex levelEnd,
                                                     angle::FormatID formatID) const;
-@@ -2974,7 +2977,9 @@ class ImageHelper final : public Resource, public angle::Subject
+ 
+     void setAcquireNextImageSemaphore(VkSemaphore semaphore)
+@@ -2972,11 +2975,13 @@ class ImageHelper final : public Resource, public angle::Subject
+ 
+         void release(Renderer *renderer);
  
          // Returns true if the update's layer range exact matches [layerIndex,
          // layerIndex+layerCount) range
@@ -33,3 +43,5 @@ diff a/src/libANGLE/renderer/vulkan/vk_helpers.h b/src/libANGLE/renderer/vulkan/
          // Returns true if the update is to any layer within range of [layerIndex,
          // layerIndex+layerCount)
          bool intersectsLayerRange(uint32_t layerIndex, uint32_t layerCount) const;
+         void getDestSubresource(uint32_t imageLayerCount,
+                                 uint32_t *baseLayerOut,

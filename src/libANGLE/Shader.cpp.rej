@@ -1,0 +1,20 @@
+diff a/src/libANGLE/Shader.cpp b/src/libANGLE/Shader.cpp	(rejected hunks)
+@@ -647,14 +647,14 @@ void Shader::compile(const Context *context, angle::JobResultExpectancy resultEx
+         options.enforcePackingRestrictions = true;
+         options.initSharedVariables        = true;
+ 
+-        if (context->getFrontendFeatures().rejectWebglShadersWithUndefinedBehavior.enabled)
++        if (context->getFrontendFeatures().allowExtensionDisableAfterNonPpTokens.enabled)
+         {
+-            options.rejectWebglShadersWithUndefinedBehavior = true;
++            options.allowExtensionDisableAfterNonPPTokensInWebGL = true;
+         }
+ 
+-        if (context->getFrontendFeatures().allowExtensionDisableAfterNonPpTokens.enabled)
++        if (context->getFrontendFeatures().rejectWebglShadersWithUndefinedBehavior.enabled)
+         {
+-            options.allowExtensionDisableAfterNonPPTokensInWebGL = true;
++            options.rejectWebglShadersWithUndefinedBehavior = true;
+         }
+     }
+     else

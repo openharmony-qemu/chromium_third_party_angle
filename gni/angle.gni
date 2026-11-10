@@ -83,6 +83,10 @@ if (angle_has_build) {
     import("//build/config/android/config.gni")
   }
 
+  if (is_arkweb) {
+    import("//build/config/ohos/config.gni")
+  }
+
   if (is_win) {
     import("//build/config/win/visual_studio_version.gni")
   }
@@ -97,7 +101,7 @@ if (angle_has_build) {
     angle_use_gbm = ozone_platform_drm
     angle_use_x11 = ozone_platform_x11 && (is_linux || is_chromeos)
     angle_use_wayland = ozone_platform_wayland && is_linux && !is_castos
-    angle_use_vulkan_display = is_linux || is_chromeos
+    angle_use_vulkan_display = is_linux || is_chromeos || is_ohos
   }
 } else {
   declare_args() {
@@ -120,7 +124,7 @@ if (angle_has_build) {
   }
 
   declare_args() {
-    angle_use_vulkan_display = is_linux || is_chromeos
+    angle_use_vulkan_display = is_linux || is_chromeos || is_ohos
   }
 }
 

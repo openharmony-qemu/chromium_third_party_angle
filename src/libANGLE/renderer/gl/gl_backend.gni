@@ -118,7 +118,7 @@ if (angle_use_x11) {
   ]
 }
 
-if (is_android || is_linux || is_chromeos) {
+if (is_android || is_linux || is_chromeos || is_ohos) {
   gl_backend_sources += [
     "egl/ContextEGL.cpp",
     "egl/ContextEGL.h",
@@ -157,6 +157,15 @@ if (is_android) {
     "egl/android/DisplayAndroid.h",
     "egl/android/NativeBufferImageSiblingAndroid.cpp",
     "egl/android/NativeBufferImageSiblingAndroid.h",
+  ]
+}
+
+if (is_arkweb) {
+  gl_backend_sources += [
+    "../../../../../../arkweb/chromium_ext/third_party/angle/src/libANGLE/renderer/gl/egl/ohos/DisplayOhos.cpp",
+    "../../../../../../arkweb/chromium_ext/third_party/angle/src/libANGLE/renderer/gl/egl/ohos/DisplayOhos.h",
+    "../../../../../../arkweb/chromium_ext/third_party/angle/src/libANGLE/renderer/gl/egl/ohos/NativeBufferImageSiblingOhos.cpp",
+    "../../../../../../arkweb/chromium_ext/third_party/angle/src/libANGLE/renderer/gl/egl/ohos/NativeBufferImageSiblingOhos.h",
   ]
 }
 

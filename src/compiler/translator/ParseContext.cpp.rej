@@ -1,0 +1,66 @@
+diff a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp	(rejected hunks)
+@@ -475,7 +475,7 @@ TParseContext::TParseContext(TSymbolTable &symt,
+       mValidateESSL100Limitations(
+           ShouldEnforceESSL100LoopAndIndexingLimitations(spec, mShaderVersion, options)),
+       mMaxFragDataArrayIndexUsed(0),
+- 	  mMaxDualSourceDrawBuffers(resources.MaxDualSourceDrawBuffers),
++      mMaxDualSourceDrawBuffers(resources.MaxDualSourceDrawBuffers),
+       mGeometryShaderInputPrimitiveType(EptUndefined),
+       mGeometryShaderOutputPrimitiveType(EptUndefined),
+       mGeometryShaderInvocations(0),
+@@ -4000,11 +4006,28 @@ TPublicType TParseContext::addFullySpecifiedType(const TTypeQualifierBuilder &ty
+     checkEarlyFragmentTestsIsNotSpecified(typeSpecifier.getLine(),
+                                           returnType.layoutQualifier.earlyFragmentTests);
+ 
+-    if (returnType.qualifier == EvqSampleIn || returnType.qualifier == EvqSampleOut ||
+-        returnType.qualifier == EvqNoPerspectiveSampleIn ||
+-        returnType.qualifier == EvqNoPerspectiveSampleOut)
+-    {
+-        mSampleQualifierSpecified = true;
++    switch (returnType.qualifier)
++    {
++        case EvqSmooth:
++        case EvqFlat:
++        case EvqNoPerspective:
++        case EvqCentroid:
++        case EvqSample:
++        case EvqNoPerspectiveCentroid:
++        case EvqNoPerspectiveSample:
++            // These qualifiers must be merged with |in| or |out| qualifiers.
++            error(typeSpecifier.getLine(), "qualifier can only be used with in and out variables",
++                  getQualifierString(returnType.qualifier));
++            break;
++
++        case EvqSampleIn:
++        case EvqSampleOut:
++        case EvqNoPerspectiveSampleIn:
++        case EvqNoPerspectiveSampleOut:
++            mSampleQualifierSpecified = true;
++            break;
++        default:
++            break;
+     }
+ 
+     if (mShaderVersion < 300)
+@@ -4043,7 +4066,7 @@ TPublicType TParseContext::addFullySpecifiedType(const TTypeQualifierBuilder &ty
+         }
+         if (returnType.qualifier == EvqComputeIn)
+         {
+-            error(typeSpecifier.getLine(), "'in' can be only used to specify the local group size",
++            error(typeSpecifier.getLine(), "'in' can only be used to specify the local group size",
+                   "in");
+         }
+     }
+@@ -8360,8 +8383,10 @@ bool TParseContext::binaryOpCommonCheck(TOperator op,
+             // Samplers as l-values are disallowed also in ESSL 3.00, see section 4.1.7,
+             // we interpret the spec so that this extends to structs containing samplers,
+             // similarly to ESSL 1.00 spec.
+-            if ((mShaderVersion < 300 || op == EOpAssign || op == EOpInitialize) &&
+-                left->getType().isStructureContainingSamplers())
++            //
++            // ESSL 3.00 doesn't disallow comparison between structs with samplers, but glslang, the
++            // reference implementation does, as do many drivers.
++            if (left->getType().isStructureContainingSamplers())
+             {
+                 error(loc, "undefined operation for structs containing samplers",
+                       GetOperatorString(op));

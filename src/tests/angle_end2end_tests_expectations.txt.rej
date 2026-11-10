@@ -1,0 +1,43 @@
+diff a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt	(rejected hunks)
+@@ -85,10 +85,12 @@
+ 42265137 VULKAN : UniformTest.UnusedStructInlineUniform/* = SKIP
+ 42265137 VULKAN : UniformTest.UnusedStructInlineUniformWithSampler/* = SKIP
+ 42265405 VULKAN : Texture2DTestES3.TextureRGBUpdateWithPBO/ES3_Vulkan* = SKIP
++506193593 VULKAN : Texture2DTestES3.YUVTexSubImage2DNonZeroOffset_3Plane/* = SKIP
+ 42265226 VULKAN : GLSLTest_ES3.GLVertexIDIntegerTextureDrawElementsU8Line/* = SKIP
+ 42265226 VULKAN : GLSLTest_ES3.GLVertexIDIntegerTextureDrawElementsU8LineIds/* = SKIP
+ 235877059 VULKAN : MultisampleTestES3.ResolveToFBO/ES3_Vulkan_EmulatedPrerotation180 = SKIP
+ 235877059 VULKAN : MultisampleTestES3.ResolveToFBO/ES3_Vulkan_EmulatedPrerotation270 = SKIP
++506165684 VULKAN : RobustResourceInitTest.SampleReinitSampleRGB/* = SKIP
+ // ANGLE is broken if a context is made current before a surface is created in the presence of multiple queue families
+ 42266900 VULKAN : EGLContextSharingTestNoFixture.*/*ForceDelayedDeviceCreationForTesting* = SKIP
+ 42266900 VULKAN : EGLSurfacelessContextTest.*/*ForceDelayedDeviceCreationForTesting* = SKIP
+@@ -863,6 +865,7 @@
+ 42267029 PIXEL6 VULKAN : VulkanPerformanceCounterTest_DepthStencilLoadStoreOps.RenderToTextureDepthStencilRenderbufferShouldNotLoad/* = SKIP
+ 42267029 PIXEL6 VULKAN : VulkanPerformanceCounterTest.RenderToTextureDepthStencilTextureShouldNotLoad/* = SKIP
+ 42267029 PIXEL6 VULKAN : VulkanPerformanceCounterTest_DepthStencilLoadStoreOps.RenderToTextureUninitializedAndUnusedDepthStencil/* = SKIP
++509210196 PIXEL6 VULKAN : FramebufferTest_ES31.AttachToMultipleCubeFacesThenMSRTT/* = SKIP
+ // New failures after AP1A.240405.002 upgrade
+ 336847261 PIXEL6 VULKAN : StateChangeTestES3.LineWidth/* = SKIP
+ 
+@@ -1186,6 +1189,9 @@
+ 42265943 WIN INTEL OPENGL : CompressedTextureETC2RGBA8SRGBTest.Test/* = SKIP
+ 42265943 WIN INTEL OPENGL : CompressedTextureETC2RGBA8Test.Test/* = SKIP
+ 
++// NVIDIA GLES specific failures with DXT texture uploads
++498904293 WIN NVIDIA GLES : DXT1CompressedTextureTestWebGL2.InitializeTextureContents/* = SKIP
++
+ // Takes several minutes to complete with ASAN / TSAN
+ 42263997 ASAN VULKAN SWIFTSHADER : ClipCullDistanceTest.SizeCheckCombined/* = SKIP
+ 42266388 TSAN VULKAN SWIFTSHADER : ClipCullDistanceTest.SizeCheckCombined/* = SKIP
+@@ -2260,6 +2266,10 @@
+ // Untriaged failures on Pixel 4 / GLES
+ 349994211 IR PIXEL4ORXL GLES : GLSLTestLoops.ForContinueInSwitchComplex/* = SKIP
+ 
++// Fails test on Metal
++499091328 MAC AMD METAL : Texture2DArrayTestES3.ReformatStagedBufferUpdatesLayerCountOOB_2DArray/* = SKIP
++512995370 MAC AMD METAL : Texture2DArrayTestES3.ReformatStagedBufferUpdatesLayerCountOOB_3D/* = SKIP
++
+ // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ // Slow tests, should appear last in this file
+ // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

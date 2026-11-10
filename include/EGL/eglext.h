@@ -526,6 +526,11 @@ EGLAPI EGLClientBuffer EGLAPIENTRY eglGetNativeClientBufferANDROID (const struct
 #define EGL_NATIVE_BUFFER_ANDROID         0x3140
 #endif /* EGL_ANDROID_image_native_buffer */
 
+#ifndef EGL_OHOS_image_native_buffer
+#define EGL_OHOS_image_native_buffer 1
+#define EGL_NATIVE_BUFFER_OHOS            0x34E1
+#endif /* EGL_OHOS_image_native_buffer */
+
 #ifndef EGL_ANDROID_native_fence_sync
 #define EGL_ANDROID_native_fence_sync 1
 #define EGL_SYNC_NATIVE_FENCE_ANDROID     0x3144

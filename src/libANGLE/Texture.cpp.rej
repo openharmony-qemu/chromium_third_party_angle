@@ -1,33 +1,4 @@
 diff a/src/libANGLE/Texture.cpp b/src/libANGLE/Texture.cpp	(rejected hunks)
-@@ -1974,28 +1974,10 @@ angle::Result Texture::generateMipmap(Context *context)
-     if (baseImageInfo.size.empty())
-     {
-         return angle::Result::Continue;
-     }
- 
--    // Clear the base image(s) immediately if needed
--    if (context->isRobustResourceInitEnabled())
--    {
--        ImageIndexIterator it =
--            ImageIndexIterator::MakeGeneric(mState.mType, baseLevel, baseLevel + 1,
--                                            ImageIndex::kEntireLevel, ImageIndex::kEntireLevel);
--        while (it.hasNext())
--        {
--            const ImageIndex index = it.next();
--            const ImageDesc &desc  = mState.getImageDesc(index.getTarget(), index.getLevelIndex());
--
--            if (desc.initState == InitState::MayNeedInit)
--            {
--                ANGLE_TRY(initializeContents(context, GL_NONE, index));
--            }
--        }
--    }
--
-     ANGLE_TRY(syncState(context, Command::GenerateMipmap));
-     ANGLE_TRY(mTexture->generateMipmap(context));
- 
-     // Propagate the format and size of the base mip to the smaller ones. Cube maps are guaranteed
-     // to have faces of the same size and format so any faces can be picked.
 @@ -2449,13 +2431,13 @@ GLuint Texture::getNativeID() const
  }
  
@@ -42,31 +13,4 @@ diff a/src/libANGLE/Texture.cpp b/src/libANGLE/Texture.cpp	(rejected hunks)
  }
  
  rx::FramebufferAttachmentObjectImpl *Texture::getAttachmentImpl() const
- {
-@@ -2727,10 +2709,14 @@ void Texture::onBufferContentsChange()
-     onStateChange(angle::SubjectMessage::ContentsChanged);
- }
- 
- void Texture::onBindToMSRTTFramebuffer()
- {
-+    if (!mState.mHasBeenBoundToMSRTTFramebuffer)
-+    {
-+        onStateChange(angle::SubjectMessage::SubjectChanged);
-+    }
-     mState.mHasBeenBoundToMSRTTFramebuffer = true;
- }
- 
- GLenum Texture::getImplementationColorReadFormat(const Context *context) const
- {
-@@ -2781,10 +2767,11 @@ void Texture::onBindAsImageTexture()
- {
-     if (!mState.mHasBeenBoundAsImage)
-     {
-         mDirtyBits.set(DIRTY_BIT_BOUND_AS_IMAGE);
-         mState.mHasBeenBoundAsImage = true;
-+        onStateChange(angle::SubjectMessage::SubjectChanged);
-     }
- }
- 
- void Texture::onBindAsEglImageSource()
  {

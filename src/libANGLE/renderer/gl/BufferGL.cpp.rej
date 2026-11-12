@@ -1,19 +1,4 @@
 diff a/src/libANGLE/renderer/gl/BufferGL.cpp b/src/libANGLE/renderer/gl/BufferGL.cpp	(rejected hunks)
-@@ -93,14 +93,10 @@ angle::Result BufferGL::setData(const gl::Context *context,
- {
-     ContextGL *contextGL         = GetImplAs<ContextGL>(context);
-     const FunctionsGL *functions = GetFunctionsGL(context);
-     StateManagerGL *stateManager = GetStateManagerGL(context);
- 
--    stateManager->bindBuffer(DestBufferOperationTarget, mBufferID);
--    ANGLE_GL_TRY(context, functions->bufferData(gl::ToGLenum(DestBufferOperationTarget), size, data,
--                                                ToGLenum(usage)));
--
-     // Initialize the shadow buffer if needed. Don't delete existing shadow data. WebGL allows users
-     // to bind as an element array buffer first and then copy source/dest later (but not the other
-     // way around).
-     if (KeepBufferShadowCopy(context, mState.getWebGLType()) && !mShadowCopy.has_value())
-     {
 @@ -105,10 +101,14 @@ angle::Result BufferGL::setData(const gl::Context *context,
      if (KeepBufferShadowCopy(context, mState.getWebGLType()) && !mShadowCopy.has_value())
      {

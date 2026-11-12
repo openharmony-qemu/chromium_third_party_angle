@@ -12,57 +12,6 @@ diff a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseC
        mGeometryShaderInvocations(0),
        mGeometryShaderMaxVertices(-1),
        mMaxGeometryShaderInvocations(resources.MaxGeometryShaderInvocations),
-@@ -3998,15 +4004,32 @@ TPublicType TParseContext::addFullySpecifiedType(const TTypeQualifierBuilder &ty
-     checkWorkGroupSizeIsNotSpecified(typeSpecifier.getLine(), returnType.layoutQualifier);
- 
-     checkEarlyFragmentTestsIsNotSpecified(typeSpecifier.getLine(),
-                                           returnType.layoutQualifier.earlyFragmentTests);
- 
--    if (returnType.qualifier == EvqSampleIn || returnType.qualifier == EvqSampleOut ||
--        returnType.qualifier == EvqNoPerspectiveSampleIn ||
--        returnType.qualifier == EvqNoPerspectiveSampleOut)
--    {
--        mSampleQualifierSpecified = true;
-+    switch (returnType.qualifier)
-+    {
-+        case EvqSmooth:
-+        case EvqFlat:
-+        case EvqNoPerspective:
-+        case EvqCentroid:
-+        case EvqSample:
-+        case EvqNoPerspectiveCentroid:
-+        case EvqNoPerspectiveSample:
-+            // These qualifiers must be merged with |in| or |out| qualifiers.
-+            error(typeSpecifier.getLine(), "qualifier can only be used with in and out variables",
-+                  getQualifierString(returnType.qualifier));
-+            break;
-+
-+        case EvqSampleIn:
-+        case EvqSampleOut:
-+        case EvqNoPerspectiveSampleIn:
-+        case EvqNoPerspectiveSampleOut:
-+            mSampleQualifierSpecified = true;
-+            break;
-+        default:
-+            break;
-     }
- 
-     if (mShaderVersion < 300)
-     {
-         if (typeSpecifier.isArray())
-@@ -4041,11 +4064,11 @@ TPublicType TParseContext::addFullySpecifiedType(const TTypeQualifierBuilder &ty
-             checkInputOutputTypeIsValidES3(returnType.qualifier, typeSpecifier,
-                                            typeSpecifier.getLine());
-         }
-         if (returnType.qualifier == EvqComputeIn)
-         {
--            error(typeSpecifier.getLine(), "'in' can be only used to specify the local group size",
-+            error(typeSpecifier.getLine(), "'in' can only be used to specify the local group size",
-                   "in");
-         }
-     }
- 
-     return returnType;
 @@ -8358,12 +8381,14 @@ bool TParseContext::binaryOpCommonCheck(TOperator op,
                  return false;
              }

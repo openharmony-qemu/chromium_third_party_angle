@@ -1,19 +1,4 @@
 diff a/src/common/angleutils.h b/src/common/angleutils.h	(rejected hunks)
-@@ -7,14 +7,10 @@
- // angleutils.h: Common ANGLE utilities.
- 
- #ifndef COMMON_ANGLEUTILS_H_
- #define COMMON_ANGLEUTILS_H_
- 
--#ifdef UNSAFE_BUFFERS_BUILD
--#    pragma allow_unsafe_buffers
--#endif
--
- #include "common/platform.h"
- 
- #if defined(ANGLE_WITH_LSAN)
- #    include <sanitizer/lsan_interface.h>
- #endif  // defined(ANGLE_WITH_LSAN)
 @@ -31,10 +27,12 @@
  #include <sstream>
  #include <string>
@@ -27,23 +12,6 @@ diff a/src/common/angleutils.h b/src/common/angleutils.h	(rejected hunks)
  
  #if defined(ANGLE_ENABLE_D3D9) || defined(ANGLE_ENABLE_D3D11)
  using Microsoft::WRL::ComPtr;
-@@ -185,15 +183,11 @@ template <typename T>
- 
- template <typename T>
- class WrappedArray final : angle::NonCopyable
- {
-   public:
--    template <size_t N>
--    constexpr WrappedArray(const T (&data)[N]) : mArray(&data[0]), mSize(N)
--    {}
--
--    constexpr WrappedArray() : mArray(nullptr), mSize(0) {}
-+    constexpr WrappedArray() = default;
-     constexpr WrappedArray(const T *data, size_t size) : mArray(data), mSize(size) {}
- 
-     WrappedArray(WrappedArray &&other) : WrappedArray()
-     {
-         std::swap(mArray, other.mArray);
 @@ -198,18 +192,22 @@ class WrappedArray final : angle::NonCopyable
      {
          std::swap(mArray, other.mArray);
@@ -83,46 +51,3 @@ diff a/src/common/angleutils.h b/src/common/angleutils.h	(rejected hunks)
  
  template <typename T>
  void SafeRelease(T &resource)
-@@ -256,11 +255,12 @@ void SafeDeleteArray(T *&resource)
- // Provide a less-than function for comparing structs
- // Note: struct memory must be initialized to zero, because of packing gaps
- template <typename T>
- inline bool StructLessThan(const T &a, const T &b)
- {
--    return (memcmp(&a, &b, sizeof(T)) < 0);
-+    // SAFETY: both `a` and `b` are the same compiler-deduced size.
-+    return ANGLE_UNSAFE_BUFFERS(memcmp(&a, &b, sizeof(T)) < 0);
- }
- 
- // Provide a less-than function for comparing structs
- // Note: struct memory must be initialized to zero, because of packing gaps
- template <typename T>
-@@ -264,17 +264,26 @@ inline bool StructLessThan(const T &a, const T &b)
- // Provide a less-than function for comparing structs
- // Note: struct memory must be initialized to zero, because of packing gaps
- template <typename T>
- inline bool StructEquals(const T &a, const T &b)
- {
--    return (memcmp(&a, &b, sizeof(T)) == 0);
-+    // SAFETY: both `a` and `b` are the same compiler-deduced size.
-+    return ANGLE_UNSAFE_BUFFERS(memcmp(&a, &b, sizeof(T)) == 0);
- }
- 
- template <typename T>
- inline void StructZero(T *obj)
- {
--    memset(obj, 0, sizeof(T));
-+    // SAFETY: compiler-deduced size.
-+    ANGLE_UNSAFE_BUFFERS(memset(obj, 0, sizeof(T)));
-+}
-+
-+template <typename T>
-+inline void StructCopy(T *dst, const T &src)
-+{
-+    // SAFETY: compiler-deduced size.
-+    ANGLE_UNSAFE_BUFFERS(memcpy(dst, &src, sizeof(T)));
- }
- 
- template <typename T>
- inline bool IsMaskFlagSet(T mask, T flag)
- {

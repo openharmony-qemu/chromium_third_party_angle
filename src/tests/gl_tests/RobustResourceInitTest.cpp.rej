@@ -1,17 +1,4 @@
 diff a/src/tests/gl_tests/RobustResourceInitTest.cpp b/src/tests/gl_tests/RobustResourceInitTest.cpp	(rejected hunks)
-@@ -589,11 +589,11 @@ void RobustResourceInitTest::checkNonZeroPixels(GLTexture *texture,
- {
-     glBindTexture(GL_TEXTURE_2D, 0);
-     GLFramebuffer fb;
-     glBindFramebuffer(GL_FRAMEBUFFER, fb);
-     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture->get(), 0);
--    EXPECT_GLENUM_EQ(GL_FRAMEBUFFER_COMPLETE, glCheckFramebufferStatus(GL_FRAMEBUFFER));
-+    EXPECT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
- 
-     checkFramebufferNonZeroPixels(skipX, skipY, skipWidth, skipHeight, skip);
- }
- 
- void RobustResourceInitTest::checkNonZeroPixels3D(GLTexture *texture,
 @@ -1120,12 +1120,12 @@ TEST_P(RobustResourceInitTestES3, MultisampledDepthInitializedCorrectly)
      drawQuad(program, essl1_shaders::PositionAttrib(), 1.0f);
      ASSERT_GL_NO_ERROR();

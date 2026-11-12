@@ -1,24 +1,4 @@
 diff a/src/libANGLE/validationES3.cpp b/src/libANGLE/validationES3.cpp	(rejected hunks)
-@@ -746,10 +746,19 @@ bool ValidateES3TexImageParametersBase(const Context *context,
-         {
-             ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kOffsetOverflow);
-             return false;
-         }
- 
-+        if (gl::IsYuvFormat(actualInternalFormat))
-+        {
-+            if ((xoffset % 2) != 0 || (yoffset % 2) != 0 || (width % 2) != 0 || (height % 2) != 0)
-+            {
-+                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kYuvTexSubImage2DOddOffsetOrDimension);
-+                return false;
-+            }
-+        }
-+
-         if (width > 0 && height > 0 && depth > 0 && pixels == nullptr &&
-             context->getState().getTargetBuffer(BufferBinding::PixelUnpack) == nullptr)
-         {
-             ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kPixelDataNull);
-             return false;
 @@ -769,13 +778,14 @@ bool ValidateES3TexImageParametersBase(const Context *context,
      {
          if ((context->isWebGL()) &&
@@ -35,52 +15,3 @@ diff a/src/libANGLE/validationES3.cpp b/src/libANGLE/validationES3.cpp	(rejected
          // indicated by type.
          if (!isCompressed)
          {
-@@ -3686,12 +3703,23 @@ bool ValidateDrawArraysInstancedBaseInstanceANGLE(const Context *context,
-                                                   GLint first,
-                                                   GLsizei count,
-                                                   GLsizei instanceCount,
-                                                   GLuint baseInstance)
- {
--    return ValidateDrawArraysInstancedBase(context, entryPoint, mode, first, count, instanceCount,
--                                           baseInstance);
-+    if (!ValidateDrawArraysInstancedBase(context, entryPoint, mode, first, count, instanceCount,
-+                                         baseInstance))
-+    {
-+        return false;
-+    }
-+
-+    if (!ValidateDrawArraysTransformFeedbackBufferSize(context, entryPoint, &count, &instanceCount,
-+                                                       1))
-+    {
-+        return false;
-+    }
-+
-+    return true;
- }
- 
- bool ValidateDrawElementsInstancedBaseVertexBaseInstanceANGLE(const Context *context,
-                                                               angle::EntryPoint entryPoint,
-                                                               PrimitiveMode mode,
-@@ -4484,11 +4519,21 @@ bool ValidateDrawArraysInstanced(const Context *context,
-                                  PrimitiveMode mode,
-                                  GLint first,
-                                  GLsizei count,
-                                  GLsizei primcount)
- {
--    return ValidateDrawArraysInstancedBase(context, entryPoint, mode, first, count, primcount, 0);
-+    if (!ValidateDrawArraysInstancedBase(context, entryPoint, mode, first, count, primcount, 0))
-+    {
-+        return false;
-+    }
-+
-+    if (!ValidateDrawArraysTransformFeedbackBufferSize(context, entryPoint, &count, &primcount, 1))
-+    {
-+        return false;
-+    }
-+
-+    return true;
- }
- 
- bool ValidateFenceSync(const Context *context,
-                        angle::EntryPoint entryPoint,
-                        GLenum condition,

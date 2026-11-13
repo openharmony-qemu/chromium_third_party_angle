@@ -1,0 +1,22 @@
+diff --git a/src/third_party/angle/src/tests/BUILD.gn b/src/third_party/angle/src/tests/BUILD.gn
+--- a/src/third_party/angle/src/tests/BUILD.gn
++++ b/src/third_party/angle/src/tests/BUILD.gn
+@@ -2101,8 +2101,10 @@ group("angle_tests") {
+   testonly = true
+   deps = [
+-    ":angle_end2end_tests",
+     ":angle_system_info_test",
+     ":angle_unittests",
+   ]
++  if (!is_ohos) {
++    deps += [ ":angle_end2end_tests" ]
++  }
+   if (angle_enable_cl_testing) {
+     deps += [ ":angle_openclcts" ]
+@@ -2125,5 +2127,5 @@ group("angle_tests") {
+-  if (!is_fuchsia) {
++  if (!is_fuchsia && !is_ohos) {
+     deps += [
+       ":angle_white_box_perftests",
+       ":angle_white_box_tests",
+     ]

@@ -1484,6 +1484,8 @@ angle::Result Texture::setSubImage(Context *context,
 
     onStateChange(angle::SubjectMessage::ContentsChanged);
 
+    setInitState(GL_NONE, index, InitState::Initialized);
+
     return angle::Result::Continue;
 }
 
@@ -1536,6 +1538,8 @@ angle::Result Texture::setCompressedSubImage(const Context *context,
                                               pixels));
 
     onStateChange(angle::SubjectMessage::ContentsChanged);
+
+    setInitState(GL_NONE, index, InitState::Initialized);
 
     return angle::Result::Continue;
 }
@@ -1653,6 +1657,8 @@ angle::Result Texture::copySubImage(Context *context,
     ANGLE_TRY(handleMipmapGenerationHint(context, index.getLevelIndex()));
 
     onStateChange(angle::SubjectMessage::ContentsChanged);
+
+    setInitState(GL_NONE, index, InitState::Initialized);
 
     return angle::Result::Continue;
 }
@@ -1776,6 +1782,8 @@ angle::Result Texture::copySubTexture(const Context *context,
                                        source));
 
     onStateChange(angle::SubjectMessage::ContentsChanged);
+
+    setInitState(GL_NONE, index, InitState::Initialized);
 
     return angle::Result::Continue;
 }
@@ -2673,9 +2681,8 @@ angle::Result Texture::ensureSubImageInitialized(const Context *context,
         // NOTE: do not optimize this to only initialize the passed area of the texture, or the
         // initialization logic in copySubImage will be incorrect.
         ANGLE_TRY(initializeContents(context, GL_NONE, imageIndex));
+        setInitState(GL_NONE, imageIndex, InitState::Initialized);
     }
-    // Note: binding is ignored for textures.
-    setInitState(GL_NONE, imageIndex, InitState::Initialized);
     return angle::Result::Continue;
 }
 

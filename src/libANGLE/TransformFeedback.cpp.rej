@@ -1,17 +1,4 @@
 diff a/src/libANGLE/TransformFeedback.cpp b/src/libANGLE/TransformFeedback.cpp	(rejected hunks)
-@@ -148,11 +148,11 @@ angle::Result TransformFeedback::begin(const Context *context,
-     mState.mPrimitiveMode = primitiveMode;
-     mState.mPaused        = false;
-     mState.mVerticesDrawn = 0;
-     bindProgram(context, program);
-     recomputeVertexCapacity(context);
--    
-+
-     for (auto &buffer : mState.mIndexedBuffers)
-     {
-         if (buffer.get())
-         {
-             buffer->onTFActiveChanged(context, true);
 @@ -208,14 +208,21 @@ PrimitiveMode TransformFeedback::getPrimitiveMode() const
  PrimitiveMode TransformFeedback::getPrimitiveMode() const
  {

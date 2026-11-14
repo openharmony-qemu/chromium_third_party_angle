@@ -1,17 +1,4 @@
 diff a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp	(rejected hunks)
-@@ -473,11 +473,11 @@ TParseContext::TParseContext(TSymbolTable &symt,
-       mMainFunction(nullptr),
-       mIsReturnVisitedInMain(false),
-       mValidateESSL100Limitations(
-           ShouldEnforceESSL100LoopAndIndexingLimitations(spec, mShaderVersion, options)),
-       mMaxFragDataArrayIndexUsed(0),
-- 	  mMaxDualSourceDrawBuffers(resources.MaxDualSourceDrawBuffers),
-+      mMaxDualSourceDrawBuffers(resources.MaxDualSourceDrawBuffers),
-       mGeometryShaderInputPrimitiveType(EptUndefined),
-       mGeometryShaderOutputPrimitiveType(EptUndefined),
-       mGeometryShaderInvocations(0),
-       mGeometryShaderMaxVertices(-1),
-       mMaxGeometryShaderInvocations(resources.MaxGeometryShaderInvocations),
 @@ -8358,12 +8381,14 @@ bool TParseContext::binaryOpCommonCheck(TOperator op,
                  return false;
              }

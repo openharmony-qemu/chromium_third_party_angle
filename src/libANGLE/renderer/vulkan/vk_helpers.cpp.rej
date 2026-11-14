@@ -45,62 +45,6 @@ diff a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulka
              copy.imageSubresource.aspectMask     = kPlaneAspectFlags[plane];
              appendSubresourceUpdate(
                  gl::LevelIndex(0),
-@@ -8565,11 +8579,12 @@ angle::Result ImageHelper::updateSubresourceOnHost(ContextVk *contextVk,
-     return angle::Result::Continue;
- }
- 
- angle::Result ImageHelper::reformatStagedBufferUpdates(ContextVk *contextVk,
-                                                        angle::FormatID srcFormatID,
--                                                       angle::FormatID dstFormatID)
-+                                                       angle::FormatID dstFormatID,
-+                                                       gl::TextureType dstTextureType)
- {
-     const angle::Format &srcFormat = angle::Format::Get(srcFormatID);
-     const angle::Format &dstFormat = angle::Format::Get(dstFormatID);
-     const gl::InternalFormat &dstFormatInfo =
-         gl::GetSizedInternalFormatInfo(dstFormat.glInternalFormat);
-@@ -8592,10 +8607,14 @@ angle::Result ImageHelper::reformatStagedBufferUpdates(ContextVk *contextVk,
-                 GLuint dstDataRowPitch = copy.imageExtent.width * dstFormat.pixelBytes;
- 
-                 GLuint srcDataDepthPitch = srcDataRowPitch * copy.imageExtent.height;
-                 GLuint dstDataDepthPitch = dstDataRowPitch * copy.imageExtent.height;
- 
-+                const uint32_t depthOrLayerCount = dstTextureType == gl::TextureType::_3D
-+                                                       ? copy.imageExtent.depth
-+                                                       : copy.imageSubresource.layerCount;
-+
-                 // Retrieve source buffer
-                 vk::BufferHelper *srcBuffer = update.data.buffer.bufferHelper;
-                 ASSERT(srcBuffer->isMapped());
-                 // The bufferOffset is relative to the buffer block. We have to use the buffer
-                 // block's memory pointer to get the source data pointer.
-@@ -8606,11 +8625,11 @@ angle::Result ImageHelper::reformatStagedBufferUpdates(ContextVk *contextVk,
-                     std::make_unique<RefCounted<BufferHelper>>();
-                 BufferHelper *dstBuffer = &stagingBuffer->get();
- 
-                 uint8_t *dstData;
-                 VkDeviceSize dstBufferOffset;
--                size_t dstBufferSize = dstDataDepthPitch * copy.imageExtent.depth;
-+                size_t dstBufferSize = dstDataDepthPitch * depthOrLayerCount;
-                 ANGLE_TRY(contextVk->initBufferForImageCopy(
-                     dstBuffer, dstBufferSize, MemoryCoherency::CachedNonCoherent, dstFormatID,
-                     &dstBufferOffset, &dstData));
- 
-                 rx::PixelReadFunction pixelReadFunction   = srcFormat.pixelReadFunction;
-@@ -8618,12 +8637,11 @@ angle::Result ImageHelper::reformatStagedBufferUpdates(ContextVk *contextVk,
- 
-                 CopyImageCHROMIUM(srcData, srcDataRowPitch, srcFormat.pixelBytes, srcDataDepthPitch,
-                                   pixelReadFunction, dstData, dstDataRowPitch, dstFormat.pixelBytes,
-                                   dstDataDepthPitch, pixelWriteFunction, dstFormatInfo.format,
-                                   dstFormatInfo.componentType, copy.imageExtent.width,
--                                  copy.imageExtent.height, copy.imageExtent.depth, false, false,
--                                  false);
-+                                  copy.imageExtent.height, depthOrLayerCount, false, false, false);
- 
-                 // Replace srcBuffer with dstBuffer
-                 update.data.buffer.bufferHelper            = dstBuffer;
-                 update.data.buffer.formatID                = dstFormatID;
-                 update.data.buffer.copyRegion.bufferOffset = dstBufferOffset;
 @@ -9215,13 +9233,15 @@ angle::Result ImageHelper::stageSubresourceUpdateFromFramebuffer(
  }
  
